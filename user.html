@@ -1,0 +1,361 @@
+<!-- START OF FILE user.html -->
+<!DOCTYPE html>
+<html lang="fr" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mon Compte - WikiMind</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body { background-color: #0f0f0f; color: #eee; }
+        .input-field {
+            width: 100%; padding: 12px 16px; border-radius: 12px;
+            background-color: #1a1a1a; border: 1px solid #333;
+            color: white; outline: none; transition: all 0.3s;
+        }
+        .input-field:focus { border-color: #666; box-shadow: 0 0 0 4px rgba(255,255,255,0.05); }
+        .btn-primary {
+            background: white; color: black;
+            font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+            padding: 12px; border-radius: 12px; width: 100%;
+            transition: transform 0.2s;
+        }
+        .btn-primary:hover { transform: scale(1.02); }
+        .tab-btn {
+            padding: 10px; flex: 1; text-align: center; cursor: pointer;
+            font-weight: 600; font-size: 0.875rem; color: #666;
+            border-bottom: 2px solid transparent; transition: all 0.3s;
+        }
+        .tab-btn.active { color: white; border-bottom-color: white; }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+    
+    <!-- Background Decor -->
+    <div class="absolute top-0 left-0 w-full h-full z-0 opacity-20 pointer-events-none">
+        <div class="absolute top-[-20%] right-[-10%] w-[500px] h-[500px] bg-blue-900 rounded-full blur-[120px]"></div>
+        <div class="absolute bottom-[-20%] left-[-10%] w-[500px] h-[500px] bg-purple-900 rounded-full blur-[120px]"></div>
+    </div>
+
+    <!-- MAIN CARD -->
+    <div class="relative z-10 w-full max-w-md bg-[#161616] border border-[#252525] rounded-3xl p-8 shadow-2xl">
+        
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <a href="Wikimind_home.html" class="inline-block mb-4 text-xs font-bold text-gray-500 hover:text-white transition">← RETOUR ACCUEIL</a>
+            <h1 class="text-3xl font-black tracking-tighter mb-2">WikiMind ID</h1>
+            <p class="text-gray-500 text-sm">Une identité unique pour tout l'écosystème.</p>
+        </div>
+
+        <!-- LOADING STATE -->
+        <div id="loading-view" class="text-center py-10 hidden">
+            <div class="animate-spin w-8 h-8 border-4 border-white border-t-transparent rounded-full mx-auto mb-4"></div>
+            <p class="text-sm text-gray-400">Chargement...</p>
+        </div>
+
+        <!-- AUTH FORMS (Login/Register) -->
+        <div id="auth-view" class="block">
+            <!-- Tabs -->
+            <div class="flex border-b border-[#333] mb-6">
+                <div onclick="switchTab('login')" id="tab-login" class="tab-btn active">Connexion</div>
+                <div onclick="switchTab('register')" id="tab-register" class="tab-btn">Créer un compte</div>
+            </div>
+
+            <!-- LOGIN FORM -->
+            <form id="login-form" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 mb-1 ml-1">EMAIL</label>
+                    <input type="email" id="login-email" class="input-field" placeholder="utilisateur@exemple.com" required>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 mb-1 ml-1">MOT DE PASSE</label>
+                    <input type="password" id="login-password" class="input-field" placeholder="••••••••" required>
+                </div>
+                <div id="login-error" class="text-red-500 text-xs hidden">Erreur de connexion</div>
+                <button type="submit" class="btn-primary mt-4">Se Connecter</button>
+            </form>
+
+            <!-- REGISTER FORM -->
+            <form id="register-form" class="space-y-4 hidden">
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 mb-1 ml-1">EMAIL</label>
+                    <input type="email" id="reg-email" class="input-field" placeholder="utilisateur@exemple.com" required>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 mb-1 ml-1">MOT DE PASSE</label>
+                    <input type="password" id="reg-password" class="input-field" placeholder="••••••••" required>
+                </div>
+                
+                <!-- Personalization Fields -->
+                <div class="pt-4 border-t border-[#333]">
+                    <p class="text-[10px] text-gray-500 uppercase font-bold tracking-widest mb-3">Personnalisation de l'IA</p>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-400 mb-1 ml-1">PRÉNOM</label>
+                            <input type="text" id="reg-name" class="input-field" placeholder="Votre prénom">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-400 mb-1 ml-1">ÂGE</label>
+                            <input type="number" id="reg-age" class="input-field" placeholder="Ex: 18">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-400 mb-1 ml-1">POIDS (kg)</label>
+                            <input type="number" id="reg-weight" class="input-field" placeholder="Ex: 70">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-400 mb-1 ml-1">TAILLE (cm)</label>
+                            <input type="number" id="reg-height" class="input-field" placeholder="Ex: 175">
+                        </div>
+                    </div>
+                </div>
+
+                <div id="reg-error" class="text-red-500 text-xs hidden">Erreur d'inscription</div>
+                <button type="submit" class="btn-primary mt-4">Créer Compte Pro</button>
+            </form>
+        </div>
+
+        <!-- DASHBOARD VIEW (Logged In) -->
+        <div id="dashboard-view" class="hidden">
+            <div class="bg-[#1a1a1a] p-4 rounded-xl border border-[#333] mb-6 flex items-center gap-4">
+                <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-xl font-bold">
+                    <span id="user-initial">U</span>
+                </div>
+                <div>
+                    <h2 class="font-bold text-lg" id="display-name">Utilisateur</h2>
+                    <div class="flex items-center gap-2">
+                        <span class="inline-block w-2 h-2 rounded-full bg-green-500"></span>
+                        <span class="text-xs text-green-500 font-bold uppercase tracking-widest">Membre Pro</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="space-y-4">
+                <h3 class="text-xs font-bold text-gray-500 uppercase tracking-widest border-b border-[#333] pb-2">Mes Données Physio</h3>
+                <form id="update-form" class="grid grid-cols-3 gap-3">
+                    <div>
+                        <label class="block text-[10px] text-gray-400 mb-1">ÂGE</label>
+                        <input type="number" id="dash-age" class="input-field text-center p-2">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] text-gray-400 mb-1">POIDS</label>
+                        <input type="number" id="dash-weight" class="input-field text-center p-2">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] text-gray-400 mb-1">TAILLE</label>
+                        <input type="number" id="dash-height" class="input-field text-center p-2">
+                    </div>
+                </form>
+                <button id="btn-save-data" class="w-full text-xs font-bold text-blue-500 hover:text-white transition uppercase tracking-widest text-right">
+                    Mettre à jour
+                </button>
+            </div>
+
+            <div class="mt-8 pt-6 border-t border-[#333]">
+                <button onclick="handleLogout()" class="w-full py-3 rounded-xl border border-red-900/50 text-red-500 hover:bg-red-900/20 font-bold text-xs uppercase tracking-widest transition">
+                    Déconnexion
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- FIREBASE LOGIC -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAsV27OD4bARFOSDlZN1MAARSv9q2WBkdo",
+            authDomain: "wikimind-pro.firebaseapp.com",
+            projectId: "wikimind-pro",
+            storageBucket: "wikimind-pro.firebasestorage.app",
+            messagingSenderId: "154490257518",
+            appId: "1:154490257518:web:3276b1e64f2db9894be67f"
+        };
+
+        // Init Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // --- DOM ELEMENTS ---
+        const authView = document.getElementById('auth-view');
+        const dashView = document.getElementById('dashboard-view');
+        const loadingView = document.getElementById('loading-view');
+        
+        // Forms
+        const loginForm = document.getElementById('login-form');
+        const regForm = document.getElementById('register-form');
+
+        // --- STATE MANAGEMENT ---
+        onAuthStateChanged(auth, async (user) => {
+            loadingView.style.display = 'block';
+            authView.style.display = 'none';
+            dashView.style.display = 'none';
+
+            if (user) {
+                // User is signed in, fetch data
+                await loadUserData(user.uid);
+            } else {
+                // User is signed out
+                loadingView.style.display = 'none';
+                authView.style.display = 'block';
+            }
+        });
+
+        async function loadUserData(uid) {
+            try {
+                const docRef = doc(db, "users", uid);
+                const docSnap = await getDoc(docRef);
+
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    renderDashboard(data);
+                } else {
+                    console.log("No such document!");
+                }
+            } catch (error) {
+                console.error("Error getting document:", error);
+            } finally {
+                loadingView.style.display = 'none';
+                dashView.style.display = 'block';
+            }
+        }
+
+        function renderDashboard(data) {
+            document.getElementById('display-name').innerText = data.name || "Utilisateur";
+            document.getElementById('user-initial').innerText = (data.name || "U")[0].toUpperCase();
+            
+            // Populate Inputs
+            document.getElementById('dash-age').value = data.age || "";
+            document.getElementById('dash-weight').value = data.weight || "";
+            document.getElementById('dash-height').value = data.height || "";
+        }
+
+        // --- ACTIONS ---
+
+        // Login
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value;
+            const pass = document.getElementById('login-password').value;
+            const errorMsg = document.getElementById('login-error');
+
+            try {
+                await signInWithEmailAndPassword(auth, email, pass);
+                // onAuthStateChanged will handle redirection
+            } catch (error) {
+                errorMsg.innerText = error.message;
+                errorMsg.classList.remove('hidden');
+            }
+        });
+
+        // Register
+        regForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('reg-email').value;
+            const pass = document.getElementById('reg-password').value;
+            
+            // Info
+            const name = document.getElementById('reg-name').value;
+            const age = document.getElementById('reg-age').value;
+            const weight = document.getElementById('reg-weight').value;
+            const height = document.getElementById('reg-height').value;
+
+            try {
+                const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
+                const user = userCredential.user;
+
+                // Create Firestore Doc
+                await setDoc(doc(db, "users", user.uid), {
+                    email: email,
+                    name: name || "Utilisateur",
+                    age: age,
+                    weight: weight,
+                    height: height,
+                    isPremium: true, // AUTO PREMIUM
+                    createdAt: new Date()
+                });
+                
+                // onAuthStateChanged will handle UI
+            } catch (error) {
+                const errorMsg = document.getElementById('reg-error');
+                errorMsg.innerText = error.message;
+                errorMsg.classList.remove('hidden');
+            }
+        });
+
+        // Logout
+        window.handleLogout = async () => {
+            await signOut(auth);
+            location.reload();
+        };
+
+        // Update Data
+        document.getElementById('btn-save-data').addEventListener('click', async () => {
+            const user = auth.currentUser;
+            if(!user) return;
+
+            const age = document.getElementById('dash-age').value;
+            const weight = document.getElementById('dash-weight').value;
+            const height = document.getElementById('dash-height').value;
+
+            const btn = document.getElementById('btn-save-data');
+            const originalText = btn.innerText;
+            btn.innerText = "...";
+
+            try {
+                const docRef = doc(db, "users", user.uid);
+                await updateDoc(docRef, {
+                    age: age,
+                    weight: weight,
+                    height: height
+                });
+                btn.innerText = "Enregistré !";
+                setTimeout(() => btn.innerText = originalText, 2000);
+            } catch (e) {
+                console.error(e);
+                btn.innerText = "Erreur";
+            }
+        });
+
+        // UI Tabs Logic
+        window.switchTab = (tab) => {
+            const loginForm = document.getElementById('login-form');
+            const regForm = document.getElementById('register-form');
+            const tabLogin = document.getElementById('tab-login');
+            const tabReg = document.getElementById('tab-register');
+
+            if(tab === 'login') {
+                loginForm.classList.remove('hidden');
+                regForm.classList.add('hidden');
+                tabLogin.classList.add('active');
+                tabReg.classList.remove('active');
+            } else {
+                loginForm.classList.add('hidden');
+                regForm.classList.remove('hidden');
+                tabLogin.classList.remove('active');
+                tabReg.classList.add('active');
+            }
+        };
+    </script>
+</body>
+</html>
