@@ -1,3 +1,4 @@
+<!-- START OF FILE WikiMind_study.html -->
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -287,7 +288,7 @@
 <!-- MAIN APP STRUCTURE -->
 <header class="p-6 flex justify-between items-center z-10">
     <div class="flex items-center gap-4">
-        <a href="https://chpalitom09-bot.github.io/Wikimind/" target="_blank" class="w-10 h-10 bg-black text-white dark:bg-white dark:text-black rounded-xl flex items-center justify-center font-black text-xl hover:scale-105 transition shadow-lg no-underline cursor-pointer">W</a>
+        <a href="Wikimind_home.html" class="w-10 h-10 bg-black text-white dark:bg-white dark:text-black rounded-xl flex items-center justify-center font-black text-xl hover:scale-105 transition shadow-lg no-underline cursor-pointer">W</a>
         <div>
             <h1 class="text-2xl font-black uppercase tracking-tighter italic">WikiMind <span class="text-gray-400 font-medium not-italic">Study</span></h1>
             <p class="text-xs text-gray-400 tracking-wide font-medium">RÉVISER INTELLIGEMMENT.</p>
@@ -295,6 +296,11 @@
     </div>
 
     <div class="flex items-center gap-4">
+        <!-- BOUTON MON COMPTE (NOUVEAU) -->
+        <a href="user.html" id="auth-btn" class="hidden md:flex items-center gap-2 px-4 py-2 rounded-full bg-gray-100 dark:bg-zinc-800 text-xs font-bold uppercase tracking-widest hover:bg-gray-200 dark:hover:bg-zinc-700 transition">
+            <span>Mon Compte</span>
+        </a>
+
         <!-- Live Clock -->
         <div id="live-clock" class="hidden font-mono font-bold text-lg md:text-xl tracking-tight text-gray-500 dark:text-gray-400">
             00:00
@@ -429,6 +435,35 @@
 
 <!-- AUDIO ELEMENTS -->
 <audio id="bg-music" loop></audio>
+
+<!-- SCRIPT FIREBASE POUR HEADER UNIQUEMENT -->
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyAsV27OD4bARFOSDlZN1MAARSv9q2WBkdo",
+        authDomain: "wikimind-pro.firebaseapp.com",
+        projectId: "wikimind-pro",
+        storageBucket: "wikimind-pro.firebasestorage.app",
+        messagingSenderId: "154490257518",
+        appId: "1:154490257518:web:3276b1e64f2db9894be67f"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    onAuthStateChanged(auth, (user) => {
+        const btn = document.getElementById('auth-btn');
+        if (btn) {
+            if (user) {
+                btn.innerHTML = `<div class="w-2 h-2 rounded-full bg-green-500"></div> <span>Mon Espace</span>`;
+            } else {
+                btn.innerHTML = `<span>Mon Compte</span>`;
+            }
+        }
+    });
+</script>
 
 <script>
     /**
