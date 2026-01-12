@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WikiMind V2 - Multi-Langues</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Markdown Parser -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <style>
+        :root {
+            --bg: #ffffff;
+            --text: #111111;
+            --sidebar: #f8f8f8;
+            --border: #e5e5e5;
+            --accent: #000000;
+            --accent-text: #ffffff;
+            --card-hover: #f9fafb;
+            --success: #10b981;
+            --error: #ef4444;
+            --warning: #f59e0b;
+        }
+
+        .dark-mode {
+            --bg: #0f0f0f;
+            --text: #eeeeee;
+            --sidebar: #161616;
+            --border: #252525;
+            --accent: #ffffff;
+            --accent-text: #000000;
+            --card-hover: #1f1f1f;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            transition: background 0.3s, color 0.3s;
+        }
+
+        /* --- SIDEBAR --- */
+        #sidebar { width: 280px; background-color: var(--sidebar); border-right: 1px solid var(--border); transition: all 0.3s ease; z-index: 50; display: flex; flex-direction: column; flex-shrink: 0; }
+        #sidebar.closed { margin-left: -280px; }
+        
+        /* --- MAIN --- */
+        #main-area { flex-grow: 1; position: relative; display: flex; flex-direction: column; overflow: hidden; background: var(--bg); }
+        #content-container { flex-grow: 1; overflow-y: auto; padding: 2rem; max-width: 1000px; margin: 0 auto; width: 100%; scroll-behavior: smooth; }
+
+        /* --- STYLES GENERIQUES --- */
+        .card { border: 1px solid var(--border); border-radius: 16px; padding: 1.5rem; background: var(--bg); transition: 0.2s; position: relative; overflow: hidden; }
+        .card:hover { border-color: var(--text); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        
+        .btn-primary { background: var(--accent); color: var(--accent-text); padding: 12px 24px; border-radius: 10px; font-weight: 700; transition: 0.2s; border: 1px solid var(--accent); cursor: pointer; display: inline-flex; items-center; justify-content: center; gap: 8px; }
+        .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+        .btn-secondary { background: transparent; color: var(--text); padding: 12px 24px; border-radius: 10px; font-weight: 600; border: 1px solid var(--border); cursor: pointer; transition: 0.2s; }
+        .btn-secondary:hover { border-color: var(--text); background: var(--sidebar); }
+
+        .input-field { width: 100%; padding: 14px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); color: var(--text); outline: none; transition: 0.2s; }
+        .input-field:focus { border-color: var(--accent); }
+
+        /* --- MARKDOWN STYLING (CORRECTION DU "MOCHE") --- */
+        .lesson-content h1 { font-size: 2rem; font-weight: 800; margin-bottom: 1.5rem; line-height: 1.2; }
+        .lesson-content h2 { font-size: 1.5rem; font-weight: 700; margin-top: 2rem; margin-bottom: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; }
+        .lesson-content h3 { font-size: 1.25rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 0.75rem; }
+        .lesson-content p { margin-bottom: 1rem; line-height: 1.7; color: var(--text); opacity: 0.9; }
+        .lesson-content strong { font-weight: 700; color: var(--text); }
+        .lesson-content em { font-style: italic; opacity: 0.8; }
+        .lesson-content ul { list-style-type: disc; padding-left: 1.5rem; margin-bottom: 1.5rem; }
+        .lesson-content ol { list-style-type: decimal; padding-left: 1.5rem; margin-bottom: 1.5rem; }
+        .lesson-content li { margin-bottom: 0.5rem; padding-left: 0.5rem; }
+        .lesson-content blockquote { border-left: 4px solid var(--accent); padding-left: 1rem; margin: 1.5rem 0; font-style: italic; background: var(--sidebar); padding: 1rem; border-radius: 0 8px 8px 0; }
+        .lesson-content table { width: 100%; border-collapse: collapse; margin: 1.5rem 0; }
+        .lesson-content th, .lesson-content td { border: 1px solid var(--border); padding: 10px; text-align: left; }
+        .lesson-content th { background: var(--sidebar); font-weight: 700; }
+        .lesson-content code { background: var(--sidebar); padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 0.9em; }
+
+        /* --- ROADMAP --- */
+        .roadmap-node { display: flex; gap: 1rem; position: relative; padding-bottom: 2rem; opacity: 0.5; pointer-events: none; transition: 0.3s; }
+        .roadmap-node.active, .roadmap-node.completed { opacity: 1; pointer-events: all; }
+        .roadmap-line { position: absolute; left: 20px; top: 40px; bottom: 0; width: 2px; background: var(--border); z-index: 0; }
+        .roadmap-node:last-child .roadmap-line { display: none; }
+        .node-icon { width: 40px; height: 40px; border-radius: 50%; background: var(--bg); border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; z-index: 10; font-weight: bold; flex-shrink: 0; }
+        .roadmap-node.active .node-icon { border-color: var(--accent); background: var(--accent); color: var(--accent-text); }
+        .roadmap-node.completed .node-icon { border-color: var(--success); color: var(--success); }
+
+        /* --- ANIMATIONS --- */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade { animation: fadeIn 0.4s ease-out forwards; }
+        .loader { width: 24px; height: 24px; border: 3px solid var(--border); border-bottom-color: var(--text); border-radius: 50%; display: inline-block; animation: rotation 1s linear infinite; }
+        @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* --- MOBILE TOGGLE --- */
+        #mobile-toggle { display: none; }
+        @media (max-width: 768px) {
+            #sidebar { position: fixed; height: 100%; margin-left: -280px; }
+            #sidebar.open { margin-left: 0; }
+            #sidebar.closed { margin-left: -280px; } /* Override default */
+            #mobile-toggle { display: block; position: fixed; top: 1rem; left: 1rem; z-index: 60; background: var(--bg); padding: 8px; border-radius: 50%; border: 1px solid var(--border); }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- SIDEBAR -->
+    <div id="sidebar">
+        <div class="p-6 border-b border-gray-100 dark:border-gray-800">
+            <h1 class="font-black text-xl tracking-tighter uppercase italic flex items-center gap-2">
+                <span class="text-2xl">🧠</span> WikiMind
+            </h1>
+        </div>
+        
+        <div class="p-4 flex-grow flex flex-col overflow-y-auto">
+            <div id="course-selector" class="mb-6">
+                <label class="text-xs font-bold text-gray-400 uppercase">Cours Actuel</label>
+                <div id="current-course-display" class="font-bold text-lg truncate mb-2">Aucun cours</div>
+                <button onclick="showHome()" class="text-xs text-blue-500 hover:underline font-bold">changer / ajouter +</button>
+            </div>
+
+            <nav class="flex flex-col gap-2">
+                <button onclick="showView('dashboard')" class="btn-secondary text-left flex items-center gap-3 justify-start">
+                    <span>🗺️</span> Programme
+                </button>
+                <button onclick="showView('flashcards')" class="btn-secondary text-left flex items-center gap-3 justify-start">
+                    <span>🗂️</span> Révisions <span id="fc-count" class="ml-auto text-xs opacity-60">0</span>
+                </button>
+            </nav>
+
+            <div class="mt-auto pt-6 border-t border-gray-100 dark:border-gray-800">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold uppercase text-gray-400">Mode Sombre</span>
+                    <button onclick="toggleTheme()" class="w-10 h-5 rounded-full bg-gray-300 dark:bg-gray-700 relative transition">
+                        <div id="theme-dot" class="w-3 h-3 rounded-full bg-white absolute top-1 left-1 transition-transform"></div>
+                    </button>
+                </div>
+                <button onclick="resetAll()" class="mt-4 text-xs text-red-500 font-bold hover:underline w-full text-left">Tout réinitialiser</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN -->
+    <div id="main-area">
+        <button id="mobile-toggle" onclick="toggleSidebar()">☰</button>
+        <div id="content-container">
+            <!-- DYNAMIC CONTENT -->
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT -->
+    <script>
+        // ================= CONFIGURATION =================
+        // ⚠️ REMPLACEZ CETTE CLE PAR LA VOTRE
+        const API_KEY = "A99WI0le9ZnREaU5skaQqkcu20FKCZ5b"; 
+        
+        const API_URL = "https://api.mistral.ai/v1/chat/completions";
+
+        // ================= STATE =================
+        const DEFAULT_STATE = {
+            courses: [], // { id, title, lang, type, level, topic, curriculum: {}, flashcards: [], completedIds: [] }
+            activeCourseId: null,
+            theme: 'light'
+        };
+
+        let STATE = JSON.parse(JSON.stringify(DEFAULT_STATE));
+        let currentTempLesson = null; // Pour stocker les données de la leçon en cours
+
+        // ================= INIT =================
+        function init() {
+            const saved = localStorage.getItem('wikimind_v2');
+            if (saved) {
+                STATE = JSON.parse(saved);
+                applyTheme();
+                if (STATE.courses.length > 0 && STATE.activeCourseId) {
+                    showView('dashboard');
+                } else {
+                    showHome();
+                }
+            } else {
+                showHome();
+            }
+            updateSidebar();
+        }
+
+        function saveState() {
+            localStorage.setItem('wikimind_v2', JSON.stringify(STATE));
+            updateSidebar();
+        }
+
+        function getActiveCourse() {
+            return STATE.courses.find(c => c.id === STATE.activeCourseId);
+        }
+
+        // ================= API =================
+        async function callAI(userPrompt, systemPrompt, jsonMode = false) {
+            if(API_KEY === "VOTRE_API_KEY_ICI") {
+                alert("Veuillez configurer votre API KEY dans le code source !");
+                return null;
+            }
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${API_KEY}` },
+                    body: JSON.stringify({
+                        model: jsonMode ? "mistral-large-latest" : "mistral-medium",
+                        messages: [
+                            { role: "system", content: systemPrompt },
+                            { role: "user", content: userPrompt }
+                        ],
+                        response_format: jsonMode ? { type: "json_object" } : undefined
+                    })
+                });
+                
+                if (!response.ok) throw new Error("Erreur API");
+                const data = await response.json();
+                const content = data.choices[0].message.content;
+                return jsonMode ? JSON.parse(content) : content;
+            } catch (error) {
+                console.error(error);
+                alert("Erreur de connexion à l'IA. Vérifiez votre clé ou votre connexion.");
+                return null;
+            }
+        }
+
+        // ================= VUES =================
+
+        // --- 1. HOME (GESTION COURS) ---
+        function showHome() {
+            const container = document.getElementById('content-container');
+            let coursesHtml = '';
+            
+            if (STATE.courses.length === 0) {
+                coursesHtml = `<div class="text-center p-8 text-gray-500">Aucun cours pour le moment. Créez-en un !</div>`;
+            } else {
+                coursesHtml = `<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                    ${STATE.courses.map(c => `
+                        <div onclick="selectCourse(${c.id})" class="card cursor-pointer group hover:border-black dark:hover:border-white ${STATE.activeCourseId === c.id ? 'border-black dark:border-white ring-1 ring-black dark:ring-white' : ''}">
+                            <div class="flex justify-between items-start mb-2">
+                                <span class="text-xs font-bold uppercase tracking-widest bg-gray-100 dark:bg-zinc-800 px-2 py-1 rounded">${c.lang}</span>
+                                <button onclick="deleteCourse(event, ${c.id})" class="text-gray-300 hover:text-red-500 text-lg">×</button>
+                            </div>
+                            <h3 class="text-xl font-bold group-hover:underline">${c.title}</h3>
+                            <p class="text-sm text-gray-500 mt-1">${c.type === 'path' ? 'Parcours complet • ' + c.level : 'Sujet : ' + c.topic}</p>
+                            <div class="mt-4 w-full bg-gray-100 h-2 rounded-full overflow-hidden">
+                                <div class="bg-black dark:bg-white h-full" style="width: ${calculateProgress(c)}%"></div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>`;
+            }
+
+            container.innerHTML = `
+                <div class="max-w-3xl mx-auto animate-fade pt-10">
+                    <h1 class="text-4xl font-black mb-2">Mes Cours</h1>
+                    <p class="text-gray-500 mb-8">Gérez vos apprentissages en plusieurs langues.</p>
+                    
+                    ${coursesHtml}
+
+                    <div class="text-center mt-8">
+                        <button onclick="showCreateCourse()" class="btn-primary py-4 px-8 text-lg shadow-lg">
+                            + Nouveau Cours
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // --- 2. CREATION DE COURS ---
+        function showCreateCourse() {
+            document.getElementById('content-container').innerHTML = `
+                <div class="max-w-xl mx-auto animate-fade pt-10">
+                    <button onclick="showHome()" class="text-sm font-bold text-gray-400 mb-4 hover:text-black">← Retour</button>
+                    <h2 class="text-3xl font-black mb-6">Créer un nouveau cours</h2>
+                    
+                    <div class="card p-6 flex flex-col gap-4">
+                        <div>
+                            <label class="text-xs font-bold uppercase text-gray-500 block mb-1">Langue cible</label>
+                            <select id="new-lang" class="input-field">
+                                <option value="Anglais">Anglais 🇬🇧</option>
+                                <option value="Espagnol">Espagnol 🇪🇸</option>
+                                <option value="Allemand">Allemand 🇩🇪</option>
+                                <option value="Italien">Italien 🇮🇹</option>
+                                <option value="Japonais">Japonais 🇯🇵</option>
+                                <option value="Coréen">Coréen 🇰🇷</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="text-xs font-bold uppercase text-gray-500 block mb-1">Type de parcours</label>
+                            <div class="grid grid-cols-2 gap-4">
+                                <button onclick="setCourseType('path')" id="btn-type-path" class="btn-secondary text-center py-4 active-type border-2 border-black">
+                                    <div class="text-2xl mb-1">🗺️</div>
+                                    <div class="font-bold">Parcours Général</div>
+                                    <div class="text-xs opacity-70 mt-1">Évaluation & progression par niveaux</div>
+                                </button>
+                                <button onclick="setCourseType('topic')" id="btn-type-topic" class="btn-secondary text-center py-4">
+                                    <div class="text-2xl mb-1">🎯</div>
+                                    <div class="font-bold">Sujet Précis</div>
+                                    <div class="text-xs opacity-70 mt-1">Réviser un point spécifique</div>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="topic-input-container" class="hidden mt-2">
+                            <label class="text-xs font-bold uppercase text-gray-500 block mb-1">Quel sujet ?</label>
+                            <input type="text" id="new-topic" class="input-field" placeholder="Ex: Le passé composé, Vocabulaire business...">
+                        </div>
+
+                        <button onclick="handleCreateSubmit()" class="btn-primary mt-4 w-full">Continuer →</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        let selectedType = 'path';
+        window.setCourseType = (type) => {
+            selectedType = type;
+            document.getElementById('btn-type-path').className = type === 'path' ? 'btn-secondary text-center py-4 border-2 border-black dark:border-white' : 'btn-secondary text-center py-4 opacity-60';
+            document.getElementById('btn-type-topic').className = type === 'topic' ? 'btn-secondary text-center py-4 border-2 border-black dark:border-white' : 'btn-secondary text-center py-4 opacity-60';
+            
+            const topicInput = document.getElementById('topic-input-container');
+            if(type === 'topic') topicInput.classList.remove('hidden');
+            else topicInput.classList.add('hidden');
+        };
+
+        async function handleCreateSubmit() {
+            const lang = document.getElementById('new-lang').value;
+            
+            if (selectedType === 'topic') {
+                const topic = document.getElementById('new-topic').value;
+                if (!topic) return alert("Veuillez entrer un sujet.");
+                // Générer directement le cours sur le sujet
+                await generateCourse(lang, 'topic', null, topic);
+            } else {
+                // Lancer le test de niveau
+                startLevelTest(lang);
+            }
+        }
+
+        // --- 3. TEST DE NIVEAU (Seulement pour 'path') ---
+        async function startLevelTest(lang) {
+            const container = document.getElementById('content-container');
+            container.innerHTML = `
+                <div class="flex flex-col items-center justify-center min-h-[60vh] animate-fade text-center">
+                    <div class="loader mb-4"></div>
+                    <h3 class="text-xl font-bold">Évaluation du niveau...</h3>
+                    <p class="text-gray-500">Génération de questions en ${lang}.</p>
+                </div>
+            `;
+
+            const prompt = `Génère 3 questions QCM de difficulté progressive pour évaluer le niveau en ${lang}.
+            JSON format: { "questions": [{ "q": "Question text", "opts": ["A", "B", "C"], "ans": 0 }] }`;
+            
+            const data = await callAI(prompt, "JSON only", true);
+            if(!data) return showHome(); // Fail safe
+
+            let score = 0;
+            let currentQ = 0;
+
+            window.renderTestQuestion = () => {
+                if(currentQ >= data.questions.length) {
+                    finishTest(lang, score, data.questions.length);
+                    return;
+                }
+                const q = data.questions[currentQ];
+                container.innerHTML = `
+                    <div class="max-w-xl mx-auto mt-10 animate-fade">
+                        <div class="flex justify-between items-center mb-6">
+                            <h2 class="text-xl font-bold">Test de niveau (${lang})</h2>
+                            <span class="text-xs bg-gray-100 px-2 py-1 rounded">Q ${currentQ+1}/${data.questions.length}</span>
+                        </div>
+                        <div class="card p-6">
+                            <p class="text-lg font-medium mb-6">${q.q}</p>
+                            <div class="flex flex-col gap-3">
+                                ${q.opts.map((o, i) => `<button onclick="handleTestAnswer(${i}, ${q.ans})" class="text-left p-3 border rounded hover:bg-gray-50 dark:hover:bg-zinc-800 transition">${o}</button>`).join('')}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            };
+
+            window.handleTestAnswer = (choice, correct) => {
+                if(choice === correct) score++;
+                currentQ++;
+                renderTestQuestion();
+            };
+
+            renderTestQuestion();
+        }
+
+        async function finishTest(lang, score, total) {
+            let level = 'A1';
+            if (score === total) level = 'B2/C1';
+            else if (score > total / 2) level = 'A2/B1';
+
+            const container = document.getElementById('content-container');
+            container.innerHTML = `
+                <div class="flex flex-col items-center justify-center min-h-[60vh] animate-fade text-center">
+                    <div class="text-5xl mb-4">🎯</div>
+                    <h2 class="text-2xl font-bold mb-2">Niveau évalué : ${level}</h2>
+                    <p class="text-gray-500 mb-6">Création de votre programme personnalisé...</p>
+                    <div class="loader"></div>
+                </div>
+            `;
+            
+            await generateCourse(lang, 'path', level, null);
+        }
+
+        // --- 4. GENERATION CURRICULUM ---
+        async function generateCourse(lang, type, level, topic) {
+            const container = document.getElementById('content-container');
+            container.innerHTML = `<div class="flex flex-col items-center justify-center min-h-[60vh] animate-fade text-center"><div class="loader mb-4"></div><p>L'IA structure le cours...</p></div>`;
+
+            let prompt = "";
+            let title = "";
+            
+            if (type === 'path') {
+                title = `Anglais Général (${level})`; // par defaut
+                if(lang !== 'Anglais') title = `${lang} Général (${level})`;
+                
+                prompt = `Crée un plan de cours structuré pour apprendre le ${lang}, niveau ${level}.
+                Fais 3 chapitres de 2 leçons.
+                JSON: { "chapters": [{ "title": "Titre Chapitre", "lessons": ["Titre Leçon 1", "Titre Leçon 2"] }] }`;
+            } else {
+                title = `Focus : ${topic}`;
+                prompt = `Crée un plan de cours intensif sur le sujet "${topic}" en ${lang}.
+                Fais 1 chapitre unique de 3 à 5 leçons clés pour maîtriser ce sujet.
+                JSON: { "chapters": [{ "title": "Module Unique", "lessons": ["Concept Base", "Cas Particuliers", "Pratique"] }] }`;
+            }
+
+            const data = await callAI(prompt, "JSON only", true);
+            if(!data) return showHome();
+
+            const newCourse = {
+                id: Date.now(),
+                title: title,
+                lang: lang,
+                type: type,
+                level: level,
+                topic: topic,
+                chapters: data.chapters.map(c => ({
+                    title: c.title,
+                    lessons: c.lessons.map(l => ({ title: l, completed: false }))
+                })),
+                flashcards: []
+            };
+
+            STATE.courses.push(newCourse);
+            STATE.activeCourseId = newCourse.id;
+            saveState();
+            showView('dashboard');
+        }
+
+        // --- 5. DASHBOARD (PROGRAMME) ---
+        function renderDashboard() {
+            const course = getActiveCourse();
+            if(!course) return showHome();
+            updateSidebar();
+
+            const container = document.getElementById('content-container');
+            let html = `
+                <div class="max-w-3xl mx-auto animate-fade pb-20">
+                    <div class="mb-10 pt-4">
+                        <div class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">${course.lang} • ${course.type === 'path' ? course.level : 'Focus'}</div>
+                        <h1 class="text-4xl font-black">${course.title}</h1>
+                    </div>
+            `;
+
+            course.chapters.forEach((chap, cIdx) => {
+                html += `<div class="mb-12"><h3 class="font-bold text-lg mb-6 pl-12 opacity-80">${chap.title}</h3><div>`;
+                
+                chap.lessons.forEach((lesson, lIdx) => {
+                    const isLocked = !lesson.completed && (cIdx > 0 || lIdx > 0) && !isPreviousDone(course, cIdx, lIdx);
+                    // Logique simplifiée : tout est accessible sauf si on veut forcer l'ordre.
+                    // Ici on laisse ouvert pour flexibilité, mais on marque visuellement.
+                    
+                    const statusClass = lesson.completed ? 'completed' : (isLocked ? '' : 'active');
+                    const icon = lesson.completed ? '✓' : (lIdx + 1);
+
+                    html += `
+                        <div class="roadmap-node ${statusClass}" onclick="openLesson(${cIdx}, ${lIdx})">
+                            <div class="roadmap-line"></div>
+                            <div class="node-icon cursor-pointer hover:scale-110 transition shadow-sm">${icon}</div>
+                            <div class="card flex-grow cursor-pointer group">
+                                <div class="flex justify-between items-center">
+                                    <span class="font-bold text-lg group-hover:underline">${lesson.title}</span>
+                                    ${lesson.completed ? '<span class="text-xs font-bold text-green-500 uppercase">Terminé</span>' : ''}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                html += `</div></div>`;
+            });
+
+            html += `</div>`;
+            container.innerHTML = html;
+        }
+
+        function isPreviousDone(course, cIdx, lIdx) {
+            if(cIdx === 0 && lIdx === 0) return true;
+            if(lIdx > 0) return course.chapters[cIdx].lessons[lIdx - 1].completed;
+            if(cIdx > 0) {
+                const prevChap = course.chapters[cIdx - 1];
+                return prevChap.lessons[prevChap.lessons.length - 1].completed;
+            }
+            return false;
+        }
+
+        // --- 6. LECON & MARKDOWN ---
+        async function openLesson(cIdx, lIdx) {
+            const course = getActiveCourse();
+            const lessonTitle = course.chapters[cIdx].lessons[lIdx].title;
+            
+            const container = document.getElementById('content-container');
+            container.innerHTML = `
+                <div class="flex flex-col items-center justify-center min-h-[60vh] animate-fade">
+                    <div class="loader mb-4"></div>
+                    <p class="font-bold text-lg">Le professeur prépare le cours...</p>
+                    <p class="text-sm text-gray-500">"${lessonTitle}"</p>
+                </div>
+            `;
+
+            const prompt = `Génère un cours complet et structuré sur : "${lessonTitle}" en ${course.lang}.
+            Utilise le format Markdown pour :
+            - Titres (#, ##)
+            - Gras (**mot**) pour les mots clés
+            - Listes à puces
+            - Tableaux pour le vocabulaire
+            - Exemples concrets traduits en français.
+            Sois pédagogue, clair et joli.`;
+
+            const content = await callAI(prompt, "Professeur de langue expert.");
+            
+            // Stockage temporaire pour les exos
+            currentTempLesson = { cIdx, lIdx, content, title: lessonTitle };
+
+            container.innerHTML = `
+                <div class="max-w-3xl mx-auto animate-fade pb-20 pt-6">
+                    <button onclick="showView('dashboard')" class="text-xs font-bold uppercase text-gray-400 hover:text-black mb-6">← Retour au programme</button>
+                    
+                    <div class="lesson-content card p-8 mb-8">
+                        ${marked.parse(content)} 
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <button onclick="startLessonQuiz()" class="btn-primary py-4 text-lg">
+                            🎓 Quiz & Exercices
+                        </button>
+                        <button onclick="extractVocab()" class="btn-secondary py-4">
+                            🧠 Sauvegarder Vocabulaire
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // --- 7. EXERCICES & QUIZ ---
+        async function startLessonQuiz() {
+            const container = document.getElementById('content-container');
+            container.innerHTML = `<div class="flex flex-col items-center justify-center min-h-[60vh]"><div class="loader mb-4"></div><p>Génération des exercices...</p></div>`;
+
+            const prompt = `Génère 3 exercices variés sur la leçon "${currentTempLesson.title}" (${getActiveCourse().lang}).
+            1. QCM
+            2. Traduction (Phrase en FR -> Langue Cible)
+            3. Compléter le trou (Phrase avec ___).
+            Format JSON : { "exercises": [ 
+                {"type": "qcm", "q": "Question?", "opts": ["A", "B", "C"], "ans": 0},
+                {"type": "trans", "q": "Traduire: '...'", "ans": "Réponse attendue"},
+                {"type": "fill", "q": "Phrase avec ___ trou", "ans": "mot"}
+            ]}`;
+
+            const data = await callAI(prompt, "JSON only", true);
+            if(!data) return showView('dashboard'); // fail safe
+
+            let currentEx = 0;
+            let score = 0;
+
+            window.renderEx = () => {
+                if(currentEx >= data.exercises.length) {
+                    finishQuiz(score, data.exercises.length);
+                    return;
+                }
+
+                const ex = data.exercises[currentEx];
+                let contentHtml = '';
+
+                if(ex.type === 'qcm') {
+                    contentHtml = `
+                        <h3 class="font-bold text-xl mb-4">${ex.q}</h3>
+                        <div class="grid gap-3">
+                            ${ex.opts.map((o, i) => `<button onclick="checkExAnswer(this, ${i === ex.ans})" class="p-4 border rounded hover:bg-gray-50 dark:hover:bg-zinc-800 text-left font-medium transition">${o}</button>`).join('')}
+                        </div>
+                    `;
+                } else {
+                    // Traduction ou Fill
+                    contentHtml = `
+                        <h3 class="font-bold text-xl mb-4">${ex.q}</h3>
+                        <input type="text" id="ex-input" class="input-field mb-4" placeholder="Votre réponse..." autocomplete="off">
+                        <button onclick="checkExText('${ex.ans}')" class="btn-primary w-full">Valider</button>
+                    `;
+                }
+
+                container.innerHTML = `
+                    <div class="max-w-lg mx-auto mt-10 animate-fade">
+                        <div class="flex justify-between mb-4">
+                            <span class="font-bold">Exercice ${currentEx+1}/${data.exercises.length}</span>
+                            <span class="text-gray-400">Score: ${score}</span>
+                        </div>
+                        <div class="card p-6">
+                            ${contentHtml}
+                        </div>
+                    </div>
+                `;
+            };
+
+            window.checkExAnswer = (btn, isCorrect) => {
+                if(isCorrect) {
+                    btn.style.background = "var(--success)";
+                    btn.style.color = "white";
+                    score++;
+                } else {
+                    btn.style.background = "var(--error)";
+                    btn.style.color = "white";
+                }
+                setTimeout(() => { currentEx++; renderEx(); }, 1000);
+            };
+
+            window.checkExText = (correctTxt) => {
+                const input = document.getElementById('ex-input');
+                const val = input.value.trim().toLowerCase();
+                // Vérification souple
+                if(val === correctTxt.toLowerCase()) {
+                    input.style.borderColor = "var(--success)";
+                    score++;
+                    setTimeout(() => { currentEx++; renderEx(); }, 1000);
+                } else {
+                    input.style.borderColor = "var(--error)";
+                    alert(`Pas tout à fait ! La réponse était : ${correctTxt}`);
+                    setTimeout(() => { currentEx++; renderEx(); }, 1000);
+                }
+            };
+
+            renderEx();
+        }
+
+        function finishQuiz(score, total) {
+            // Marquer leçon comme terminée
+            const course = getActiveCourse();
+            course.chapters[currentTempLesson.cIdx].lessons[currentTempLesson.lIdx].completed = true;
+            saveState();
+
+            const container = document.getElementById('content-container');
+            container.innerHTML = `
+                <div class="flex flex-col items-center justify-center min-h-[60vh] animate-fade text-center">
+                    <div class="text-6xl mb-4">${score === total ? '🏆' : '👍'}</div>
+                    <h2 class="text-3xl font-black mb-2">Terminé !</h2>
+                    <p class="text-xl mb-6">Score : <strong>${score}/${total}</strong></p>
+                    <button onclick="showView('dashboard')" class="btn-primary px-8">Retour au Programme</button>
+                </div>
+            `;
+        }
+
+        // --- 8. VOCABULAIRE & FLASHCARDS ---
+        async function extractVocab() {
+            const prompt = `Extrais 5 mots de vocabulaire importants de la leçon précédente ("${currentTempLesson.title}").
+            JSON: [{"front": "Mot (Langue Cible)", "back": "Traduction (FR)"}]`;
+            
+            const btn = event.target;
+            btn.innerHTML = "Extraction...";
+            
+            const data = await callAI(prompt, "JSON array", true);
+            if(data) {
+                const course = getActiveCourse();
+                course.flashcards.push(...data);
+                saveState();
+                alert(`${data.length} cartes ajoutées !`);
+                btn.innerHTML = "✅ Ajouté";
+            }
+        }
+
+        function renderFlashcards() {
+            const course = getActiveCourse();
+            if(!course) return showHome();
+            
+            const container = document.getElementById('content-container');
+            if(course.flashcards.length === 0) {
+                container.innerHTML = `<div class="text-center mt-20 text-gray-500">Pas encore de cartes pour ce cours.<br>Faites des leçons pour en ajouter.</div>`;
+                return;
+            }
+
+            container.innerHTML = `
+                <div class="max-w-4xl mx-auto animate-fade pt-6">
+                    <h2 class="text-2xl font-bold mb-6">Révisions : ${course.title}</h2>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                        ${course.flashcards.map((fc, i) => `
+                            <div class="card h-48 flex flex-col items-center justify-center text-center p-4 cursor-pointer relative group perspective" onclick="this.classList.toggle('flipped')">
+                                <!-- Simple flip logic via CSS classes or JS toggling content -->
+                                <div class="font-black text-xl mb-2">${fc.front}</div>
+                                <div class="text-xs text-gray-400 uppercase">cliquer pour retourner</div>
+                                <div class="absolute inset-0 bg-white dark:bg-zinc-900 flex items-center justify-center text-blue-600 font-bold text-xl opacity-0 group-[.flipped]:opacity-100 transition-opacity z-10 p-4 border rounded-xl shadow-xl">
+                                    ${fc.back}
+                                </div>
+                                <button onclick="deleteCard(event, ${i})" class="absolute top-2 right-2 text-gray-200 hover:text-red-500 z-20">×</button>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        window.deleteCard = (e, idx) => {
+            e.stopPropagation();
+            const course = getActiveCourse();
+            course.flashcards.splice(idx, 1);
+            saveState();
+            renderFlashcards();
+        };
+
+        // --- UTILITAIRES ---
+        function calculateProgress(course) {
+            let total = 0, done = 0;
+            course.chapters.forEach(c => c.lessons.forEach(l => { total++; if(l.completed) done++; }));
+            return total === 0 ? 0 : (done / total) * 100;
+        }
+
+        function showView(view) {
+            if (view === 'dashboard') renderDashboard();
+            else if (view === 'flashcards') renderFlashcards();
+        }
+
+        function selectCourse(id) {
+            STATE.activeCourseId = id;
+            saveState();
+            showView('dashboard');
+        }
+
+        window.deleteCourse = (e, id) => {
+            e.stopPropagation();
+            if(confirm("Supprimer ce cours définitivement ?")) {
+                STATE.courses = STATE.courses.filter(c => c.id !== id);
+                if(STATE.activeCourseId === id) STATE.activeCourseId = null;
+                saveState();
+                showHome();
+            }
+        };
+
+        function resetAll() {
+            if(confirm("Tout effacer ?")) {
+                localStorage.removeItem('wikimind_v2');
+                location.reload();
+            }
+        }
+
+        function toggleTheme() {
+            STATE.theme = STATE.theme === 'light' ? 'dark' : 'light';
+            saveState();
+            applyTheme();
+        }
+
+        function applyTheme() {
+            const dot = document.getElementById('theme-dot');
+            if (STATE.theme === 'dark') {
+                document.body.classList.add('dark-mode');
+                dot.style.transform = 'translateX(20px)';
+            } else {
+                document.body.classList.remove('dark-mode');
+                dot.style.transform = 'translateX(0)';
+            }
+        }
+
+        function toggleSidebar() {
+            const sb = document.getElementById('sidebar');
+            sb.classList.toggle('closed');
+            sb.classList.toggle('open');
+        }
+
+        function updateSidebar() {
+            const course = getActiveCourse();
+            const display = document.getElementById('current-course-display');
+            const count = document.getElementById('fc-count');
+            
+            if(course) {
+                display.innerText = course.title;
+                count.innerText = course.flashcards.length;
+            } else {
+                display.innerText = "Aucun cours";
+                count.innerText = "0";
+            }
+        }
+
+        // Lancement
+        init();
+
+    </script>
+</body>
+</html>

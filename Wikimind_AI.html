@@ -1,0 +1,2615 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-T7N53M8869"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-T7N53M8869');
+</script>
+<!-- AJOUT FIREBASE IMPORTS (VERSION 10.7.0) -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
+  import { getDatabase, ref, push, onChildAdded } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBhlNhB8yPNWXzok_STHG5q8hI4Kk_z7Ow",
+    authDomain: "wikimind-c3cef.firebaseapp.com",
+    databaseURL: "https://wikimind-c3cef-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "wikimind-c3cef",
+    storageBucket: "wikimind-c3cef.firebasestorage.app",
+    messagingSenderId: "5176412102",
+    appId: "1:5176412102:web:2069dc70dfe70b402594c7"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+  
+  // Exposition globale pour usage dans le script principal
+  window.fbDb = db;
+  window.fbRef = ref;
+  window.fbPush = push;
+  window.fbOnChildAdded = onChildAdded;
+</script>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- MODIFICATION: Passage en 5.1 -->
+    <title>WikiMind 5.1</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <!-- PDF & Canvas Tools -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <!-- Math & Charts -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.0/dist/mermaid.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
+
+    <style>
+        /* --- VARIABLES & BASE THEME --- */
+        :root { --bg: #ffffff; --text: #111111; --sidebar: #fcfcfc; --border: #f0f0f0; --bubble-user: #555555; --input-bg: #ffffff; --select-bg: #f3f4f6; --card-hover: #f9fafb; }
+        .dark-mode { --bg: #0f0f0f; --text: #eeeeee; --sidebar: #161616; --border: #252525; --bubble-user: #aaaaaa; --input-bg: #1a1a1a; --select-bg: #2a2a2a; --card-hover: #1f1f1f; }
+
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg); color: var(--text); height: 100vh; overflow: hidden; display: flex; transition: background 0.3s; }
+        
+        /* --- SIDEBAR & LAYOUT --- */
+        #sidebar { width: 280px; background-color: var(--sidebar); border-right: 1px solid var(--border); transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); z-index: 50; display: flex; flex-direction: column; flex-shrink: 0; margin-left: -280px; }
+        #sidebar.open { margin-left: 0; }
+        
+        #main-area { flex-grow: 1; position: relative; display: flex; flex-direction: column; overflow: hidden; background: var(--bg); }
+        #chat-container { flex-grow: 1; overflow-y: auto; padding: 2rem; padding-bottom: 220px; width: 100%; max-width: 850px; margin: 0 auto; scroll-behavior: smooth; display: block; }
+        
+        /* --- VUE BIBLIOTHÈQUE --- */
+        #library-view { display: none; flex-grow: 1; overflow-y: auto; padding: 2rem; width: 100%; max-width: 1200px; margin: 0 auto; }
+        .lib-controls { display: flex; flex-direction: column; gap: 1rem; margin-bottom: 2rem; }
+        .search-bar { width: 100%; padding: 12px 20px; border-radius: 12px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text); outline: none; transition: 0.3s; }
+        .search-bar:focus { border-color: #888; }
+        .filters { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 5px; }
+        .filter-btn { padding: 6px 16px; border-radius: 99px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap; transition: 0.2s; display: flex; items-center; gap: 6px; }
+        .filter-btn:hover, .filter-btn.active { background: var(--text); color: var(--bg); border-color: var(--text); }
+
+        /* --- SUGGESTIONS BAR --- */
+        .suggestions-ticker { display: flex; gap: 12px; overflow: hidden; margin-top: -10px; margin-bottom: 2rem; padding: 8px 0; align-items: center; white-space: nowrap; mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent); -webkit-mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent); }
+        .suggest-item { flex: 0 0 auto; font-size: 11px; font-weight: 600; padding: 8px 16px; background: var(--select-bg); border-radius: 99px; color: var(--text); cursor: pointer; transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); border: 1px solid transparent; opacity: 0; animation: fadeSlideIn 0.5s forwards; display: flex; items-center; gap: 6px; }
+        .suggest-item:hover { background: var(--bg); border-color: var(--border); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        @keyframes fadeSlideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .app-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem; }
+        .app-card { border: 1px solid var(--border); border-radius: 20px; padding: 1.5rem; cursor: pointer; transition: all 0.3s ease; position: relative; overflow: visible; background: var(--bg); }
+        .app-card:hover { border-color: var(--text); transform: translateY(-2px); background: var(--card-hover); box-shadow: 0 10px 30px -10px rgba(0,0,0,0.1); }
+        .app-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; items-center; justify-content: center; font-size: 24px; margin-bottom: 1rem; background: var(--select-bg); }
+        .app-tag { position: absolute; top: 1.5rem; right: 1.5rem; font-size: 10px; font-weight: 800; text-transform: uppercase; padding: 4px 8px; border-radius: 99px; background: var(--select-bg); color: #888; }
+        .modes-display { display: flex; gap: 4px; margin-top: 8px; flex-wrap: wrap; }
+        .mode-badge { font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 4px; border: 1px solid var(--border); color: #666; background: var(--bg); }
+        
+        .card-menu-btn { position: absolute; top: 1.5rem; right: 4.5rem; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #888; transition: 0.2s; z-index: 10; }
+        .card-menu-btn:hover { background: var(--border); color: var(--text); }
+        .card-dropdown { display: none; position: absolute; top: 2.5rem; right: 4rem; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); z-index: 20; width: 120px; overflow: hidden; }
+        .card-dropdown.show { display: block; }
+        .card-option { padding: 10px 14px; font-size: 12px; font-weight: 600; cursor: pointer; transition: 0.2s; display: flex; items-center; gap: 8px; }
+        .card-option:hover { background: var(--select-bg); }
+        .pinned-icon { position: absolute; top: 12px; left: 12px; color: #22c55e; font-size: 14px; display: none; }
+        .app-card.pinned .pinned-icon { display: block; }
+
+        .rating-badge { font-size: 10px; font-weight: 700; background: #e0f2fe; color: #0284c7; padding: 2px 6px; border-radius: 6px; margin-top: 6px; display: inline-block; }
+        .dark-mode .rating-badge { background: #0c4a6e; color: #38bdf8; }
+
+        /* --- ANIMATION TRANSITION --- */
+        #transition-overlay { position: fixed; inset: 0; background: var(--bg); z-index: 9999; display: flex; align-items: center; justify-content: center; pointer-events: none; opacity: 0; transition: opacity 0.3s; }
+        #transition-text { font-size: 4rem; font-weight: 900; letter-spacing: -0.05em; text-transform: uppercase; transform: scale(1); opacity: 0; white-space: nowrap; color: var(--text); }
+        .animating-in #transition-overlay { opacity: 1; pointer-events: all; }
+        .animating-in.phase-1 #transition-text { opacity: 1; transform: scale(1); transition: opacity 0.3s ease-out; }
+        .animating-in.phase-2 #transition-text { animation: zoomThrough 1s cubic-bezier(0.7, 0, 0.3, 1) forwards; }
+        @keyframes zoomThrough { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(50); opacity: 0; } }
+
+        /* --- CHAT BUBBLES --- */
+        .chat-bubble { max-width: 90%; padding: 1rem 0; margin-bottom: 0.2rem; line-height: 1.7; font-size: 1.05rem; }
+        .chat-bubble.user { color: var(--bubble-user); font-weight: 500; margin-left: auto; text-align: right; padding-right: 1rem; border-right: 3px solid var(--text); }
+        .chat-bubble.model { color: var(--text); margin-right: auto; width: 100%; }
+        
+        .chat-bubble.model table { width: 100%; border-collapse: collapse; margin: 1em 0; font-size: 0.9em; border-radius: 8px; overflow: hidden; }
+        .chat-bubble.model th, .chat-bubble.model td { border: 1px solid var(--border); padding: 10px 14px; text-align: left; }
+        .chat-bubble.model th { background: var(--select-bg); font-weight: 700; text-transform: uppercase; font-size: 0.8em; }
+        
+        .table-wrapper { position: relative; margin-bottom: 1.5em; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+        .copy-table-btn { position: absolute; top: 0; right: 0; background: var(--select-bg); border: none; padding: 4px 10px; font-size: 10px; font-weight: bold; cursor: pointer; color: #666; border-bottom-left-radius: 8px; z-index: 5; }
+        .copy-table-btn:hover { background: var(--text); color: var(--bg); }
+
+        .chat-bubble.model ul { list-style-type: disc; padding-left: 1.5em; margin: 1em 0; }
+        .chat-bubble.model ol { list-style-type: decimal; padding-left: 1.5em; margin: 1em 0; }
+        .chat-bubble.model li { margin-bottom: 0.5em; }
+
+        /* CODE BLOCK STYLING */
+        .code-wrapper { position: relative; margin: 1em 0; background: #f4f4f5; border-radius: 12px; border: 1px solid var(--border); overflow: hidden; }
+        .dark-mode .code-wrapper { background: #18181b; }
+        .code-wrapper pre { margin: 0; padding: 1.2rem; overflow-x: auto; font-family: 'Menlo', 'Monaco', 'Courier New', monospace; font-size: 0.9em; }
+        .code-wrapper code { background: transparent !important; color: inherit; }
+        .copy-code-btn { position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.1); color: var(--text); border: none; padding: 4px 10px; border-radius: 6px; font-size: 10px; font-weight: 700; cursor: pointer; transition: 0.2s; }
+        .copy-code-btn:hover { background: var(--text); color: var(--bg); }
+
+        .msg-actions { display: flex; gap: 18px; margin-bottom: 2.5rem; padding-top: 8px; align-items: center; }
+        .action-btn { cursor: pointer; color: #bbb; transition: 0.2s; display: flex; align-items: center; gap: 6px; text-decoration: none; }
+        .action-btn:hover { color: var(--text); }
+        
+        /* Bouton Erreur (Règle 7) */
+        .report-btn { margin-left: auto; color: #888; font-size: 16px; opacity: 0.6; transition: 0.2s; display: flex; align-items: center; }
+        .report-btn:hover { opacity: 1; color: var(--text); }
+        
+        @keyframes popLike { 0% { transform: scale(1); } 40% { transform: scale(1.5); } 100% { transform: scale(1.1); } }
+        .like-active { color: #22c55e !important; animation: popLike 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        .dislike-active { color: #ef4444 !important; animation: popLike 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        
+        @keyframes rotateBtn { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .rotate-anim { animation: rotateBtn 0.5s ease-in-out; color: var(--text) !important; }
+
+        /* --- INPUT AREA --- */
+        #input-wrapper { position: absolute; left: 50%; transform: translateX(-50%); width: 92%; max-width: 760px; transition: all 0.6s ease; z-index: 40; }
+        #input-wrapper.centered { top: 55%; transform: translate(-50%, -50%); }
+        #input-box { background: var(--input-bg); border: 1px solid var(--border); position: relative; display: flex; flex-direction: column; }
+        #input-box.drag-over { border: 2px dashed #22c55e; background: var(--select-bg); }
+        textarea { background: transparent; color: var(--text); }
+
+        #file-preview-area { padding: 10px 20px 0 20px; display: none; }
+        .file-chip { display: inline-flex; align-items: center; gap: 10px; background: var(--select-bg); padding: 8px 16px; border-radius: 12px; border: 1px solid var(--border); font-size: 12px; font-weight: 600; }
+        .file-chip-icon { width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; background: var(--bg); border-radius: 6px; font-size: 14px; }
+        .file-remove { cursor: pointer; margin-left: 8px; color: #888; transition: 0.2s; }
+        .file-remove:hover { color: #ef4444; }
+
+        #welcome-text { position: absolute; top: 32%; left: 50%; transform: translate(-50%, -50%); text-align: center; transition: 0.5s; width: 100%; }
+        #welcome-text.hidden-state { opacity: 0; transform: translate(-50%, -80%); pointer-events: none; }
+        
+        /* --- UTILS --- */
+        .loader-spin { 
+            width: 32px; height: 32px;
+            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' fill='none' stroke='%23000' stroke-width='8'%3E%3Cpath d='M10 20 L25 80 L50 40 L75 80 L90 20' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat center;
+            background-size: contain;
+            animation: spinLogo 1s linear infinite;
+            border: none; border-radius: 0;
+        }
+        .dark-mode .loader-spin {
+             background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' fill='none' stroke='%23fff' stroke-width='8'%3E%3Cpath d='M10 20 L25 80 L50 40 L75 80 L90 20' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+        }
+        @keyframes spinLogo { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        .generated-image { width: 100%; border-radius: 16px; display: block; margin-top: 8px; }
+        .history-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-radius: 8px; cursor: pointer; color: #888; font-size: 11px; }
+        .history-item:hover { background: var(--border); color: var(--text); }
+        .delete-chat { opacity: 0; color: #ccc; transition: 0.2s; padding: 2px 6px; }
+        .history-item:hover .delete-chat { opacity: 1; }
+        
+        /* --- MODALS --- */
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; align-items: center; justify-content: center; backdrop-filter: blur(8px); }
+        .modal-content { background: var(--bg); border: 1px solid var(--border); padding: 2rem; border-radius: 24px; width: 90%; max-width: 450px; box-shadow: 0 20px 60px rgba(0,0,0,0.1); }
+        .toggle-bg { width: 40px; height: 20px; background: #ddd; border-radius: 20px; position: relative; cursor: pointer; }
+        .toggle-dot { width: 16px; height: 16px; background: white; border-radius: 50%; position: absolute; top: 2px; left: 2px; transition: 0.3s; }
+        .dark-mode .toggle-bg { background: #22c55e; }
+        .dark-mode .toggle-dot { left: 22px; }
+        #model-select { background: var(--select-bg); border-radius: 999px; padding: 6px 16px; font-size: 11px; font-weight: 700; color: #6b7280; outline: none; border: none; cursor: pointer; }
+
+        .upload-trigger { position: absolute; left: 15px; top: 15px; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 300; color: #aaa; cursor: pointer; transition: 0.2s; z-index: 50; }
+        .upload-trigger:hover { color: var(--text); background: var(--select-bg); border-radius: 8px; }
+        #user-input { padding-left: 50px !important; }
+        #input-wrapper.docked { bottom: 2rem; }
+        
+        @media (max-width: 640px) {
+            #settings-btn-sidebar { margin-bottom: 60px; }
+        }
+
+        /* Image Editor Modal */
+        #editor-modal .modal-content { max-width: 800px; width: 95%; max-height: 90vh; display: flex; flex-direction: column; gap: 1rem; overflow-y: auto; }
+        #editor-canvas { width: 100%; height: auto; border: 1px dashed var(--border); cursor: crosshair; touch-action: none; background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMCIgaGVpZ2h0PSIxMCI+PHBhdGggZD0iTTAgMGgxMHYxMEgwVjB6IiBmaWxsPSIjZmZmIi8+PHBhdGggZD0iTTAgMGg1djVIMFYwek01IDVoNXY1SDVWNXoiIGZpbGw9IiNlZWUiLz48L3N2Zz4='); }
+        .tool-btn { padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); cursor: pointer; font-size: 12px; font-weight: bold; }
+        .tool-btn.active { background: var(--text); color: var(--bg); }
+
+        .mermaid { margin: 1em 0; background: var(--bg); padding: 10px; border-radius: 8px; overflow-x: auto; text-align: center; }
+        
+        .chat-bubble.persona-a { color: #007bff; border-left: 3px solid #007bff; border-right: none; margin-right: auto; }
+        .chat-bubble.persona-b { color: #e83e8c; border-left: 3px solid #e83e8c; border-right: none; margin-left: auto; text-align: left; }
+		
+        /* PRO MODE DETAILS STYLE (Règle 6) */
+        .pro-reasoning { background: var(--select-bg); border-radius: 12px; padding: 10px; margin-bottom: 12px; border: 1px solid var(--border); }
+        .pro-reasoning summary { cursor: pointer; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #888; list-style: none; display: flex; align-items: center; gap: 6px; }
+        .pro-reasoning summary::-webkit-details-marker { display: none; }
+        .pro-reasoning summary::after { content: '▼'; font-size: 8px; transition: 0.2s; margin-left: auto; }
+        .pro-reasoning[open] summary::after { transform: rotate(180deg); }
+        .pro-content { margin-top: 10px; font-size: 0.9em; color: var(--text); opacity: 0.8; padding-left: 8px; border-left: 2px solid #ccc; white-space: pre-wrap; }
+
+        .chart-container { background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 10px; margin: 10px 0; }
+
+        /* AJOUT: Styles pour le Chat Partagé (Bêta) - REDESIGN */
+        #shared-chat-view { display: none; flex-direction: column; height: 100%; position: relative; }
+        .shared-login-screen { position: absolute; inset: 0; background: var(--bg); z-index: 60; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem; }
+        .shared-room-input { padding: 1rem; font-size: 1.2rem; border-radius: 12px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text); text-align: center; letter-spacing: 2px; text-transform: uppercase; }
+        .shared-chat-area { flex-grow: 1; overflow-y: auto; padding: 2rem; padding-bottom: 100px; display: flex; flex-direction: column; gap: 1rem; }
+        
+        /* UPDATED SHARED MESSAGE STYLES */
+        .shared-message { max-width: 80%; padding: 10px 15px; border-radius: 12px; font-size: 0.95rem; line-height: 1.5; position: relative; }
+        .shared-message.own { margin-left: auto; background: var(--select-bg); border-bottom-right-radius: 2px; text-align: right; }
+        .shared-message.other { margin-right: auto; border: 1px solid var(--border); border-bottom-left-radius: 2px; text-align: left; background: var(--bg); }
+        /* AI styling matches 'other' completely, no green bg */
+        .shared-message.ai { margin-right: auto; border: 1px solid var(--border); border-bottom-left-radius: 2px; text-align: left; background: var(--bg); }
+        
+        .shared-author { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; margin-bottom: 4px; opacity: 0.6; display: block; }
+        .shared-input-bar { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 600px; display: flex; gap: 10px; background: var(--bg); padding: 10px; border-radius: 99px; border: 1px solid var(--border); box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        .shared-status { position: absolute; top: 10px; right: 20px; font-size: 10px; font-weight: bold; color: #22c55e; display: flex; items-center; gap: 6px; }
+        .blink-dot { width: 8px; height: 8px; background: currentColor; border-radius: 50%; animation: blinker 1.5s linear infinite; }
+        @keyframes blinker { 50% { opacity: 0; } }
+
+    </style>
+</head>
+<body>
+
+    <div id="transition-overlay">
+        <div id="transition-text">WikiMind APP</div>
+    </div>
+
+    <!-- ONBOARDING MODAL -->
+    <div id="onboarding-modal" class="modal" style="z-index: 200;">
+        <div class="modal-content text-center" onclick="event.stopPropagation()">
+            <h3 class="text-2xl font-black mb-4 uppercase tracking-tighter">Bienvenue</h3>
+            <p class="text-gray-500 mb-6 text-sm">Pour personnaliser votre expérience, comment doit-on vous appeler ?</p>
+            <input type="text" id="user-firstname" placeholder="Prénom" class="w-full p-3 border border-gray-200 rounded-lg mb-3 bg-transparent text-sm">
+            <input type="text" id="user-lastname" placeholder="Nom" class="w-full p-3 border border-gray-200 rounded-lg mb-6 bg-transparent text-sm">
+            <button onclick="saveIdentity()" class="w-full bg-black text-white dark:bg-white dark:text-black py-3 rounded-xl font-bold text-xs uppercase tracking-widest">Commencer</button>
+        </div>
+    </div>
+
+    <div id="settings-modal" class="modal" onclick="this.style.display='none'">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <h3 class="text-xl font-black mb-6 uppercase italic tracking-tighter">Paramètres</h3>
+            <div class="flex justify-between items-center mb-8">
+                <span class="font-bold text-sm uppercase tracking-widest text-gray-400">Mode Sombre</span>
+                <div class="toggle-bg" onclick="toggleDarkMode()">
+                    <div class="toggle-dot"></div>
+                </div>
+            </div>
+            <div class="border-t pt-6 border-gray-100 dark:border-gray-800 text-center">
+                <span class="font-bold text-[10px] uppercase tracking-widest text-gray-400 block mb-4">Administrateur du projet</span>
+                <div class="flex items-center justify-center gap-4">
+                    <div class="w-12 h-12 bg-black dark:bg-white dark:text-black rounded-full flex items-center justify-center text-white font-bold text-sm">TD</div>
+                    <div class="text-left">
+                        <p class="font-bold text-base">Tom Duval</p>
+                        <p class="text-[10px] text-gray-400 uppercase font-black tracking-tighter">Créateur & Admin</p>
+                    </div>
+                </div>
+                <div class="mt-4 pt-2">
+                    <span class="text-[10px] text-gray-400">Partenaire : </span>
+                    <a href="https://chpalitom09-bot.github.io/Pepins-de-t-mates/" target="_blank" class="font-bold text-[10px] uppercase tracking-widest hover:opacity-70 transition" style="color: inherit; text-decoration: none;">Pépins de tomates</a>
+                </div>
+            </div>
+            <button onclick="document.getElementById('settings-modal').style.display='none'" class="w-full mt-8 bg-black dark:bg-white dark:text-black text-white py-3 rounded-xl font-bold text-[10px] uppercase tracking-widest">Fermer</button>
+        </div>
+    </div>
+
+    <div id="editor-modal" class="modal">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <h3 class="text-xl font-black mb-4 uppercase italic">Édition Image</h3>
+            <div class="flex gap-2 mb-2 flex-wrap">
+                <button class="tool-btn active" onclick="setTool('brush')">✏️ Pinceau Néon</button>
+                <button class="tool-btn" onclick="clearCanvas()">❌ Tout effacer</button>
+            </div>
+            <div class="relative w-full overflow-hidden bg-gray-100 rounded-lg flex items-center justify-center">
+                <canvas id="editor-canvas"></canvas>
+            </div>
+            <input type="text" id="edit-prompt" placeholder="Décris ce que tu veux modifier dans la zone..." class="w-full p-3 border border-gray-200 rounded-lg text-sm mt-2 bg-transparent">
+            <div class="flex gap-2 mt-4">
+                <button onclick="closeEditor()" class="flex-1 py-3 rounded-xl font-bold text-xs uppercase border border-gray-200">Annuler</button>
+                <button onclick="applyEdit()" class="flex-1 bg-black text-white py-3 rounded-xl font-bold text-xs uppercase">Générer</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="help-modal" class="modal" onclick="this.style.display='none'">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <h3 class="text-xl font-black mb-6 uppercase italic tracking-tighter text-center">À Propos</h3>
+            <div class="grid grid-cols-2 gap-4">
+                <div onclick="showAideSummary()" class="border border-gray-100 dark:border-gray-800 p-6 rounded-2xl text-center cursor-pointer hover:bg-gray-50 dark:hover:bg-zinc-900 transition">
+                    <div class="text-2xl mb-2">💡</div>
+                    <p class="font-bold text-[10px] uppercase tracking-widest">Guide WikiMind</p>
+                </div>
+                <div onclick="window.open('https://docs.google.com/forms/d/e/1FAIpQLSes80R6njvmNcjUvYWfa4eWTALYN-hvdboANAqgFoKSJHDa3w/viewform?usp=publish-editor','_blank')" class="border border-gray-100 dark:border-gray-800 p-6 rounded-2xl text-center cursor-pointer hover:bg-gray-50 dark:hover:bg-zinc-900 transition">
+                    <div class="text-2xl mb-2">⭐</div>
+                    <p class="font-bold text-[10px] uppercase tracking-widest">Laisser un Avis</p>
+                </div>
+            </div>
+            <div id="aide-summary" class="hidden mt-6 text-xs text-gray-400 leading-relaxed border-t pt-4 border-gray-50 dark:border-zinc-800">
+                <p class="mb-2"><b>WikiMind_1 Identity Edition</b> est une architecture cognitive avancée. Contrairement aux chatbots standards, elle utilise un <b>Routeur Neural</b> pour analyser vos demandes et sélectionner dynamiquement l'outil le plus adapté.</p>
+                <p class="mb-2">- <b>Bibliothèque :</b> Accédez à un écosystème d'applications spécialisées (SoundMind, Explore, FutureMind...).</p>
+                <p class="mb-2">- <b>Architecture :</b> Les modèles Llama 3 (Groq), Mistral et Gemini collaborent en arrière-plan.</p>
+                <p>- <b>Confidentialité :</b> Historique local et traitement sécurisé.</p>
+            </div>
+            <div class="mt-6 pt-4 border-t border-gray-100 dark:border-gray-800">
+                <h4 class="font-bold text-xs uppercase mb-2">Mentions Légales</h4>
+                <p class="text-[10px] text-gray-400 leading-normal">
+                    WikiMind est une interface expérimentale. Les contenus sont générés par IA et peuvent contenir des erreurs. 
+                    <br>Utilisation à des fins personnelles et éducatives uniquement. 
+                    <br>Aucune donnée personnelle n'est stockée sur serveur distant (Local Storage uniquement).
+                    <br><br>
+                    Crédits IA : <a href="https://chpalitom09-bot.github.io/Pepins-de-t-mates/" target="_blank" class="font-bold hover:text-black transition" style="color:inherit; text-decoration:none;">Pépins de tomates</a>
+                </p>
+            </div>
+            <button onclick="document.getElementById('help-modal').style.display='none'" class="w-full mt-6 bg-gray-100 dark:bg-zinc-800 py-3 rounded-xl font-bold text-[10px] uppercase tracking-widest">Fermer</button>
+        </div>
+    </div>
+
+    <div id="sidebar">
+        <div class="p-6 border-b border-gray-50 flex flex-col gap-2">
+            <div class="flex justify-between items-center">
+                <h1 class="font-black text-lg tracking-tighter uppercase italic flex items-center gap-2">
+                    WikiMind
+                    <a href="https://chpalitom09-bot.github.io/WikiMind_Bac/" target="_blank" class="text-xs no-underline hover:scale-110 transition" title="WikiMind BAC">🎓</a>
+                </h1>
+                <button onclick="toggleSidebar()" class="text-gray-400 hover:text-black"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"></path></svg></button>
+            </div>
+            <button onclick="document.getElementById('help-modal').style.display='flex'" class="text-[9px] font-bold text-gray-400 uppercase tracking-[0.2em] hover:text-black text-left w-fit transition">Aide & Avis ▾</button>
+        </div>
+        <div class="p-4 flex-grow flex flex-col overflow-hidden">
+            <button onclick="resetToHome()" class="w-full bg-black dark:bg-white dark:text-black text-white py-3 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:opacity-80">+ Nouveau Chat</button>
+            
+            <button onclick="openLibrary()" class="w-full mt-2 border border-gray-200 dark:border-zinc-800 py-3 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-gray-50 dark:hover:bg-zinc-900 transition flex items-center justify-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+                Bibliothèque Apps
+            </button>
+
+            <!-- BOUTON CHAT PARTAGÉ (FULL WIDTH) -->
+            <button onclick="toggleSharedChat()" class="w-full mt-2 border border-blue-500 text-blue-500 py-3 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-blue-50 transition flex items-center justify-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                Chat Partagé (Bêta)
+            </button>
+
+            <div id="history-list" class="flex-grow overflow-y-auto space-y-1 pt-6"></div>
+            <button id="settings-btn-sidebar" onclick="document.getElementById('settings-modal').style.display='flex'" class="flex items-center gap-3 p-3 mt-auto text-gray-400 hover:text-black transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                <span class="text-[10px] font-bold uppercase tracking-widest">Paramètres</span>
+            </button>
+        </div>
+    </div>
+
+    <div id="main-area">
+        <button id="float-toggle" onclick="toggleSidebar()" class="absolute top-6 left-6 z-50 p-2 bg-white rounded-full shadow-sm border border-gray-100 text-black"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg></button>
+        <button id="float-new-chat" onclick="resetToHome()" class="absolute top-6 left-20 z-50 p-2 bg-white rounded-full shadow-sm border border-gray-100 text-black transition-all duration-300 hover:bg-gray-50 hover:scale-105" title="Nouveau Chat"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg></button>
+
+        <div id="app-header" class="hidden absolute top-6 left-1/2 transform -translate-x-1/2 bg-gray-100 dark:bg-zinc-800 px-4 py-1 rounded-full text-xs font-bold uppercase tracking-widest text-gray-500 z-30">General</div>
+
+        <div id="welcome-text">
+            <h2 class="text-7xl font-black mb-3 tracking-tighter uppercase">WIKIMIND</h2>
+            <p class="text-gray-400 font-medium tracking-tight">Bienvenue comment puis-je vous aider <span class="font-bold">?</span></p>
+        </div>
+
+        <div id="chat-container"></div>
+
+        <!-- AJOUT: Container du Chat Partagé (Caché par défaut) -->
+        <div id="shared-chat-view">
+            <div id="shared-login" class="shared-login-screen">
+                <div class="text-6xl mb-4">🌐</div>
+                <h2 class="text-2xl font-black uppercase tracking-tighter">Chat Partagé</h2>
+                <p class="text-gray-400 text-sm mb-4">Rejoignez une conversation avec le code unique.</p>
+                <input type="text" id="room-code-input" placeholder="CODE (ex: WKM-8F3)" class="shared-room-input w-64">
+                <!-- ADDED: Create Button Logic via JS injection below -->
+                <button onclick="joinSharedRoom()" class="bg-black text-white dark:bg-white dark:text-black px-8 py-3 rounded-full font-bold uppercase text-xs tracking-widest hover:scale-105 transition mb-2">Rejoindre</button>
+                <button onclick="createSharedRoom()" class="border border-gray-300 dark:border-gray-600 px-8 py-3 rounded-full font-bold uppercase text-xs tracking-widest hover:scale-105 transition">Créer une conversation</button>
+                <p class="text-xs text-gray-400 mt-4">Mentionnez <b class="text-black dark:text-white">@wikimind</b> pour parler à l'IA.</p>
+            </div>
+            
+            <div id="shared-status" class="shared-status hidden">
+                <div class="blink-dot"></div> <span id="shared-room-display">ROOM</span>
+            </div>
+
+            <div id="shared-messages-area" class="shared-chat-area hidden">
+                <!-- Messages will appear here -->
+            </div>
+
+            <div id="shared-input-area" class="shared-input-bar hidden">
+                <input type="text" id="shared-msg-input" placeholder="Message au groupe... (@wikimind pour l'IA)" class="flex-grow bg-transparent border-none outline-none text-sm px-4" onkeydown="if(event.key === 'Enter') sendSharedMessage()">
+                <button onclick="sendSharedMessage()" class="bg-blue-500 text-white w-10 h-10 rounded-full flex items-center justify-center font-bold">➤</button>
+            </div>
+        </div>
+
+        <div id="library-view">
+            <div class="mb-6">
+                <h2 class="text-3xl font-black tracking-tighter mb-2">Bibliothèque</h2>
+                <p class="text-gray-400 text-sm">Applications, Outils et Modèles IA.</p>
+            </div>
+
+            <div class="lib-controls">
+                <input type="text" id="lib-search" placeholder="Rechercher une application ou un modèle..." class="search-bar" onkeyup="filterLibrary()">
+                
+                <div id="suggestions-container" class="suggestions-ticker"></div>
+
+                <div class="filters">
+                    <button class="filter-btn active" onclick="setFilter('all', this)">Tous</button>
+                    <button class="filter-btn" onclick="setFilter('Knowledge', this)">📝 Texte/Savoir</button>
+                    <button class="filter-btn" onclick="setFilter('Music', this)">🎵 Audio</button>
+                    <button class="filter-btn" onclick="setFilter('Code', this)">💻 Code</button>
+                    <button class="filter-btn" onclick="setFilter('Image', this)">🖼️ Image</button>
+                    <button class="filter-btn" onclick="setFilter('AI', this)">🤖 Modèles IA</button>
+                </div>
+            </div>
+            
+            <h3 class="font-bold text-xs uppercase tracking-widest text-gray-500 mb-4 section-title">Apps Officielles WikiMind</h3>
+            <div id="official-apps" class="app-grid mb-8"></div>
+
+            <h3 class="font-bold text-xs uppercase tracking-widest text-gray-500 mb-4 section-title">Base de Données IA (Open Source)</h3>
+            <div id="ai-models-grid" class="app-grid mb-8"></div>
+
+            <h3 class="font-bold text-xs uppercase tracking-widest text-gray-500 mb-4 section-title">Outils & Utilitaires</h3>
+            <div id="public-apps" class="app-grid"></div>
+        </div>
+
+        <div id="input-wrapper" class="centered">
+            <input type="file" id="file-input" style="display: none;" accept=".pdf,.docx,.txt,image/*" onchange="handleFileUpload(this)">
+            
+            <div id="input-box" class="rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.1)] overflow-hidden">
+                <div id="file-preview-area"></div>
+
+                <div class="upload-trigger" onclick="document.getElementById('file-input').click()">+</div>
+                
+                <textarea id="user-input" rows="1" placeholder="Demandez n'importe quoi..." class="w-full p-6 outline-none resize-none text-lg min-h-[70px]" onkeydown="handleKey(event)"></textarea>
+                <div class="flex justify-between items-center px-6 pb-4">
+                    <select id="model-select" onchange="handleModelChange()">
+                        <option value="llama-3.1-8b-instant">RAPIDE</option>
+                        <option value="llama-3.3-70b-versatile">RÉFLÉCHI</option>
+                        <option value="ADVANCED">AVANCÉ</option> <!-- Règle 4 -->
+                        <option value="PRO">MODE PRO</option> <!-- Règle 6 -->
+                        <option value="IMAGE">IMAGE</option>
+                    </select>
+                    <button onclick="send()" class="bg-black text-white dark:bg-white dark:text-black rounded-full w-11 h-11 flex items-center justify-center transition hover:scale-105 active:scale-95"><svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"></path></svg></button>
+                </div>
+            </div>
+            <div id="file-feedback" class="text-xs text-center mt-2 text-gray-400 font-bold hidden"></div>
+        </div>
+    </div>
+
+    <script>
+        // --- CONFIGURATION & CLÉS ---
+        const KEYS = {
+            GROQ: "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",
+            LASTFM: "9608664a3c195d56ff6f1f21e5864f52",
+            MISTRAL: "PWuDhogjoWM8XkfbaPFosUfsuADxcpyO",
+            GEMINI: "AIzaSyDyWdlLXkr1VFZhNODf7CblkfsgExwiOe0",
+            CLOUDFLARE_TOKEN: "fRTAU-M5OSk_0b1KZ9w-pjDAuWldKX_4FAG56AQw",
+            CLOUDFLARE_ID: "a3fbe10ed5d1355e4c064b6f21c6144a"
+        };
+
+        // --- DEFINITION DES APPS ---
+        const OFFICIAL_APPS = [
+            { id: 'random_mind', name: 'RandomMind', icon: '🎲', desc: 'Lance une application ou un modèle IA au hasard.', tag: 'System', modes: ['RAPIDE', 'RÉFLÉCHI', 'IMAGE'] },
+            { id: 'explore', name: 'WikiMind Explore', icon: '🌍', desc: 'Encyclopédie vivante connectée à Wikipedia en temps réel.', tag: 'Knowledge', system: "Tu es WikiMind Explore. Tu DOIS utiliser l'outil Wikipedia pour répondre aux questions factuelles. Réponds avec précision.", modes: ['RAPIDE', 'RÉFLÉCHI'] },
+            { id: 'soundmind', name: 'SoundMind', icon: '🎵', desc: 'Expert musical et culturel. Biographie, discographies, tendances.', tag: 'Music', system: "Tu es SoundMind. Tu es un expert musical connecté à Last.fm. Parle de musique avec passion.", modes: ['RAPIDE', 'RÉFLÉCHI'] },
+            { id: 'studymind', name: 'StudyMind 2.0', icon: '🎓', desc: 'Assistant académique avancé. Recherche livres, données et quiz.', tag: 'Education', system: "Tu es StudyMind. Tu aides les étudiants. Tu utilises OpenLibrary et Wikidata pour structurer tes réponses.", modes: ['RAPIDE', 'RÉFLÉCHI'] },
+            { id: 'futuremind', name: 'FutureMind', icon: '🚀', desc: 'Coach orientation et avenir. Analyse de profil et suggestions métiers.', tag: 'Career', system: "Tu es FutureMind. Tu es un conseiller d'orientation bienveillant. Tu dois poser des questions pour comprendre le profil avant de suggérer des métiers.", modes: ['RÉFLÉCHI'] },
+            { id: 'multivers', name: 'Multivers', icon: '🎙️', desc: 'Fais débattre deux IA expertes sur un sujet complexe.', tag: 'System', system: "Tu es le modérateur du Multivers.", modes: ['AUTO'] }
+        ];
+
+        // BASE DE DONNÉES IA
+        const AI_MODELS = [
+            { id: 'auto_gpt', name: 'AgentMind (Auto)', icon: '🌐', desc: 'Agent autonome. Planifie et exécute des tâches complexes.', tag: 'AI', rating: '9.9', type: 'text', provider: 'groq' },
+            { id: 'llama-3.3-70b-versatile', name: 'Llama 3.3 70B', icon: '🦙', desc: 'Le modèle open-source le plus puissant de Meta. Polyvalence extrême.', tag: 'AI', rating: '9.8', type: 'text', provider: 'groq' },
+           { id: 'llama-3.1-8b-instant', name: 'Llama 3.1 8B', icon: '⚡', desc: 'Ultra-rapide, idéal pour les chats instantanés et tâches simples.', tag: 'AI', rating: '9.2', type: 'text', provider: 'groq' },
+            { id: 'llama-guard-3-8b', name: 'Llama Guard 3', icon: '🛡️', desc: 'Spécialisé dans la modération et la sécurité des contenus.', tag: 'AI', rating: '8.5', type: 'text', provider: 'groq' },
+            { id: 'llama-3-70b-instruct', name: 'Llama 3 70B Legacy', icon: '📜', desc: 'Version précédente, très stable pour le suivi d\'instructions.', tag: 'AI', rating: '9.0', type: 'text', provider: 'groq' },
+            { id: 'mistral-large-latest', name: 'Mistral Large', icon: '🌪️', desc: 'Le fleuron français. Raisonnement complexe et multilingue.', tag: 'AI', rating: '9.7', type: 'text', provider: 'mistral' },
+            { id: 'mistral-medium', name: 'Mistral Medium', icon: '🇫🇷', desc: 'Équilibre parfait entre performance et latence.', tag: 'AI', rating: '9.4', type: 'text', provider: 'mistral' },
+            { id: 'mixtral-8x7b-32768', name: 'Mixtral 8x7B', icon: '🧬', desc: 'Architecture MoE (Mixture of Experts). Excellent en logique.', tag: 'AI', rating: '9.6', type: 'text', provider: 'groq' },
+            { id: 'mistral-small', name: 'Mistral Small', icon: '🔹', desc: 'Modèle compact pour tâches rapides et efficaces.', tag: 'AI', rating: '8.9', type: 'text', provider: 'mistral' },
+            { id: 'gemma2-9b-it', name: 'Gemma 2 9B', icon: '💎', desc: 'Modèle de Google. Très performant pour sa taille.', tag: 'AI', rating: '9.3', type: 'text', provider: 'groq' },
+            { id: 'gemma-7b-it', name: 'Gemma 7B', icon: '🏔️', desc: 'Première itération, solide pour le code et texte.', tag: 'AI', rating: '8.7', type: 'text', provider: 'groq' },
+            { id: 'phi-3-mini', name: 'Phi-3 Mini', icon: '🔬', desc: 'Petit mais costaud. Surprend par son raisonnement.', tag: 'AI', rating: '9.1', type: 'text', provider: 'groq_sim' },
+            { id: 'phi-3-medium', name: 'Phi-3 Medium', icon: '🧠', desc: 'Version intermédiaire de Microsoft Research.', tag: 'AI', rating: '9.3', type: 'text', provider: 'groq_sim' },
+            { id: 'qwen-2.5-72b', name: 'Qwen 2.5 72B', icon: '🐲', desc: 'Géant chinois, incroyable en mathématiques et code.', tag: 'AI', rating: '9.6', type: 'text', provider: 'groq_sim' },
+            { id: 'qwen-2.5-coder', name: 'Qwen Coder', icon: '👨‍💻', desc: 'Spécialisé dans la génération de code et debug.', tag: 'AI', rating: '9.5', type: 'code', provider: 'groq_sim' },
+            { id: 'qwen-1.5-14b', name: 'Qwen 1.5 14B', icon: '🏯', desc: 'Bon compromis taille/puissance pour le chat.', tag: 'AI', rating: '9.0', type: 'text', provider: 'groq_sim' },
+            { id: 'yi-34b', name: 'Yi 34B', icon: '🥢', desc: 'Modèle bilingue anglais/chinois très performant.', tag: 'AI', rating: '9.1', type: 'text', provider: 'groq_sim' },
+            { id: 'deepseek-coder-v2', name: 'DeepSeek Coder V2', icon: '🐋', desc: 'Le roi du code open source actuel.', tag: 'Code', rating: '9.9', type: 'code', provider: 'groq_sim' },
+            { id: 'deepseek-llm-67b', name: 'DeepSeek LLM', icon: '🌊', desc: 'Modèle généraliste très capable.', tag: 'AI', rating: '9.4', type: 'text', provider: 'groq_sim' },
+            { id: 'falcon-180b', name: 'Falcon 180B', icon: '🦅', desc: 'Monstre de puissance open source (TII UAE).', tag: 'AI', rating: '9.5', type: 'text', provider: 'groq_sim' },
+            { id: 'solar-10.7b', name: 'Solar 10.7B', icon: '☀️', desc: 'Technologie d\'up-scaling innovante.', tag: 'AI', rating: '8.8', type: 'text', provider: 'groq_sim' },
+            { id: 'starling-7b', name: 'Starling 7B', icon: '🐦', desc: 'Fine-tuné avec RLAIF, très naturel.', tag: 'AI', rating: '8.9', type: 'text', provider: 'groq_sim' },
+            { id: 'openchat-3.5', name: 'OpenChat 3.5', icon: '💬', desc: 'Basé sur Mistral, optimisé pour le dialogue.', tag: 'AI', rating: '9.0', type: 'text', provider: 'groq_sim' },
+            { id: 'nous-hermes-2', name: 'Nous Hermes 2', icon: '⚕️', desc: 'Non censuré, créatif et direct.', tag: 'AI', rating: '9.2', type: 'text', provider: 'groq_sim' },
+            { id: 'dolphin-mixtral', name: 'Dolphin Mixtral', icon: '🐬', desc: 'Version non censurée de Mixtral. Fun.', tag: 'AI', rating: '9.3', type: 'text', provider: 'groq_sim' },
+            { id: 'wizardlm-2', name: 'WizardLM 2', icon: '🧙‍♂️', desc: 'Expert en raisonnement complexe.', tag: 'AI', rating: '9.5', type: 'text', provider: 'groq_sim' },
+{ id: 'got_houses', name: 'GoTHouses', icon: '🏰', url: 'https://anapioficeandfire.com/api/houses/1', desc: 'Maisons de Westeros.', tag: 'Knowledge' },
+            { id: 'missing_suggest', name: 'Il manque quelque chose ?', icon: '📩', url: 'https://docs.google.com/forms/d/e/1FAIpQLSfYcYzag2zeNLXmOW8Ek9X1W6zq2CA0iE9BOwlcExTvNOJPvw/viewform?usp=header', desc: 'Suggérer une nouvelle API.', tag: 'System' }
+        ];
+        
+        // TABLEAUX VIDES POUR PUBLIC APPS
+        const PUBLIC_APPS = [
+            { id: 'qr', name: 'QR Gen', icon: '📱', desc: 'Générateur de QR Codes.', tag: 'Tool', url: 'api' },
+			{ id: 'dict', name: 'DicoMind', icon: '📖', url: 'https://api.dictionaryapi.dev/api/v2/entries/en/', desc: 'Dictionnaire anglais complet.', tag: 'Knowledge' },
+            { id: 'meteo', name: 'MétéoDirect', icon: '🌤️', url: 'https://api.open-meteo.com/v1/forecast', desc: 'Données météo précises sans clé.', tag: 'Tool' },
+            { id: 'fact', name: 'FactChecker', icon: '✅', url: 'https://uselessfacts.jsph.pl/api/v2/facts/random', desc: 'Faits divers aléatoires et vérifiés.', tag: 'Knowledge' },
+            { id: 'space', name: 'Cosmos', icon: '🚀', url: 'https://api.le-systeme-solaire.net/rest/bodies/', desc: 'Données sur le système solaire.', tag: 'Knowledge' },
+            { id: 'art', name: 'ArtDaily', icon: '🎨', url: 'https://api.artic.edu/api/v1/artworks', desc: 'Collection Art Institute of Chicago.', tag: 'Image' },
+            { id: 'dog', name: 'DogVision', icon: '🐶', url: 'https://dog.ceo/api/breeds/image/random', desc: 'Encyclopédie canine visuelle.', tag: 'Image' },
+            { id: 'cat', name: 'CatLogic', icon: '🐱', url: 'https://catfact.ninja/fact', desc: 'Tout sur les chats.', tag: 'Knowledge' },
+            { id: 'crypto', name: 'CoinWatch', icon: '💰', url: 'https://api.coingecko.com/api/v3/simple/price', desc: 'Cours des cryptos en temps réel.', tag: 'Tool' },
+            { id: 'joke', name: 'HumourBot', icon: '🤡', url: 'https://official-joke-api.appspot.com/random_joke', desc: 'Générateur de blagues.', tag: 'Tool' },
+            { id: 'gender', name: 'Identity', icon: '👤', url: 'https://api.genderize.io', desc: 'Prédiction de genre par prénom.', tag: 'Tool' },
+            { id: 'nation', name: 'Origin', icon: '🏳️', url: 'https://api.nationalize.io', desc: 'Prédiction de nationalité.', tag: 'Tool' },
+            { id: 'age', name: 'Chrono', icon: '⏳', url: 'https://api.agify.io', desc: 'Estimation âge par prénom.', tag: 'Tool' },
+            { id: 'ip', name: 'NetTrace', icon: '🌐', url: 'https://api.ipify.org?format=json', desc: 'Infos IP publique.', tag: 'Tool' },
+            { id: 'bored', name: 'Activity', icon: '💡', url: 'https://www.boredapi.com/api/activity', desc: 'Idées d\'activités anti-ennui.', tag: 'Tool' },
+            { id: 'univ', name: 'UniFinder', icon: '🏛️', url: 'http://universities.hipolabs.com/search', desc: 'Recherche universités mondiales.', tag: 'Knowledge' },
+            { id: 'zip', name: 'ZipCode', icon: '📮', url: 'https://api.zippopotam.us/', desc: 'Infos codes postaux.', tag: 'Tool' },
+            { id: 'holidays', name: 'DayOff', icon: '📅', url: 'https://date.nager.at/api/v3/PublicHolidays', desc: 'Jours fériés mondiaux.', tag: 'Tool' },
+            { id: 'quote', name: 'WiseWords', icon: '📜', url: 'https://api.quotable.io/random', desc: 'Citations célèbres.', tag: 'Knowledge' },
+            { id: 'rhyme', name: 'PoetFlow', icon: '✍️', url: 'https://api.datamuse.com/words', desc: 'Moteur de rimes et synonymes.', tag: 'Knowledge' },
+            { id: 'makeup', name: 'Glamour', icon: '💄', url: 'https://makeup-api.herokuapp.com/api/v1/products.json', desc: 'Marques et produits cosmétiques.', tag: 'Tool' },
+            { id: 'cocktail', name: 'Barman', icon: '🍸', url: 'https://www.thecocktaildb.com/api/json/v1/1/random.php', desc: 'Recettes de cocktails.', tag: 'Tool' },
+            { id: 'meal', name: 'ChefMind', icon: '🍳', url: 'https://www.themealdb.com/api/json/v1/1/random.php', desc: 'Recettes de cuisine.', tag: 'Tool' },
+            { id: 'bank', name: 'IbanCheck', icon: '💳', url: 'https://openiban.com/validate', desc: 'Validation bancaire.', tag: 'Tool' },
+            { id: 'number', name: 'MathFacts', icon: '🔢', url: 'http://numbersapi.com/random/math', desc: 'Curiosités mathématiques.', tag: 'Knowledge' },
+            { id: 'pokemon', name: 'Pokedex', icon: '⚡', url: 'https://pokeapi.co/api/v2/pokemon/', desc: 'Données Pokémon complètes.', tag: 'Knowledge' },
+            { id: 'anime', name: 'Otaku', icon: '🎌', url: 'https://api.jikan.moe/v4/random/anime', desc: 'Découverte Anime/Manga.', tag: 'Image' },
+            { id: 'tech', name: 'TechNews', icon: '💻', url: 'https://hacker-news.firebaseio.com/v0/topstories.json', desc: 'Flux Hacker News.', tag: 'Knowledge' },
+            { id: 'vehicle', name: 'Motor', icon: '🚗', url: 'https://vpic.nhtsa.dot.gov/api/', desc: 'Données véhicules NHTSA.', tag: 'Tool' },
+            { id: 'starwars', name: 'JediData', icon: '🌌', url: 'https://swapi.dev/api/people/', desc: 'Données Star Wars.', tag: 'Knowledge' },
+            { id: 'advice', name: 'Guru', icon: '🙏', url: 'https://api.adviceslip.com/advice', desc: 'Conseils de vie.', tag: 'Tool' },
+            { id: 'loripsum', name: 'Filler', icon: '📝', url: 'https://loripsum.net/api', desc: 'Générateur Lorem Ipsum.', tag: 'Tool' },
+            { id: 'qr_img', name: 'QR Gen', icon: '🏁', url: 'https://api.qrserver.com/', desc: 'Générateur QR Codes.', tag: 'Image' },
+            { id: 'country_v3', name: 'Atlas', icon: '🌍', url: 'https://restcountries.com/v3.1/name/france', desc: 'Données pays.', tag: 'Knowledge' },
+            { id: 'worldbank', name: 'EcoData', icon: '📉', url: 'https://api.worldbank.org/v2/country/fr/indicator/SP.POP.TOTL?format=json', desc: 'Données économiques.', tag: 'Knowledge' },
+            { id: 'unesco', name: 'Heritage', icon: '🏛️', url: 'https://whc.unesco.org/en/list/json', desc: 'Patrimoine mondial.', tag: 'Knowledge' },
+            { id: 'openlib_s', name: 'BookSearch', icon: '📚', url: 'https://openlibrary.org/search.json?q=harry+potter', desc: 'Recherche livres.', tag: 'Knowledge' },
+            { id: 'wiki_data', name: 'WikiData', icon: '📊', url: 'https://query.wikidata.org/sparql?query=', desc: 'Requêtes SPARQL.', tag: 'Knowledge' },
+            { id: 'cia', name: 'CIA Facts', icon: '🕵️', url: 'https://raw.githubusercontent.com/factbook/factbook.json/master/factbook.json', desc: 'World Factbook JSON.', tag: 'Knowledge' },
+            { id: 'datagouv', name: 'DataFrance', icon: '🇫🇷', url: 'https://www.data.gouv.fr/api/1/datasets/', desc: 'Open Data France.', tag: 'Knowledge' },
+            { id: 'geonames', name: 'GeoNames', icon: '🗺️', url: 'http://api.geonames.org/searchJSON?q=paris&maxRows=10&username=demo', desc: 'Données géographiques.', tag: 'Tool' },
+            { id: 'nasa', name: 'NASA', icon: '🚀', url: 'https://images-api.nasa.gov/search?q=mars', desc: 'Médiathèque NASA.', tag: 'Image' },
+            { id: 'iss', name: 'ISS Pos', icon: '🛰️', url: 'http://api.open-notify.org/iss-now.json', desc: 'Position ISS.', tag: 'Tool' },
+            { id: 'astros', name: 'Astronauts', icon: '👨‍🚀', url: 'http://api.open-notify.org/astros.json', desc: 'Humains dans l\'espace.', tag: 'Knowledge' },
+            { id: 'launch', name: 'LaunchPad', icon: '🚀', url: 'https://ll.thespacedevs.com/2.2.0/launch/upcoming/', desc: 'Lancements spatiaux.', tag: 'Knowledge' },
+            { id: 'air', name: 'AirQuality', icon: '💨', url: 'https://api.openaq.org/v2/latest', desc: 'Qualité de l\'air.', tag: 'Tool' },
+            { id: 'solar', name: 'SolarCycle', icon: '☀️', url: 'https://services.swpc.noaa.gov/json/solar-cycle.json', desc: 'Données solaires.', tag: 'Knowledge' },
+            { id: 'translate', name: 'Translator', icon: '🗣️', url: 'https://libretranslate.de/translate', desc: 'Traduction libre.', tag: 'Tool' },
+            { id: 'wordnik', name: 'Wordnik', icon: '📖', url: 'https://api.wordnik.com/v4/words.json/randomWord', desc: 'Mots aléatoires.', tag: 'Knowledge' },
+            { id: 'got', name: 'GoT API', icon: '🐉', url: 'https://anapioficeandfire.com/api/characters/583', desc: 'Game of Thrones.', tag: 'Knowledge' },
+            { id: 'hp', name: 'PotterHead', icon: '⚡', url: 'https://hp-api.onrender.com/api/characters', desc: 'Univers Harry Potter.', tag: 'Knowledge' },
+            { id: 'poetry', name: 'PoemDB', icon: '✒️', url: 'https://poetrydb.org/random', desc: 'Poésie aléatoire.', tag: 'Knowledge' },
+            { id: 'datamuse', name: 'Muse', icon: '🧠', url: 'https://api.datamuse.com/words?ml=music&max=20', desc: 'Associations de mots.', tag: 'Tool' },
+            { id: 'ghibli', name: 'Ghibli', icon: '🍃', url: 'https://ghibliapi.vercel.app/films', desc: 'Films Studio Ghibli.', tag: 'Image' },
+            { id: 'rick', name: 'RickMorty', icon: '🧪', url: 'https://rickandmortyapi.com/api/character', desc: 'Univers R&M.', tag: 'Image' },
+            { id: 'bbad', name: 'Heisenberg', icon: '⚗️', url: 'https://breakingbadapi.com/api/characters', desc: 'Breaking Bad.', tag: 'Knowledge' },
+            { id: 'digimon', name: 'DigiDex', icon: '🦕', url: 'https://digimon-api.vercel.app/api/digimon', desc: 'Données Digimon.', tag: 'Knowledge' },
+            { id: 'marvel', name: 'Marvel', icon: '🦸', url: 'https://gateway.marvel.com/v1/public/characters', desc: 'Héros Marvel.', tag: 'Knowledge' },
+            { id: 'trivia', name: 'TriviaGen', icon: '❓', url: 'https://opentdb.com/api.php?amount=10', desc: 'Quiz culture G.', tag: 'Tool' },
+            { id: 'yesno', name: 'Oracle', icon: '🔮', url: 'https://yesno.wtf/api', desc: 'Oui ou Non ?', tag: 'Tool' },
+            { id: 'picsum', name: 'Picsum', icon: '📸', url: 'https://picsum.photos/600/400', desc: 'Images aléatoires.', tag: 'Image' },
+            { id: 'unsplash', name: 'Unsplash', icon: '📷', url: 'https://source.unsplash.com/random', desc: 'Photos HD.', tag: 'Image' },
+            { id: 'artvee', name: 'ClassicArt', icon: '🖼️', url: 'https://artvee.com/api/artworks', desc: 'Art classique.', tag: 'Image' },
+            { id: 'met', name: 'The Met', icon: '🏛️', url: 'https://collectionapi.metmuseum.org/public/collection/v1/objects', desc: 'Metropolitan Museum.', tag: 'Image' },
+            { id: 'europeana', name: 'Europeana', icon: '🇪🇺', url: 'https://api.europeana.eu/record/v2/search.json', desc: 'Culture européenne.', tag: 'Knowledge' },
+            { id: 'pubapis', name: 'ApiList', icon: '📃', url: 'https://api.publicapis.org/entries', desc: 'Liste d\'APIs.', tag: 'Tool' },
+            { id: 'ipco', name: 'IP Info', icon: '📍', url: 'https://ipapi.co/json/', desc: 'Géolocalisation IP.', tag: 'Tool' },
+            { id: 'uagent', name: 'UA Parser', icon: '🕵️‍♂️', url: 'https://api.userstack.com/detect', desc: 'Info navigateur.', tag: 'Tool' },
+            { id: 'randomuser', name: 'FakeID', icon: '🆔', url: 'https://randomuser.me/api/', desc: 'Générateur profil.', tag: 'Tool' },
+            { id: 'uuid', name: 'UUID Gen', icon: '🔑', url: 'https://www.uuidtools.com/api/generate/v4', desc: 'Identifiant unique.', tag: 'Tool' },
+            { id: 'worldtime', name: 'WorldClock', icon: '🕰️', url: 'http://worldtimeapi.org/api/timezone/Europe/Paris', desc: 'Heure atomique.', tag: 'Tool' },
+            { id: 'forex', name: 'Forex', icon: '💱', url: 'https://api.exchangerate.host/latest', desc: 'Taux de change.', tag: 'Tool' },
+            { id: 'elevation', name: 'Altitude', icon: '⛰️', url: 'https://api.open-elevation.com/api/v1/lookup?locations=48.8584,2.2945', desc: 'Élévation GPS.', tag: 'Tool' },
+            { id: 'covid', name: 'Pandemic', icon: '🦠', url: 'https://disease.sh/v3/covid-19/all', desc: 'Stats Covid.', tag: 'Knowledge' },
+            { id: 'pop', name: 'PopClock', icon: '👥', url: 'https://population.io/1.0/population/World/today-and-tomorrow/', desc: 'Population mondiale.', tag: 'Knowledge' },
+            { id: 'brew', name: 'BeerFind', icon: '🍺', url: 'https://api.openbrewerydb.org/breweries', desc: 'Brasseries.', tag: 'Tool' },
+            { id: 'carbon', name: 'Co2 Track', icon: '🏭', url: 'https://api.carbonintensity.org.uk/intensity', desc: 'Intensité carbone.', tag: 'Knowledge' },
+            { id: 'tvmaze', name: 'TV Shows', icon: '📺', url: 'https://api.tvmaze.com/search/shows?q=dark', desc: 'Séries TV.', tag: 'Image' },
+            { id: 'osm', name: 'OSM Geo', icon: '🗺️', url: 'https://nominatim.openstreetmap.org/search?q=Paris&format=json', desc: 'OpenStreetMap.', tag: 'Tool' },
+            { id: 'chess', name: 'ChessStats', icon: '♟️', url: 'https://api.chess.com/pub/player/hikaru/stats', desc: 'Stats échecs.', tag: 'Tool' },
+            { id: 'cards', name: 'DeckDraw', icon: '🃏', url: 'https://deckofcardsapi.com/api/deck/new/draw/?count=2', desc: 'Tirage cartes.', tag: 'Tool' },
+            { id: 'jeopardy', name: 'JService', icon: '🧠', url: 'https://jservice.io/api/random', desc: 'Questions Jeopardy.', tag: 'Tool' },
+            { id: 'dog2', name: 'DogFacts', icon: '🐕', url: 'https://dogapi.dog/api/v2/facts', desc: 'Faits sur les chiens.', tag: 'Knowledge' },
+            { id: 'gutendex', name: 'Biblio', icon: '📚', url: 'https://gutendex.com/books', desc: 'Livres Gutenberg.', tag: 'Knowledge' },
+            { id: 'robohash', name: 'Avatar', icon: '🤖', url: 'https://robohash.org/wiki', desc: 'Générateur avatars.', tag: 'Image' },
+            { id: 'memes', name: 'MemeGen', icon: '🐸', url: 'https://api.imgflip.com/get_memes', desc: 'Top Mèmes.', tag: 'Image' },
+            { id: 'excuse', name: 'Excuses', icon: '🤥', url: 'https://excuser-three.vercel.app/v1/excuse', desc: 'Générateur d\'excuses.', tag: 'Tool' },
+            { id: 'shibe', name: 'Shiba', icon: '🐕', url: 'http://shibe.online/api/shibes', desc: 'Images Shibu Inu.', tag: 'Image' },
+            { id: 'fox', name: 'Renard', icon: '🦊', url: 'https://randomfox.ca/floof/', desc: 'Images renards.', tag: 'Image' },
+            { id: 'foodish', name: 'FoodPorn', icon: '🥘', url: 'https://foodish-api.com/api/', desc: 'Plats aléatoires.', tag: 'Image' },
+            { id: 'sunset', name: 'Soleil', icon: '🌅', url: 'https://api.sunrise-sunset.org/json?lat=48.8566&lng=2.3522', desc: 'Lever/Coucher soleil.', tag: 'Tool' },
+            { id: 'ipapi', name: 'GeoIP', icon: '🗺️', url: 'http://ip-api.com/json', desc: 'Géolocalisation IP.', tag: 'Tool' },
+            { id: 'httpcat', name: 'HttpCat', icon: '🐱', url: 'https://http.cat/404', desc: 'Codes HTTP chats.', tag: 'Image' },
+			{ id: 'Plant', name: 'PlantAI', icon: '🌱', url: 'https://http.cat/404', desc: 'Codes HTTP chats.', tag: 'Image' },
+{ id: 'plants_trefle', name: 'PlantDB', icon: '🌿', url: 'https://trefle.io/api/v1/plants', desc: 'Base botanique mondiale.', tag: 'Nature' },
+{ id: 'weather_alerts', name: 'Weather Alerts', icon: '⛈️', url: 'https://api.weather.gov/alerts/active', desc: 'Alertes météo officielles.', tag: 'Tool' },
+{ id: 'moon', name: 'MoonPhase', icon: '🌙', url: 'https://api.farmsense.net/v1/moonphases/', desc: 'Phases de la lune.', tag: 'Knowledge' },
+{ id: 'currency_names', name: 'MoneyInfo', icon: '💵', url: 'https://openexchangerates.org/api/currencies.json', desc: 'Infos devises.', tag: 'Tool' },
+{ id: 'open_trivia', name: 'Trivia+', icon: '🧠', url: 'https://the-trivia-api.com/api/questions', desc: 'Quiz avancé.', tag: 'Tool' },
+{ id: 'animals', name: 'AnimalFacts', icon: '🐾', url: 'https://some-random-api.com/animal/dog', desc: 'Animaux & faits.', tag: 'Knowledge' },
+{ id: 'cocktail_list', name: 'CocktailDB+', icon: '🍹', url: 'https://www.thecocktaildb.com/api/json/v1/1/search.php?s=', desc: 'Recherche cocktails.', tag: 'Tool' },
+{ id: 'dictionary_fr', name: 'Dico FR', icon: '🇫🇷', url: 'https://api.dicolink.com/v1/mot/', desc: 'Dictionnaire français.', tag: 'Knowledge' },
+{ id: 'nobel', name: 'Nobel API', icon: '🏅', url: 'https://api.nobelprize.org/v1/prize.json', desc: 'Prix Nobel.', tag: 'Knowledge' },
+{ id: 'quotes_ai', name: 'QuoteAI', icon: '💬', url: 'https://zenquotes.io/api/random', desc: 'Citations inspirantes.', tag: 'Knowledge' },
+
+{ id: 'universalis', name: 'Encyclo+', icon: '📚', url: 'https://api.wikimedia.org/feed/v1/wikipedia/fr/onthisday/all', desc: 'Aujourd’hui dans l’histoire.', tag: 'Knowledge' },
+{ id: 'space_weather', name: 'SpaceWeather', icon: '☄️', url: 'https://services.swpc.noaa.gov/products/summary.json', desc: 'Météo spatiale.', tag: 'Knowledge' },
+{ id: 'chemistry', name: 'Chemistry', icon: '⚛️', url: 'https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/random/JSON', desc: 'Molécules chimiques.', tag: 'Knowledge' },
+{ id: 'cocktail_img', name: 'DrinkPics', icon: '📸', url: 'https://www.thecocktaildb.com/images/media/drink/', desc: 'Images cocktails.', tag: 'Image' },
+{ id: 'color_api', name: 'ColorMind', icon: '🎨', url: 'https://www.thecolorapi.com/random', desc: 'Couleurs & palettes.', tag: 'Tool' },
+{ id: 'history', name: 'HistoryAPI', icon: '📜', url: 'https://history.muffinlabs.com/date', desc: 'Événements historiques.', tag: 'Knowledge' },
+{ id: 'recipe_search', name: 'RecipeFinder', icon: '🍽️', url: 'https://www.themealdb.com/api/json/v1/1/search.php?s=', desc: 'Recherche recettes.', tag: 'Tool' },
+{ id: 'science_news', name: 'ScienceFeed', icon: '🔬', url: 'https://api.spaceflightnewsapi.net/v4/articles', desc: 'Actu science.', tag: 'Knowledge' },
+{ id: 'city_pop', name: 'CityPop', icon: '🏙️', url: 'https://countriesnow.space/api/v0.1/countries/population/cities', desc: 'Population villes.', tag: 'Knowledge' },
+{ id: 'books_random', name: 'BookRandom', icon: '📖', url: 'https://gutendex.com/books/?random=true', desc: 'Livre aléatoire.', tag: 'Knowledge' },
+
+{ id: 'music_genre', name: 'MusicGenres', icon: '🎶', url: 'https://musicbrainz.org/ws/2/genre', desc: 'Genres musicaux.', tag: 'Music' },
+{ id: 'sports', name: 'SportData', icon: '🏆', url: 'https://www.thesportsdb.com/api/v1/json/3/all_sports.php', desc: 'Sports mondiaux.', tag: 'Knowledge' },
+{ id: 'mythology', name: 'Mytho', icon: '🏺', url: 'https://mythology-api.vercel.app/api/mythology', desc: 'Mythologies.', tag: 'Knowledge' },
+{ id: 'timezones', name: 'TimeZones', icon: '🌐', url: 'https://worldtimeapi.org/api/timezone', desc: 'Fuseaux horaires.', tag: 'Tool' },
+{ id: 'logic_puzzle', name: 'LogicGame', icon: '🧩', url: 'https://opentdb.com/api.php?category=18', desc: 'Défis logiques.', tag: 'Tool' },
+{ id: 'constellations', name: 'Stars', icon: '⭐', url: 'https://api.le-systeme-solaire.net/rest/constellations', desc: 'Constellations.', tag: 'Knowledge' },
+{ id: 'eco_tips', name: 'GreenTips', icon: '♻️', url: 'https://api.ecotips.io/random', desc: 'Écologie.', tag: 'Knowledge' },
+{ id: 'psychology', name: 'PsyFacts', icon: '🧠', url: 'https://psychology-api.vercel.app/api/facts', desc: 'Psychologie.', tag: 'Knowledge' },
+    { id: 'wikinews', name: 'WikiNews', icon: '📰', url: 'https://en.wikinews.org/w/api.php?action=query&list=recentchanges&format=json', desc: 'Actualités Wikimedia.', tag: 'Knowledge' },
+    { id: 'stackex', name: 'StackData', icon: '💡', url: 'https://api.stackexchange.com/2.3/questions?order=desc&sort=activity&site=stackoverflow', desc: 'Questions StackOverflow.', tag: 'Knowledge' },
+    { id: 'hn_item', name: 'HN Item', icon: '🧵', url: 'https://hacker-news.firebaseio.com/v0/item/8863.json', desc: 'Post Hacker News.', tag: 'Knowledge' },
+    { id: 'arxiv', name: 'ArXiv', icon: '📄', url: 'http://export.arxiv.org/api/query?search_query=all:ai', desc: 'Papiers scientifiques.', tag: 'Knowledge' },
+    { id: 'openalex', name: 'OpenAlex', icon: '🔬', url: 'https://api.openalex.org/works?search=artificial%20intelligence', desc: 'Publications académiques.', tag: 'Knowledge' },
+    { id: 'earthquakes', name: 'Earthquakes', icon: '🌋', url: 'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_day.geojson', desc: 'Séismes mondiaux.', tag: 'Knowledge' },
+    { id: 'volcano', name: 'Volcanoes', icon: '🌋', url: 'https://volcano.si.edu/database/webservices.cfm?method=getVolcanoes', desc: 'Volcans actifs.', tag: 'Knowledge' },
+    { id: 'ocean_temp', name: 'OceanTemp', icon: '🌊', url: 'https://marine-api.open-meteo.com/v1/marine', desc: 'Température océans.', tag: 'Tool' },
+    { id: 'countries_iso', name: 'CountryISO', icon: '🏳️', url: 'https://restcountries.com/v2/all', desc: 'Codes ISO pays.', tag: 'Knowledge' },
+    { id: 'time_api_all', name: 'WorldTime+', icon: '🕒', url: 'https://worldtimeapi.org/api/timezone', desc: 'Tous les fuseaux.', tag: 'Tool' },
+    { id: 'periodic', name: 'PeriodicTable', icon: '⚛️', url: 'https://periodic-table-elements-info.herokuapp.com/elements', desc: 'Table périodique.', tag: 'Knowledge' },
+    { id: 'nasa_apod_img', name: 'SpacePic', icon: '🌌', url: 'https://api.nasa.gov/planetary/apod?api_key=DEMO_KEY', desc: 'Image du jour NASA.', tag: 'Image' },
+    { id: 'species', name: 'SpeciesDB', icon: '🦠', url: 'https://api.gbif.org/v1/species/search?q=canis', desc: 'Espèces biologiques.', tag: 'Knowledge' },
+    { id: 'chem_elements', name: 'ChemFacts', icon: '🧪', url: 'https://neelpatel05.pythonanywhere.com', desc: 'Faits chimiques.', tag: 'Knowledge' },
+    { id: 'password', name: 'PassGen', icon: '🔐', url: 'https://api.api-ninjas.com/v1/passwordgenerator', desc: 'Générateur mot de passe.', tag: 'Tool' },
+    { id: 'name_gen', name: 'NameForge', icon: '🧑', url: 'https://namey.muffinlabs.com/name.json', desc: 'Générateur de noms.', tag: 'Tool' },
+    { id: 'username', name: 'UserName', icon: '👤', url: 'https://random-data-api.com/api/users/random_user', desc: 'Pseudos aléatoires.', tag: 'Tool' },
+    { id: 'fortune', name: 'Fortune', icon: '🥠', url: 'https://helloacm.com/api/fortune/', desc: 'Fortunes cookies.', tag: 'Fun' },
+    { id: 'truth', name: 'TruthOrDare', icon: '😈', url: 'https://api.truthordarebot.xyz/api/truth', desc: 'Jeu vérité.', tag: 'Fun' },
+    { id: 'placeimg', name: 'PlaceIMG', icon: '🖼️', url: 'https://placeimg.com/640/480/any', desc: 'Images par thème.', tag: 'Image' },
+    { id: 'loremflickr', name: 'FlickrRnd', icon: '📸', url: 'https://loremflickr.com/640/480', desc: 'Images Flickr.', tag: 'Image' },
+    { id: 'dicebear', name: 'AvatarSVG', icon: '🙂', url: 'https://api.dicebear.com/7.x/bottts/svg', desc: 'Avatars SVG.', tag: 'Image' },
+    { id: 'dummyimg', name: 'DummyIMG', icon: '🧱', url: 'https://dummyimage.com/600x400', desc: 'Images factices.', tag: 'Image' },
+    { id: 'exchange_hist', name: 'ForexHistory', icon: '📈', url: 'https://api.exchangerate.host/timeseries', desc: 'Historique devises.', tag: 'Tool' },
+    { id: 'population_city', name: 'CityStats', icon: '🏙️', url: 'https://countriesnow.space/api/v0.1/countries/capital', desc: 'Capitales pays.', tag: 'Knowledge' },
+    { id: 'holidays_us', name: 'US Holidays', icon: '🇺🇸', url: 'https://date.nager.at/api/v3/PublicHolidays/2024/US', desc: 'Fêtes US.', tag: 'Tool' },
+    { id: 'ml_papers', name: 'ML Papers', icon: '🤖', url: 'https://paperswithcode.com/api/v1/papers/', desc: 'IA & code.', tag: 'Knowledge' },
+    { id: 'ai_terms', name: 'AITerms', icon: '📘', url: 'https://api.allorigins.win/raw?url=https://ml-cheatsheet.readthedocs.io/en/latest/glossary.html', desc: 'Lexique IA.', tag: 'Knowledge' },
+    { id: 'random_word_fr', name: 'MotFR', icon: '🇫🇷', url: 'https://trouve-mot.fr/api/random', desc: 'Mot français.', tag: 'Knowledge' },
+    { id: 'emoji', name: 'EmojiGen', icon: '😀', url: 'https://emoji-api.com/emojis?access_key=demo', desc: 'Liste emojis.', tag: 'Fun' },
+    { id: 'insult', name: 'Shakespeare', icon: '🎭', url: 'https://evilinsult.com/generate_insult.php?lang=en&type=json', desc: 'Insultes Shakespeare.', tag: 'Fun' },
+    { id: 'httpbin', name: 'HTTPBin', icon: '🧪', url: 'https://httpbin.org/get', desc: 'Test HTTP.', tag: 'Tool' },
+    { id: 'json_test', name: 'JSON Test', icon: '📦', url: 'https://jsonplaceholder.typicode.com/posts/1', desc: 'Fake API JSON.', tag: 'Tool' },
+    { id: 'lyrics', name: 'Lyrics', icon: '🎤', url: 'https://api.lyrics.ovh/v1/Coldplay/Yellow', desc: 'Paroles chansons.', tag: 'Music' },
+    { id: 'plantnet_info', name: 'PlantInfo', icon: '🌿', url: 'https://my-api.plantnet.org/v2/projects', desc: 'Infos botaniques.', tag: 'Nature' },
+{ id: 'bitcoin_fees', name: 'BTC Fees', icon: '₿', url: 'https://mempool.space/api/v1/fees/recommended', desc: 'Frais Bitcoin en temps réel.', tag: 'Finance' },
+{ id: 'earthquakes', name: 'QuakeWatch', icon: '🌋', url: 'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_day.geojson', desc: 'Séismes mondiaux récents.', tag: 'Knowledge' },
+{ id: 'rail_fr', name: 'Rail France', icon: '🚆', url: 'https://ressources.data.sncf.com/api/records/1.0/search/?dataset=referentiel-gares-voyageurs', desc: 'Gares SNCF officielles.', tag: 'Tool' },
+{ id: 'paris_open', name: 'Paris OpenData', icon: '🗼', url: 'https://opendata.paris.fr/api/records/1.0/search/', desc: 'Open Data Ville de Paris.', tag: 'Knowledge' },
+{ id: 'public_holidays_fr', name: 'JoursFeries FR', icon: '🇫🇷', url: 'https://jours-feries-france.antoine-augusti.fr/api/2025', desc: 'Jours fériés France.', tag: 'Tool' },
+{ id: 'random_color', name: 'ColorHex', icon: '🟣', url: 'https://x-colors.yurace.pro/api/random', desc: 'Couleur aléatoire HEX/RGB.', tag: 'Tool' },
+{ id: 'lyrics', name: 'LyricsSearch', icon: '🎤', url: 'https://api.lyrics.ovh/v1/Coldplay/Yellow', desc: 'Paroles de chansons.', tag: 'Music' },
+{ id: 'ip_range', name: 'IP Tools', icon: '🧮', url: 'https://ipinfo.io/json', desc: 'Infos IP étendues.', tag: 'Tool' },
+{ id: 'public_dns', name: 'DNS Lookup', icon: '🌐', url: 'https://dns.google/resolve?name=google.com&type=A', desc: 'Résolution DNS publique.', tag: 'Tool' },
+{ id: 'word_freq', name: 'WordFrequency', icon: '📊', url: 'https://api.wordfreq.io/wordfreq/en/hello', desc: 'Fréquence des mots.', tag: 'Knowledge' },
+{ id: 'random_math', name: 'MathGen', icon: '➗', url: 'https://newton.now.sh/api/v2/random', desc: 'Calculs mathématiques.', tag: 'Tool' },
+{ id: 'ascii_art', name: 'AsciiArt', icon: '🅰️', url: 'https://artii.herokuapp.com/make?text=HELLO', desc: 'Générateur ASCII Art.', tag: 'Fun' },
+{ id: 'http_dog', name: 'HttpDog', icon: '🐶', url: 'https://http.dog/404.jpg', desc: 'Codes HTTP version chien.', tag: 'Image' },
+{ id: 'emoji_search', name: 'EmojiDB', icon: '😀', url: 'https://emoji-api.com/emojis?search=smile', desc: 'Recherche emojis.', tag: 'Tool' },
+{ id: 'random_password', name: 'PassGen', icon: '🔐', url: 'https://passwordinator.herokuapp.com/generate', desc: 'Générateur de mots de passe.', tag: 'Tool' },
+{ id: 'weather_fr_alert', name: 'VigiMétéo', icon: '⚠️', url: 'https://public.opendatasoft.com/api/records/1.0/search/?dataset=vigilance-meteo-france', desc: 'Vigilance météo France.', tag: 'Tool' },
+{ id: 'cocktail_ingredient', name: 'CocktailByIngredient', icon: '🥃', url: 'https://www.thecocktaildb.com/api/json/v1/1/filter.php?i=Gin', desc: 'Cocktails par ingrédient.', tag: 'Tool' },
+{ id: 'country_flags', name: 'FlagAPI', icon: '🚩', url: 'https://flagcdn.com/en/codes.json', desc: 'Codes & drapeaux pays.', tag: 'Knowledge' },
+{ id: 'random_fact_alt', name: 'DidYouKnow+', icon: '🤯', url: 'https://nekos.life/api/v2/fact', desc: 'Faits insolites alternatifs.', tag: 'Fun' },
+{ id: 'open_transport', name: 'TransitData', icon: '🚌', url: 'https://transport.data.gouv.fr/api/datasets', desc: 'Transports open data FR.', tag: 'Knowledge' },
+{ id: 'kanye_quote', name: 'Yezus', icon: '🎤', url: 'https://api.kanye.rest/', desc: 'Citations de Kanye West.', tag: 'Fun' },
+{ id: 'tech_buzz', name: 'CorpBS', icon: '💼', url: 'https://corporatebs-generator.sameerkumar.website/', desc: 'Jargon d\'entreprise génératif.', tag: 'Fun' },
+{ id: 'coffee_pic', name: 'CoffeeTime', icon: '☕', url: 'https://coffee.alexflipnote.dev/random.json', desc: 'Photos de café.', tag: 'Image' },
+{ id: 'random_duck', name: 'DuckPic', icon: '🦆', url: 'https://random-d.uk/api/v2/random', desc: 'Canards aléatoires.', tag: 'Image' },
+{ id: 'ron_swanson', name: 'RonQuotes', icon: '🥩', url: 'https://ron-swanson-quotes.herokuapp.com/v2/quotes', desc: 'Sagesse de Parks & Rec.', tag: 'Fun' },
+{ id: 'geek_jokes', name: 'GeekJoke', icon: '🤓', url: 'https://geek-jokes.sameerkumar.website/api?format=json', desc: 'Blagues de développeurs.', tag: 'Fun' },
+{ id: 'meow_facts', name: 'MeowFacts', icon: '😺', url: 'https://meowfacts.herokuapp.com/', desc: 'Encore plus de chats.', tag: 'Knowledge' },
+{ id: 'dog_ceo_breeds', name: 'DogBreeds', icon: '🐩', url: 'https://dog.ceo/api/breeds/list/all', desc: 'Liste des races canines.', tag: 'Knowledge' },
+{ id: 'studio_ghibli_ppl', name: 'GhibliPpl', icon: '👺', url: 'https://ghibliapi.vercel.app/people', desc: 'Personnages Ghibli.', tag: 'Knowledge' }
+        ];
+
+        // --- STATE & DB ---
+        let db; let currentChatId = null; let chatMessages = [];
+        let currentAppId = null; 
+        let futureMindStep = 0;
+        let currentFilter = 'all';
+        let attachedFileContent = ""; 
+        let userMemory = JSON.parse(localStorage.getItem('user_profile')) || [];
+        
+        // Load settings from LocalStorage (Règle 9)
+        const savedModel = localStorage.getItem('wikimind_model_pref');
+        if(savedModel) document.getElementById('model-select').value = savedModel;
+
+        const placeholders = [
+  "Explique-moi l’intelligence artificielle simplement.",
+  "Donne-moi une anecdote scientifique étonnante.",
+  "Quelles technologies vont exploser cette année ?",
+  "Écris un texte inspirant sur le futur du numérique.",
+  "Comment créer un site web moderne étape par étape ?",
+  "Explique le fonctionnement du cerveau humain.",
+  "Quelle est la différence entre IA faible et IA forte ?",
+  "Comment apprendre à programmer efficacement ?",
+  "Donne-moi une idée de projet web original.",
+  "Explique la blockchain comme si j’avais 10 ans.",
+  "Quels sont les meilleurs langages à apprendre aujourd’hui ?",
+  "Comment fonctionne un réseau neuronal ?",
+  "Raconte une histoire courte de science-fiction.",
+  "Explique pourquoi le ciel est bleu.",
+  "Comment protéger ses données personnelles en ligne ?",
+  "Quels métiers vont disparaître avec l’IA ?",
+  "Donne-moi une astuce pour être plus productif.",
+  "Comment fonctionne un moteur de recherche ?",
+  "Explique la relativité simplement.",
+  "Donne-moi une idée d’application innovante.",
+  "Comment fonctionne un chatbot ?",
+  "Explique le machine learning sans jargon.",
+  "Qu’est-ce qu’un algorithme exactement ?",
+  "Comment gagner du temps avec l’automatisation ?",
+  "Explique la différence entre frontend et backend.",
+  "Donne-moi une idée de startup tech.",
+  "Comment l’IA peut aider à apprendre plus vite ?"
+]
+
+        let pIndex = 0; let charIndex = 0; let isDeleting = false; let typingActive = true;
+
+        const renderer = new marked.Renderer();
+        renderer.code = function(code, language) {
+            if (language === 'mermaid') {
+                return `<div class="mermaid">${code}</div>`;
+            }
+            // Détection Chart.js
+            if (language === 'json' && code.includes('"isChart": true')) {
+                 const id = 'chart-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
+                 setTimeout(() => renderChart(id, code), 200);
+                 return `<div class="chart-container" style="position: relative; height:300px; width:100%"><canvas id="${id}"></canvas></div>`;
+            }
+
+            return `<div class="code-wrapper">
+                <button class="copy-code-btn" onclick="copyCode(this)">Copier</button>
+                <pre><code class="language-${language}">${code}</code></pre>
+            </div>`;
+        };
+        marked.use({ renderer });
+
+        window.addEventListener('DOMContentLoaded', () => {
+            initOnboarding();
+            animatePlaceholder();
+            renderLibrary();
+            initSuggestionTicker();
+            initDragAndDrop();
+        });
+
+        // --- ONBOARDING LOGIC ---
+        function initOnboarding() {
+            const id = localStorage.getItem('wikimind_user_identity');
+            if(!id) {
+                document.getElementById('onboarding-modal').style.display = 'flex';
+            } else {
+                updateWelcomeMessage();
+            }
+        }
+
+        function saveIdentity() {
+            const f = document.getElementById('user-firstname').value.trim();
+            const l = document.getElementById('user-lastname').value.trim();
+            if(f && l) {
+                localStorage.setItem('wikimind_user_identity', JSON.stringify({first: f, last: l}));
+                document.getElementById('onboarding-modal').style.display = 'none';
+                updateWelcomeMessage();
+            }
+        }
+
+        function updateWelcomeMessage() {
+            const id = JSON.parse(localStorage.getItem('wikimind_user_identity'));
+            if(id) {
+                const welcome = document.querySelector('#welcome-text p');
+                welcome.innerHTML = `Bienvenue <span class="font-bold text-black dark:text-white">${id.first}</span>, comment puis-je vous aider <span class="font-bold">?</span>`;
+            }
+        }
+
+        // --- LIBRARY SYSTEM ---
+        function getFavorites() {
+            return JSON.parse(localStorage.getItem('wikimind_favs') || '[]');
+        }
+
+        function togglePin(appId) {
+            let favs = getFavorites();
+            if(favs.includes(appId)) favs = favs.filter(id => id !== appId);
+            else favs.push(appId);
+            localStorage.setItem('wikimind_favs', JSON.stringify(favs));
+            renderLibrary();
+        }
+
+        function createCard(app, type) {
+            const favs = getFavorites();
+            const isPinned = favs.includes(app.id);
+            const pinnedClass = isPinned ? 'pinned' : '';
+            const ratingHtml = app.rating ? `<div class="rating-badge">Note: ${app.rating}/10</div>` : '';
+            
+            let modesHtml = '';
+            if (app.modes && app.modes.length > 0) {
+                modesHtml = `<div class="modes-display">
+                    ${app.modes.map(m => `<span class="mode-badge">${m}</span>`).join('')}
+                </div>`;
+            }
+
+            const card = document.createElement('div');
+            card.className = `app-card ${pinnedClass}`;
+            card.dataset.name = app.name.toLowerCase();
+            card.dataset.tag = app.tag || 'Tool';
+            card.dataset.desc = app.desc.toLowerCase();
+            card.dataset.id = app.id;
+            
+            const menuHtml = `
+                <div class="card-menu-btn" onclick="event.stopPropagation(); toggleCardMenu(this)">•••</div>
+                <div class="card-dropdown">
+                    <div class="card-option" onclick="event.stopPropagation(); togglePin('${app.id}')">
+                        ${isPinned ? '❌ Détacher' : '📌 Épingler'}
+                    </div>
+                </div>
+            `;
+
+            card.onclick = () => launchApp(app.id, type === 'public');
+            card.innerHTML = `
+                <div class="pinned-icon">📌</div>
+                ${menuHtml}
+                <div class="app-tag">${app.tag || 'APP'}</div>
+                <div class="app-icon text-3xl">${app.icon}</div>
+                <h4 class="font-bold text-lg mb-1">${app.name}</h4>
+                <p class="text-xs text-gray-500 leading-relaxed mb-2">${app.desc}</p>
+                ${ratingHtml}
+                ${modesHtml}
+            `;
+            return card;
+        }
+
+        function toggleCardMenu(btn) {
+            document.querySelectorAll('.card-dropdown').forEach(d => d.classList.remove('show'));
+            const drop = btn.nextElementSibling;
+            drop.classList.toggle('show');
+        }
+
+        document.addEventListener('click', () => {
+             document.querySelectorAll('.card-dropdown').forEach(d => d.classList.remove('show'));
+        });
+
+        function renderLibrary() {
+            const officialContainer = document.getElementById('official-apps');
+            const aiContainer = document.getElementById('ai-models-grid');
+            const publicContainer = document.getElementById('public-apps');
+            
+            officialContainer.innerHTML = '';
+            aiContainer.innerHTML = '';
+            publicContainer.innerHTML = '';
+
+            const favs = getFavorites();
+            const sortFn = (a, b) => {
+                const aPin = favs.includes(a.id) ? 1 : 0;
+                const bPin = favs.includes(b.id) ? 1 : 0;
+                return bPin - aPin;
+            };
+
+            [...OFFICIAL_APPS].sort(sortFn).forEach(app => officialContainer.appendChild(createCard(app, 'official')));
+            [...AI_MODELS].sort(sortFn).forEach(app => aiContainer.appendChild(createCard(app, 'ai')));
+            [...PUBLIC_APPS].sort(sortFn).forEach(app => publicContainer.appendChild(createCard(app, 'public')));
+            
+            filterLibrary();
+        }
+
+        function setFilter(filter, btn) {
+            currentFilter = filter;
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            filterLibrary();
+            updateSuggestions();
+        }
+
+        function filterLibrary() {
+            const term = document.getElementById('lib-search').value.toLowerCase();
+            const cards = document.querySelectorAll('.app-card');
+            
+            cards.forEach(card => {
+                const id = card.dataset.id;
+                if (id === 'missing_suggest') {
+                    card.style.display = 'block';
+                    return; 
+                }
+                const name = card.dataset.name;
+                const desc = card.dataset.desc;
+                const tag = card.dataset.tag;
+                
+                const matchesTerm = name.includes(term) || desc.includes(term);
+                const matchesFilter = currentFilter === 'all' || 
+                                      (currentFilter === 'AI' && tag === 'AI') || 
+                                      (tag.includes(currentFilter));
+                
+                if(matchesTerm && matchesFilter) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+
+        function initSuggestionTicker() {
+            updateSuggestions();
+            setInterval(updateSuggestions, 5000);
+        }
+
+        function updateSuggestions() {
+            const container = document.getElementById('suggestions-container');
+            if(!container) return;
+
+            const allApps = [...OFFICIAL_APPS, ...AI_MODELS, ...PUBLIC_APPS]
+                .filter(a => a.id !== 'missing_suggest' && a.id !== 'random_mind');
+            
+            let candidates = allApps;
+            if (currentFilter !== 'all') {
+                candidates = allApps.filter(a => (a.tag || '').includes(currentFilter) || (currentFilter === 'AI' && a.tag === 'AI'));
+                if(candidates.length < 4) candidates = allApps;
+            }
+
+            const shuffled = candidates.sort(() => 0.5 - Math.random());
+            const selected = shuffled.slice(0, 4);
+
+            container.innerHTML = selected.map(app => 
+                `<div class="suggest-item" onclick="launchApp('${app.id}')">
+                    <span>${app.icon}</span> ${app.name}
+                </div>`
+            ).join('');
+        }
+
+        function openLibrary() {
+            document.getElementById('welcome-text').classList.add('hidden-state');
+            document.getElementById('chat-container').style.display = 'none';
+            document.getElementById('library-view').style.display = 'block';
+            document.getElementById('input-wrapper').classList.add('hidden');
+            document.getElementById('app-header').classList.add('hidden');
+        }
+
+        function launchApp(appId, isGeneric = false) {
+            if(appId === 'missing_suggest') {
+                window.open('https://docs.google.com/forms/d/e/1FAIpQLSfYcYzag2zeNLXmOW8Ek9X1W6zq2CA0iE9BOwlcExTvNOJPvw/viewform?usp=header', '_blank');
+                return;
+            }
+
+            if(appId === 'random_mind') {
+                const candidates = [...OFFICIAL_APPS, ...AI_MODELS, ...PUBLIC_APPS]
+                    .filter(a => a.id !== 'missing_suggest' && a.id !== 'random_mind');
+                const randomApp = candidates[Math.floor(Math.random() * candidates.length)];
+                launchApp(randomApp.id);
+                return;
+            }
+
+            const transitionText = document.getElementById('transition-text');
+            
+            let appObj = OFFICIAL_APPS.find(a=>a.id===appId) || AI_MODELS.find(a=>a.id===appId) || PUBLIC_APPS.find(a=>a.id===appId);
+            transitionText.innerText = appObj ? appObj.name : "WikiMind APP";
+
+            document.body.classList.add('animating-in');
+            document.body.classList.add('phase-1');
+
+            setTimeout(() => {
+                document.body.classList.remove('phase-1');
+                document.body.classList.add('phase-2');
+                
+                setTimeout(() => {
+                    currentAppId = appId;
+                    futureMindStep = 0;
+                    
+                    document.getElementById('library-view').style.display = 'none';
+                    document.getElementById('chat-container').style.display = 'block';
+                    document.getElementById('chat-container').innerHTML = ""; 
+                    chatMessages = []; 
+                    currentChatId = Date.now();
+                    
+                    const header = document.getElementById('app-header');
+                    header.innerText = appObj.name;
+                    header.classList.remove('hidden');
+
+                    document.getElementById('input-wrapper').classList.remove('hidden');
+                    document.getElementById('input-wrapper').className = 'docked';
+                    document.getElementById('welcome-text').classList.add('hidden-state');
+                    
+                    if(appId === 'futuremind') {
+                        addMsg("Bonjour ! Je suis FutureMind. Je vais t'aider à trouver ta voie. Pour commencer, quel âge as-tu et en quelle classe es-tu ?", 'model');
+                        chatMessages.push({role: "assistant", content: "Bonjour ! Je suis FutureMind. Quel âge as-tu et en quelle classe es-tu ?"});
+                    } else if(appId === 'soundmind') {
+                        addMsg("Salut ! SoundMind à l'écoute. On parle de quel artiste ou genre aujourd'hui ?", 'model');
+                    } else if(appId === 'multivers') {
+                        addMsg("Bienvenue dans le Multivers. Définis les deux participants (ex: 'Un expert IA vs Un philosophe') et le sujet du débat.", 'model');
+                    } else if (AI_MODELS.find(a=>a.id===appId)) {
+                        const m = AI_MODELS.find(a=>a.id===appId);
+                        addMsg(`**${m.name}** initialisé.\n${m.desc}\nJe suis prêt.`, 'model');
+                    } else {
+                        addMsg(`**${appObj.name}** activé. Comment puis-je vous aider ?`, 'model');
+                    }
+                    
+                    setTimeout(() => {
+                        document.body.classList.remove('animating-in', 'phase-2');
+                    }, 500);
+                }, 800);
+            }, 800);
+        }
+
+        function resetToHome() {
+            currentAppId = null;
+            location.reload(); 
+        }
+
+        // --- CORE CHAT LOGIC ---
+        async function send() {
+            const val = document.getElementById('user-input').value.trim();
+            const model = document.getElementById('model-select').value;
+            if(!val && !attachedFileContent) return; 
+            
+            typingActive = false;
+            if(!currentChatId) currentChatId = Date.now();
+            uiToChatMode();
+            
+            let displayMsg = val;
+            if (attachedFileContent) displayMsg += `\n*[Fichier joint analysé]*`;
+            
+            addMsg(displayMsg, 'user');
+            chatMessages.push({ role: "user", content: displayMsg });
+            
+            document.getElementById('user-input').value = "";
+            document.getElementById('user-input').placeholder = "Demandez n'importe quoi...";
+            document.getElementById('file-feedback').classList.add('hidden'); 
+            
+            document.getElementById('file-preview-area').style.display = 'none';
+            document.getElementById('file-preview-area').innerHTML = '';
+            
+            const loading = addMsg("", 'model', true); 
+
+            if (currentAppId) {
+                try {
+                    await handleAppLogic(currentAppId, val, loading);
+                } catch (e) {
+                    loading.innerText = "Erreur de l'application.";
+                    console.error(e);
+                }
+                saveCurrentChat();
+                attachedFileContent = "";
+                return;
+            }
+
+            // Routeur Modes Spéciaux (Règles 4 & 6)
+            if (model === "ADVANCED") { // Équivalent AgentMind/AutoGPT
+                await handleAutoGPT(val, loading);
+                attachedFileContent = "";
+                return;
+            }
+
+            if (model === "PRO") { // Règle 6
+                await handleProMode(val, loading);
+                attachedFileContent = "";
+                return;
+            }
+
+            if(model === "IMAGE") { 
+                await handleImageGeneration(val, loading);
+                attachedFileContent = "";
+                return;
+            }
+
+            const urlMatch = val.match(/(https?:\/\/[^\s]+)/g);
+            let scrapedContent = "";
+            if (urlMatch) {
+                try {
+                    loading.innerText = "...Analyse URL...";
+                    const targetUrl = urlMatch[0];
+                    const scrapeRes = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`);
+                    const scrapeData = await scrapeRes.json();
+                    if (scrapeData.contents) {
+                        const textContent = scrapeData.contents.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '').replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '').replace(/<[^>]+>/g, ' ').substring(0, 5000);
+                        scrapedContent = `\n[CONTENU URL ANALYSÉ (${targetUrl})]: ${textContent}\n`;
+                    }
+                } catch(e) { console.log("Scraping error", e); }
+                loading.innerHTML = ""; 
+            }
+
+            let contextBoost = scrapedContent;
+            if (val.toLowerCase().includes('actu') || val.toLowerCase().includes('news')) {
+                const nData = await fetchNews(val);
+                if(nData) contextBoost += `\n[News Context]: ${nData}`;
+            }
+
+            // RÈGLE 5 : IDENTITÉ SILENCIEUSE + Prompt Système mis à jour
+            let systemInstruction = `Tu es WikiMind. (Ne mentionne "Tom Duval" QUE si explicitement demandé ou pour des crédits administratifs). Tu es poli, intelligent et utile. 
+            Utilise Markdown pour les tableaux et listes.
+            IMPORTANT : 
+            1. Utilise $...$ pour les formules mathématiques en ligne (ex: $E=mc^2$) et $$...$$ pour les blocs mathématiques.
+            2. Si tu dois générer un graphique, utilise le bloc de code JSON suivant en remplaçant les données:
+            \`\`\`json
+            { "isChart": true, "type": "bar", "data": { "labels": ["A","B"], "datasets": [{ "label": "Exemple", "data": [10, 20] }] } }
+            \`\`\`
+            3. Si on te demande de générer un PDF/Document, structure bien avec des titres # (H1) et ## (H2) pour que je puisse générer un sommaire automatique.`;
+            
+            // INJECTION IDENTITÉ (FEATURE 2)
+            const identity = JSON.parse(localStorage.getItem('wikimind_user_identity'));
+            if(identity) {
+                systemInstruction += ` Tu t'adresses à ${identity.first} ${identity.last}.`;
+            }
+
+            if (userMemory.length > 0) {
+                systemInstruction += `\n[MÉMOIRE LONG TERME]: Voici ce que tu sais sur l'utilisateur : ${userMemory.join('; ')}. Utilise ces infos pour personnaliser la réponse (ne dis jamais que tu as mémorisé).`;
+            }
+            systemInstruction += `\nSi l'utilisateur partage un fait personnel important, ajoute le à la fin de ta réponse dans un bloc caché ainsi : [[MEMORY: le fait à retenir]].`;
+
+            if (val.match(/(cours|explique|résumé|quiz|révision|étud)/i) || attachedFileContent) {
+                systemInstruction += " MODE ÉTUDIER ACTIVÉ: Tu es un professeur pédagogue. Structure tes réponses, fais des résumés clairs. Utilise des tableaux Markdown.";
+            }
+
+            if (attachedFileContent) {
+                contextBoost += `\n[DOCUMENT UTILISATEUR]: ${attachedFileContent}\nUtilise ce contenu pour répondre.`;
+            }
+
+            let isDocGen = val.match(/(génère|crée|exporte).*(pdf|document|rapport)/i);
+
+            try {
+                const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${KEYS.GROQ}` },
+                    body: JSON.stringify({ 
+                        model: model.includes("llama") ? model : "llama-3.3-70b-versatile", 
+                        messages: [
+                            {role: "system", content: `${systemInstruction} ${contextBoost}`}, 
+                            ...chatMessages
+                        ] 
+                    })
+                });
+                const data = await res.json();
+                let reply = data.choices[0].message.content;
+                
+                const memMatch = reply.match(/\[\[MEMORY: (.*?)\]\]/);
+                if (memMatch) {
+                    const newFact = memMatch[1];
+                    if (!userMemory.includes(newFact)) {
+                        userMemory.push(newFact);
+                        localStorage.setItem('user_profile', JSON.stringify(userMemory));
+                    }
+                    reply = reply.replace(memMatch[0], ''); 
+                }
+
+                loading.remove();
+                const bubble = addMsg(reply, 'model'); // Capture element for PDF
+                chatMessages.push({ role: "assistant", content: reply });
+                
+                if(isDocGen) {
+                   setTimeout(() => generatePDF(bubble), 1000); // Wait for charts/math to render
+                }
+
+                saveCurrentChat();
+            } catch(e) { loading.innerText = "Erreur de connexion."; }
+            
+            attachedFileContent = "";
+        }
+
+        async function handleAppLogic(appId, userText, loadingBubble) {
+            let systemContext = "";
+            let externalData = "";
+
+            if (appId === 'auto_gpt') {
+                await handleAutoGPT(userText, loadingBubble);
+                return;
+            }
+
+            if (appId === 'multivers') {
+                await handleMultiverse(userText, loadingBubble);
+                return;
+            }
+
+            const aiModel = AI_MODELS.find(a => a.id === appId);
+            if (aiModel) {
+                if (aiModel.provider === 'mistral') {
+                    await callMistral(userText, aiModel.id, loadingBubble);
+                    return;
+                } else if (aiModel.provider === 'groq') {
+                    await callGroq(userText, `Tu es ${aiModel.name}. Agis exactement comme ce modèle.`, loadingBubble, aiModel.id);
+                    return;
+                } else {
+                    await callGroq(userText, `SYSTEM: Tu simules maintenant le modèle ${aiModel.name} (${aiModel.desc}). Adopte son style et ses capacités spécifiques.`, loadingBubble, "llama-3.3-70b-versatile");
+                    return;
+                }
+            }
+
+            if (appId === 'futuremind') {
+                systemContext = OFFICIAL_APPS.find(a=>a.id==='futuremind').system;
+                futureMindStep++;
+                let promptSupplement = "";
+                if(futureMindStep === 1) promptSupplement = "Tu numérotes les questions,L'utilisateur vient de donner son âge/classe. Demande maintenant ses matières préférées et celles qu'il déteste.en fait tu lui fais un prompt avec des questions pour lui peu importe mais un parcours addaptatif";
+                else if(futureMindStep === 2) promptSupplement = "Tu numérotes les questions, Demande maintenant ses centres d'intérêt hors école (hobbies, passions).en fait tu lui fais un prompt avec des questions pour lui peu importe mais un parcours addaptatif";
+                else if(futureMindStep === 3) promptSupplement = "Tu numérotes les questions, Demande s'il préfère un travail manuel, intellectuel, en extérieur ou bureau. en fait tu lui fais un prompt avec des questions pour lui peu importe mais un parcours addaptatif";
+                else if(futureMindStep >= 4) {
+                    promptSupplement = "Analyse tout ce qui a été dit. Utilise tes connaissances ESCO (European Skills, Competences, Qualifications and Occupations) pour suggérer 3 métiers précis avec parcours d'études en France.";
+                    externalData = "Rappel: Utilise les données ESCO pour les fiches métiers.";
+                }
+                await callGroq(userText, `${systemContext} ${promptSupplement} ${externalData}`, loadingBubble);
+                return;
+            }
+
+            if (appId === 'explore') {
+                systemContext = OFFICIAL_APPS.find(a=>a.id==='explore').system;
+                try {
+                    const searchRes = await fetch(`https://fr.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(userText)}&format=json&origin=*`);
+                    const searchData = await searchRes.json();
+                    if(searchData.query.search[0]) {
+                        const pageTitle = searchData.query.search[0].title;
+                        const contentRes = await fetch(`https://fr.wikipedia.org/w/api.php?action=query&prop=extracts&exintro&explaintext&titles=${encodeURIComponent(pageTitle)}&format=json&origin=*`);
+                        const contentData = await contentRes.json();
+                        const pages = contentData.query.pages;
+                        const pageId = Object.keys(pages)[0];
+                        externalData = `\n[SOURCE WIKIPEDIA: ${pages[pageId].extract}]`;
+                    }
+                } catch(e) { console.log("Wiki Error", e); }
+                await callGroq(userText, systemContext + externalData, loadingBubble);
+                return;
+            }
+
+            if (appId === 'soundmind') {
+                systemContext = OFFICIAL_APPS.find(a=>a.id==='soundmind').system;
+                try {
+                    const fmRes = await fetch(`https://ws.audioscrobbler.com/2.0/?method=artist.getinfo&artist=${encodeURIComponent(userText)}&api_key=${KEYS.LASTFM}&format=json`);
+                    const fmData = await fmRes.json();
+                    if(fmData.artist) {
+                        externalData = `\n[Info LastFM]: Bio: ${fmData.artist.bio.summary}. Tags: ${fmData.artist.tags.tag.map(t=>t.name).join(', ')}. Similaires: ${fmData.artist.similar.artist.map(a=>a.name).join(', ')}.`;
+                    }
+                } catch(e) {}
+                await callGroq(userText, systemContext + externalData, loadingBubble);
+                return;
+            }
+
+            if (appId === 'studymind') {
+                systemContext = OFFICIAL_APPS.find(a=>a.id==='studymind').system;
+                try {
+                    const olRes = await fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(userText)}&limit=3`);
+                    const olData = await olRes.json();
+                    if(olData.docs && olData.docs.length > 0) {
+                        externalData += "\n[Livres trouvés]: " + olData.docs.map(d => `${d.title} par ${d.author_name?.[0]}`).join("; ");
+                    }
+                } catch(e) {}
+                if(userText.toLowerCase().includes("quiz") || userText.toLowerCase().includes("question")) {
+                     try {
+                        const qRes = await fetch("https://opentdb.com/api.php?amount=1&type=multiple");
+                        const qData = await qRes.json();
+                        if(qData.results) {
+                            externalData += `\n[Trivia Data]: Pose cette question à l'utilisateur: ${qData.results[0].question}. Réponse correcte (ne pas dire tout de suite): ${qData.results[0].correct_answer}.`;
+                        }
+                     } catch(e){}
+                }
+                await callGroq(userText, systemContext + externalData, loadingBubble);
+                return;
+            }
+
+            const publicApp = PUBLIC_APPS.find(a=>a.id === appId);
+            if(publicApp) {
+                if(appId === 'qr') {
+                    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(userText)}`;
+                    loadingBubble.remove();
+                    addMsg(`Voici votre QR Code : \n\n![QR](${qrUrl})`, 'model');
+                    chatMessages.push({ role: "assistant", content: `![QR](${qrUrl})` });
+                    return;
+                }
+                let apiResult = "";
+                try {
+                    if(!publicApp.url.includes('<') && !publicApp.url.includes('search') && publicApp.url !== 'api') {
+                         const res = await fetch(publicApp.url);
+                         const json = await res.json();
+                         // Règle 8 : Stringify proprement le code/JSON
+                         apiResult = JSON.stringify(json, null, 2).substring(0, 1500); 
+                    }
+                } catch(e) { apiResult = "Impossible de contacter l'API directement."; }
+
+                systemContext = `Tu es l'outil ${publicApp.name}. Ton but est : ${publicApp.desc}. Voici les données brutes de ton API si disponible : ${apiResult}. Traite la demande utilisateur.`;
+                await callGroq(userText, systemContext, loadingBubble);
+                return;
+            }
+        }
+
+        // --- RÈGLE 6 : MODE PRO (MULTI-IA & RAISONNEMENT COLLAPSIBLE) ---
+        async function handleProMode(text, loadingBubble) {
+            loadingBubble.innerText = "Analyse approfondie (Mode Pro)...";
+            
+            // Étape 1 : Génération du Raisonnement (Groq 70B)
+            let reasoning = "";
+            try {
+                const thoughtRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${KEYS.GROQ}` },
+                    body: JSON.stringify({ 
+                        model: "llama-3.3-70b-versatile",
+                        messages: [
+                            {role: "system", content: "Tu es le moteur de raisonnement. Analyse la demande, décompose le problème étape par étape. Sois technique et précis. N'affiche pas la réponse finale, juste le processus de pensée."},
+                            {role: "user", content: text}
+                        ]
+                    })
+                });
+                const thoughtData = await thoughtRes.json();
+                reasoning = thoughtData.choices[0].message.content;
+            } catch(e) { reasoning = "Erreur de génération du raisonnement."; }
+
+            // Étape 2 : Réponse Finale (Mistral ou autre) - Simulation Multi-IA
+            loadingBubble.innerText = "Synthèse de la réponse finale...";
+            let finalAnswer = "";
+            try {
+                // On utilise Mistral Large pour la réponse finale basée sur le raisonnement
+                const finalRes = await fetch("https://api.mistral.ai/v1/chat/completions", {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${KEYS.MISTRAL}` },
+                    body: JSON.stringify({ 
+                        model: "mistral-large-latest",
+                        messages: [
+                            {role: "system", content: "Tu es WikiMind Pro. Utilise le raisonnement fourni pour donner une réponse parfaite, claire et structurée. (Identité: WikiMind)."},
+                            {role: "user", content: `Demande: ${text}\n\nRaisonnement technique: ${reasoning}\n\nDonne la réponse finale optimale.`}
+                        ]
+                    })
+                });
+                const finalData = await finalRes.json();
+                finalAnswer = finalData.choices[0].message.content;
+            } catch(e) {
+                // Fallback Groq
+                finalAnswer = "Erreur Mistral, bascule sur Groq..."; 
+                await callGroq(text, "Réponds de manière experte.", loadingBubble);
+                return;
+            }
+
+            loadingBubble.remove();
+
+            // Construction UI
+            const wrapper = document.createElement('div');
+            
+            // Bloc Raisonnement (Details)
+            const details = document.createElement('details');
+            details.className = "pro-reasoning";
+            details.innerHTML = `<summary>🧠 Raisonnement (Déplier)</summary><div class="pro-content">${marked.parse(reasoning)}</div>`;
+            
+            // Bloc Réponse
+            const responseDiv = document.createElement('div');
+            responseDiv.innerHTML = marked.parse(finalAnswer);
+
+            // Container standard addMsg pour style
+            const bubble = addMsg("", 'model');
+            bubble.innerHTML = ""; // Vider pour insertion custom
+            bubble.appendChild(details);
+            bubble.appendChild(responseDiv);
+            
+            // Ajout actions (copy, error, etc) manuellement car addMsg est bypassé
+            const actions = document.createElement('div');
+            actions.className = 'msg-actions';
+            actions.innerHTML = `
+                <div class="action-btn" onclick="copy(this, '')"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"></path></svg></div>
+                <a href="https://docs.google.com/forms/d/e/1FAIpQLSf-4ZhMFqQdBt84xoFQP3IpbzYIxo4t5ELCXXj4pDAxACkLcQ/viewform?usp=header" target="_blank" class="report-btn" title="Signaler une erreur"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg></a>
+            `;
+            bubble.parentNode.appendChild(actions);
+
+            chatMessages.push({ role: "assistant", content: finalAnswer });
+        }
+
+        async function handleAutoGPT(goal, loadingBubble) {
+            loadingBubble.innerText = "Planification en cours (Groq)...";
+            const planPrompt = `Tu es AgentMind. Ton but est de planifier la demande : "${goal}". 
+            Réponds UNIQUEMENT avec un JSON valide sous la forme : {"steps": ["étape 1", "étape 2", "étape 3"]}. Maximum 5 étapes.`;
+            
+            let steps = [];
+            try {
+                const planRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${KEYS.GROQ}` },
+                    body: JSON.stringify({ model: "llama-3.3-70b-versatile", messages: [{role: "system", content: "JSON only"}, {role: "user", content: planPrompt}], response_format: {type: "json_object"} })
+                });
+                const planData = await planRes.json();
+                steps = JSON.parse(planData.choices[0].message.content).steps;
+            } catch(e) {
+                loadingBubble.innerText = "Erreur Planification.";
+                return;
+            }
+
+            loadingBubble.remove();
+            addMsg(`📋 **Plan généré :**\n${steps.map((s,i) => `${i+1}. ${s}`).join('\n')}`, 'model');
+            
+            let context = `Objectif global: ${goal}.\n`;
+            for (let i = 0; i < steps.length; i++) {
+                const step = steps[i];
+                const stepLoader = addMsg(`⚙️ Exécution étape ${i+1}/${steps.length}...`, 'model', true);
+                
+                try {
+                    const stepRes = await fetch("https://api.mistral.ai/v1/chat/completions", {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${KEYS.MISTRAL}` },
+                        body: JSON.stringify({ 
+                            model: "mistral-large-latest",
+                            messages: [
+                                {role: "system", content: "Tu es un agent exécutant. Sois concis et précis."},
+                                {role: "user", content: `Contexte: ${context}\n\nTÂCHE ACTUELLE: ${step}. Exécute cette tâche maintenant.`}
+                            ]
+                        })
+                    });
+                    const stepData = await stepRes.json();
+                    const result = stepData.choices[0].message.content;
+                    
+                    stepLoader.remove();
+                    addMsg(`**${i+1}. ${step}**\n\n${result}`, 'model');
+                    context += `\n[Résultat Étape ${i+1}]: ${result}`;
+                } catch(e) {
+                    stepLoader.innerText = "Erreur exécution étape.";
+                }
+            }
+            addMsg("✅ **Mission terminée.**", 'model');
+        }
+
+        async function handleMultiverse(setup, loadingBubble) {
+            loadingBubble.innerText = "Initialisation du Multivers...";
+            
+            const setupRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${KEYS.GROQ}` },
+                body: JSON.stringify({ 
+                    model: "llama-3.3-70b-versatile", 
+                    messages: [{role: "system", content: "JSON output: {p1: 'Nom1', p2: 'Nom2', topic: 'Sujet'}"}, {role: "user", content: `Analyse ceci pour un débat : ${setup}`}],
+                    response_format: {type: "json_object"}
+                })
+            });
+            const setupData = await setupRes.json();
+            const config = JSON.parse(setupData.choices[0].message.content);
+            loadingBubble.remove();
+            
+            addMsg(`⚔️ **DÉBAT LANCÉ : ${config.p1} VS ${config.p2}**\nSujet : ${config.topic}`, 'model');
+            
+            let exchangeHistory = "";
+            let turns = 2; 
+            
+            for(let i=0; i<turns*2; i++) {
+                const isP1 = i % 2 === 0;
+                const currentSpeaker = isP1 ? config.p1 : config.p2;
+                const otherSpeaker = isP1 ? config.p2 : config.p1;
+                
+                const turnLoader = addMsg(`🎙️ ${currentSpeaker} réfléchit...`, 'model', true);
+                
+                const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${KEYS.GROQ}` },
+                    body: JSON.stringify({ 
+                        model: "llama-3.3-70b-versatile", 
+                        messages: [
+                            {role: "system", content: `Tu es ${currentSpeaker}. Tu débats avec ${otherSpeaker} sur : ${config.topic}. Sois incisif, court (max 50 mots) et dans le personnage.`},
+                            {role: "user", content: `Historique du débat:\n${exchangeHistory}\n\nÀ toi de parler.`}
+                        ]
+                    })
+                });
+                const data = await res.json();
+                const reply = data.choices[0].message.content;
+                
+                turnLoader.remove();
+                
+                const bubble = addMsg(`**${currentSpeaker}:** ${reply}`, 'model');
+                bubble.firstChild.classList.remove('model');
+                bubble.firstChild.classList.add(isP1 ? 'persona-a' : 'persona-b');
+                bubble.firstChild.classList.add('chat-bubble');
+                
+                exchangeHistory += `\n${currentSpeaker}: ${reply}`;
+                await new Promise(r => setTimeout(r, 1500)); 
+            }
+        }
+
+        async function callGroq(userMsg, systemMsg, loadingBubble, specificModel = "llama-3.3-70b-versatile") {
+            try {
+                if(attachedFileContent) {
+                    systemMsg += `\n[CONTEXTE FICHIER]: ${attachedFileContent}`;
+                }
+                
+                if(userMemory.length > 0 && !systemMsg.includes("MÉMOIRE")) {
+                     systemMsg += `\n[MÉMOIRE]: ${userMemory.join('; ')}`;
+                }
+
+                const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${KEYS.GROQ}` },
+                    body: JSON.stringify({ 
+                        model: specificModel,
+                        messages: [
+                            {role: "system", content: systemMsg}, 
+                            ...chatMessages
+                        ] 
+                    })
+                });
+                const data = await res.json();
+                if(data.error) throw new Error(data.error.message);
+                let reply = data.choices[0].message.content;
+                
+                const memMatch = reply.match(/\[\[MEMORY: (.*?)\]\]/);
+                if (memMatch) {
+                    const newFact = memMatch[1];
+                    if (!userMemory.includes(newFact)) {
+                        userMemory.push(newFact);
+                        localStorage.setItem('user_profile', JSON.stringify(userMemory));
+                    }
+                    reply = reply.replace(memMatch[0], '');
+                }
+
+                loadingBubble.remove();
+                addMsg(reply, 'model');
+                chatMessages.push({ role: "assistant", content: reply });
+            } catch(e) { 
+                loadingBubble.innerText = "Erreur Groq: " + e.message; 
+            }
+        }
+
+        async function callMistral(userMsg, modelId, loadingBubble) {
+            try {
+                const res = await fetch("https://api.mistral.ai/v1/chat/completions", {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json', 
+                        'Authorization': `Bearer ${KEYS.MISTRAL}` 
+                    },
+                    body: JSON.stringify({ 
+                        model: modelId,
+                        messages: chatMessages
+                    })
+                });
+                const data = await res.json();
+                if(data.error) throw new Error(data.error.message); 
+                const reply = data.choices[0].message.content;
+                loadingBubble.remove();
+                addMsg(reply, 'model');
+                chatMessages.push({ role: "assistant", content: reply });
+            } catch(e) { 
+                console.warn("Mistral fail, fallback Groq", e);
+                callGroq(userMsg, "Tu relaies Mistral (Fallback).", loadingBubble);
+            }
+        }
+
+        async function handleImageGeneration(prompt, loadingBubble) {
+            const seed = Date.now();
+            const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=1024&height=1024&nologo=true&seed=${seed}`;
+            
+            const img = new Image();
+            img.src = imageUrl;
+            img.className = "generated-image";
+            img.dataset.seed = seed;
+            img.dataset.prompt = prompt;
+
+            img.onload = () => {
+                loadingBubble.remove();
+                const bubble = addMsg("", 'model', false, imageUrl, prompt, seed);
+                bubble.appendChild(img);
+                
+                chatMessages.push({ role: "assistant", content: `![Génération](${imageUrl})` });
+                saveCurrentChat();
+            };
+            img.onerror = () => { loadingBubble.innerText = "Erreur de génération."; };
+        }
+
+        async function fetchNews(query) {
+            try {
+                const res = await fetch(`https://newsapi.org/v2/everything?q=${encodeURIComponent(query)}&language=fr&pageSize=3&apiKey=502e7bfe7cd7411181f82aa0a143a4c6`);
+                const data = await res.json();
+                return data.articles.map(a => a.title + " (" + a.source.name + ")").join(" | ");
+            } catch(e) { return null; }
+        }
+
+        // --- UTILS ---
+        function animatePlaceholder() {
+            if (!typingActive) return;
+            const input = document.getElementById('user-input');
+            const currentText = placeholders[pIndex];
+            if (isDeleting) {
+                input.placeholder = currentText.substring(0, charIndex--);
+                if (charIndex < 0) { isDeleting = false; pIndex = (pIndex + 1) % placeholders.length; setTimeout(animatePlaceholder, 500); } 
+                else { setTimeout(animatePlaceholder, 30); }
+            } else {
+                input.placeholder = currentText.substring(0, charIndex++);
+                if (charIndex > currentText.length) { isDeleting = true; setTimeout(animatePlaceholder, 3000); } 
+                else { setTimeout(animatePlaceholder, 60); }
+            }
+        }
+        
+        const reqDB = indexedDB.open("WikiMind_Ultimate", 2);
+        reqDB.onsuccess = e => { db = e.target.result; if(db.objectStoreNames.contains("conversations")) renderHistory(); };
+        reqDB.onupgradeneeded = e => { e.target.result.createObjectStore("conversations", {keyPath: "id"}); };
+
+        function toggleSidebar() { 
+            const sb = document.getElementById('sidebar'); sb.classList.toggle('open');
+            const isOpen = sb.classList.contains('open');
+            // Hide/Show floating buttons based on sidebar state
+            document.getElementById('float-toggle').style.opacity = isOpen ? "0" : "1";
+            document.getElementById('float-toggle').style.pointerEvents = isOpen ? "none" : "auto";
+            document.getElementById('float-new-chat').style.opacity = isOpen ? "0" : "1";
+            document.getElementById('float-new-chat').style.pointerEvents = isOpen ? "none" : "auto";
+        }
+        function toggleDarkMode() { 
+            document.body.classList.toggle('dark-mode');
+            localStorage.setItem('wikimind_theme', document.body.classList.contains('dark-mode') ? 'dark' : 'light');
+        }
+        // Load theme
+        if(localStorage.getItem('wikimind_theme') === 'dark') document.body.classList.add('dark-mode');
+
+        function showAideSummary() { document.getElementById('aide-summary').classList.toggle('hidden'); }
+        function handleKey(e) { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }
+        
+        function handleModelChange() {
+            const val = document.getElementById('model-select').value;
+            // Règle 9 : Save preference
+            localStorage.setItem('wikimind_model_pref', val);
+            if(val !== 'IMAGE') currentAppId = null; 
+        }
+
+        function addMsg(txt, role, isTmp = false, imgUrl = null, imgPrompt = null, imgSeed = null) {
+            const wrap = document.createElement('div'); wrap.className = "flex flex-col mb-2";
+            const d = document.createElement('div'); d.className = `chat-bubble ${role}`;
+            
+            if(isTmp) {
+                d.innerHTML = (role === 'model') ? `<div class="loader-spin"></div>` : txt; 
+                if(txt && role === 'model') {
+                    d.innerHTML = `<div class="flex items-center gap-2"><div class="loader-spin" style="width:20px;height:20px;"></div><span>${txt}</span></div>`;
+                }
+            } else if (txt !== "") {
+                d.innerHTML = marked.parse(txt);
+                
+                if (d.querySelector('.mermaid')) {
+                    mermaid.init(undefined, d.querySelectorAll('.mermaid'));
+                }
+
+                d.querySelectorAll('table').forEach(tbl => {
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'table-wrapper';
+                    const btn = document.createElement('button');
+                    btn.className = 'copy-table-btn';
+                    btn.innerText = 'Copier le tableau';
+                    btn.onclick = () => copyTable(tbl);
+                    tbl.parentNode.insertBefore(wrapper, tbl);
+                    wrapper.appendChild(btn);
+                    wrapper.appendChild(tbl);
+                });
+
+                // KAtex Configuration (Règle 4)
+                setTimeout(() => {
+                    renderMathInElement(d, {
+                        delimiters: [
+                            {left: '$$', right: '$$', display: true},
+                            {left: '$', right: '$', display: false},
+                            {left: '\\(', right: '\\)', display: false},
+                            {left: '\\[', right: '\\]', display: true}
+                        ]
+                    });
+                }, 10);
+            }
+            wrap.appendChild(d);
+
+            if(!isTmp && role === 'model') {
+                const act = document.createElement('div'); act.className = 'msg-actions';
+                
+                let editBtnHtml = "";
+                const currentImg = imgUrl || (txt.startsWith('![') ? txt.match(/\((.*?)\)/)?.[1] : null);
+                
+                if(currentImg) { 
+                    const seedAttr = imgSeed ? `data-seed="${imgSeed}"` : '';
+                    const promptAttr = imgPrompt ? `data-prompt="${imgPrompt}"` : '';
+                    
+                    editBtnHtml = `
+                        <div class="action-btn" onclick="triggerEdit(this, '${currentImg}', '${imgPrompt || ''}', '${imgSeed || ''}')">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                        </div>
+                        <div class="action-btn" onclick="downloadImage('${currentImg}')">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                        </div>`; 
+                }
+
+                // RÈGLE 7 : BOUTON ERREUR OBLIGATOIRE
+                const errorBtn = `<a href="https://docs.google.com/forms/d/e/1FAIpQLSf-4ZhMFqQdBt84xoFQP3IpbzYIxo4t5ELCXXj4pDAxACkLcQ/viewform?usp=header" target="_blank" class="report-btn" title="Signaler une erreur"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg></a>`;
+
+                act.innerHTML = `
+                    <div class="action-btn" onclick="copy(this, \`${txt.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`)"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"></path></svg></div>
+                    ${editBtnHtml}
+                    <div class="action-btn" onclick="this.classList.toggle('like-active')"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10h4.708a2 2 0 011.965 2.388l-1.38 5.523A2 2 0 0117.328 20H7a2 2 0 01-2-2V9a2 2 0 011.414-1.914l5.394-2.158a.991.991 0 011.192.414L14 10z"></path></svg></div>
+                    <div class="action-btn" onclick="this.classList.toggle('dislike-active')"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14H5.292a2 2 0 01-1.965-2.388l1.38-5.523A2 2 0 016.672 4H17a2 2 0 012 2v9a2 2 0 01-1.414 1.914l-5.394 2.158a.991.991 0 01-1.192-.414L10 14z"></path></svg></div>
+                    ${errorBtn}
+                `;
+                wrap.appendChild(act);
+            }
+            document.getElementById('chat-container').appendChild(wrap);
+            document.getElementById('chat-container').scrollTop = document.getElementById('chat-container').scrollHeight;
+            return d;
+        }
+
+        async function downloadImage(url) {
+            const response = await fetch(url);
+            const blob = await response.blob();
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = `wikimind_art_${Date.now()}.png`;
+            link.click();
+        }
+
+        function saveCurrentChat() { if(!db) return; const tx = db.transaction("conversations", "readwrite"); tx.objectStore("conversations").put({ id: currentChatId, title: chatMessages[0].content.substring(0, 30), messages: chatMessages }); renderHistory(); }
+        
+        // MODIFIED: renderHistory to handle shared chat type
+        function renderHistory() { 
+            if(!db) return; 
+            const tx = db.transaction("conversations", "readonly"); 
+            tx.objectStore("conversations").getAll().onsuccess = e => { 
+                const list = document.getElementById('history-list'); 
+                list.innerHTML = ""; 
+                e.target.result.reverse().forEach(chat => { 
+                    const item = document.createElement('div'); 
+                    item.className = "history-item group"; 
+                    
+                    let clickAction = `loadChat(${chat.id})`;
+                    let title = chat.title;
+                    if (chat.type === 'shared') {
+                        clickAction = `joinSharedRoomFromHistory('${chat.roomCode}')`;
+                        title = `🌐 Room ${chat.roomCode}`;
+                    }
+
+                    item.innerHTML = `<span onclick="${clickAction}" class="truncate flex-grow">${title}</span><span onclick="deleteChat('${chat.id}')" class="delete-chat">×</span>`; 
+                    list.appendChild(item); 
+                }); 
+            }; 
+        }
+
+        function loadChat(id) { const tx = db.transaction("conversations", "readonly"); tx.objectStore("conversations").get(id).onsuccess = e => { const chat = e.target.result; currentChatId = chat.id; chatMessages = chat.messages; document.getElementById('chat-container').innerHTML = ""; uiToChatMode(); chatMessages.forEach(m => { addMsg(m.content, m.role); }); }; }
+        function deleteChat(id) { db.transaction("conversations", "readwrite").objectStore("conversations").delete(id).onsuccess = () => renderHistory(); }
+        function uiToChatMode() { typingActive = false; document.getElementById('welcome-text').classList.add('hidden-state'); document.getElementById('input-wrapper').className = 'docked'; }
+        function copy(btn, text) { navigator.clipboard.writeText(text); btn.style.color = "#22c55e"; setTimeout(()=> btn.style.color = "#bbb", 1500); }
+
+        function copyTable(table) {
+            let range = document.createRange();
+            range.selectNode(table);
+            window.getSelection().removeAllRanges();
+            window.getSelection().addRange(range);
+            document.execCommand('copy');
+            window.getSelection().removeAllRanges();
+            const btn = table.previousElementSibling;
+            const originalText = btn.innerText;
+            btn.innerText = "Copié !";
+            btn.style.color = "#22c55e";
+            setTimeout(() => { btn.innerText = originalText; btn.style.color = "#666"; }, 1500);
+        }
+
+        function copyCode(btn) {
+            const code = btn.nextElementSibling.innerText;
+            navigator.clipboard.writeText(code);
+            const originalText = btn.innerText;
+            btn.innerText = "COPIÉ";
+            setTimeout(() => { btn.innerText = originalText; }, 1500);
+        }
+
+        function initDragAndDrop() {
+            const dropZone = document.getElementById('input-box');
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, preventDefaults, false);
+            });
+            function preventDefaults(e) { e.preventDefault(); e.stopPropagation(); }
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropZone.addEventListener(eventName, highlight, false);
+            });
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, unhighlight, false);
+            });
+            function highlight(e) { dropZone.classList.add('drag-over'); }
+            function unhighlight(e) { dropZone.classList.remove('drag-over'); }
+            dropZone.addEventListener('drop', handleDrop, false);
+            function handleDrop(e) {
+                const dt = e.dataTransfer;
+                handleFiles(dt.files);
+            }
+        }
+
+        function handleFileUpload(input) { handleFiles(input.files); }
+
+        async function handleFiles(files) {
+            if (files.length === 0) return;
+            const file = files[0];
+            const feedback = document.getElementById('file-feedback');
+            const previewArea = document.getElementById('file-preview-area');
+            
+            feedback.classList.remove('hidden');
+            feedback.innerText = `Lecture de ${file.name}...`;
+
+            const finishLoad = (content, typeIcon, imgBase64 = null) => {
+                attachedFileContent = content.substring(0, 15000);
+                feedback.classList.add('hidden'); 
+                
+                let editBtn = '';
+                if(imgBase64) {
+                    editBtn = `<span class="cursor-pointer ml-2 text-blue-500 font-bold hover:text-blue-700" onclick="openImageEditor('${imgBase64}', '', null)">✏️ Éditer</span>`;
+                }
+
+                previewArea.style.display = 'block';
+                previewArea.innerHTML = `
+                    <div class="file-chip">
+                        <span class="file-chip-icon">${typeIcon}</span>
+                        <span class="truncate max-w-[150px]">${file.name}</span>
+                        ${editBtn}
+                        <span class="file-remove" onclick="removeFile()">×</span>
+                    </div>
+                `;
+            };
+
+            if (file.type === "application/pdf") {
+                const reader = new FileReader();
+                reader.onload = async function() {
+                    try {
+                        const typedarray = new Uint8Array(this.result);
+                        const pdf = await pdfjsLib.getDocument(typedarray).promise;
+                        let text = "";
+                        for (let i = 1; i <= pdf.numPages; i++) {
+                            const page = await pdf.getPage(i);
+                            const content = await page.getTextContent();
+                            text += content.items.map(item => item.str).join(" ") + "\n";
+                        }
+                        finishLoad(text, '📄');
+                    } catch(e) { feedback.innerText = "Erreur PDF"; }
+                };
+                reader.readAsArrayBuffer(file);
+            } else if (file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    mammoth.extractRawText({arrayBuffer: this.result})
+                        .then(result => finishLoad(result.value, '📝'))
+                        .catch(err => feedback.innerText = "Erreur DOCX");
+                };
+                reader.readAsArrayBuffer(file);
+            } else if (file.type.startsWith("image/")) {
+                feedback.innerText = "Analyse OCR de l'image...";
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                     const base64 = e.target.result;
+                     Tesseract.recognize(file, 'fra').then(({ data: { text } }) => {
+                        finishLoad(text || "[Texte illisible]", '🖼️', base64);
+                    }).catch(e => {
+                        finishLoad("[Image sans texte]", '🖼️', base64);
+                    });
+                };
+                reader.readAsDataURL(file);
+                
+            } else if (file.type === "text/plain") {
+                const reader = new FileReader();
+                reader.onload = function() { finishLoad(this.result, '📄'); };
+                reader.readAsText(file);
+            } else {
+                feedback.innerText = "Format non supporté";
+            }
+        }
+
+        function removeFile() {
+            attachedFileContent = "";
+            document.getElementById('file-preview-area').innerHTML = "";
+            document.getElementById('file-preview-area').style.display = "none";
+            document.getElementById('file-input').value = ""; 
+        }
+
+        // --- IMAGE EDITOR (Règle 2 : NÉON) ---
+        let editorCanvas, editorCtx;
+        let isDrawing = false;
+        let currentEditSeed = null;
+        let currentEditPrompt = null;
+
+        function triggerEdit(btn, imgUrl, prompt, seed) {
+            const icon = btn.querySelector('svg');
+            icon.classList.add('rotate-anim');
+            setTimeout(() => {
+                icon.classList.remove('rotate-anim');
+                openImageEditor(imgUrl, prompt, seed);
+            }, 500);
+        }
+
+        function openImageEditor(imgUrl, prompt, seed) {
+            document.getElementById('editor-modal').style.display = 'flex';
+            currentEditSeed = seed;
+            currentEditPrompt = prompt;
+            
+            editorCanvas = document.getElementById('editor-canvas');
+            editorCtx = editorCanvas.getContext('2d');
+            
+            const img = new Image();
+            img.crossOrigin = "Anonymous";
+            img.src = imgUrl;
+            img.onload = () => {
+                editorCanvas.width = img.width;
+                editorCanvas.height = img.height;
+                editorCanvas.style.width = "100%";
+                editorCanvas.style.height = "auto";
+                editorCtx.drawImage(img, 0, 0);
+            };
+
+            editorCanvas.onmousedown = startDraw;
+            editorCanvas.onmousemove = draw;
+            editorCanvas.onmouseup = endDraw;
+            editorCanvas.ontouchstart = startDraw;
+            editorCanvas.ontouchmove = draw;
+            editorCanvas.ontouchend = endDraw;
+        }
+
+        let editTool = 'brush';
+        function setTool(tool) {
+            editTool = tool;
+            document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+
+        function clearCanvas() {
+             const img = new Image();
+             img.crossOrigin = "Anonymous";
+             document.getElementById('editor-modal').style.display = 'none';
+             setTimeout(() => document.getElementById('editor-modal').style.display = 'flex', 50);
+        }
+
+        function startDraw(e) { isDrawing = true; draw(e); }
+
+        function draw(e) {
+            if(!isDrawing) return;
+            const rect = editorCanvas.getBoundingClientRect();
+            const scaleX = editorCanvas.width / rect.width;
+            const scaleY = editorCanvas.height / rect.height;
+            
+            const x = ((e.clientX || e.touches[0].clientX) - rect.left) * scaleX;
+            const y = ((e.clientY || e.touches[0].clientY) - rect.top) * scaleY;
+            
+            editorCtx.lineWidth = 40;
+            editorCtx.lineCap = 'round';
+            editorCtx.lineJoin = 'round';
+            
+            if(editTool === 'brush') {
+                // Règle 2 : NÉON DOUX (Cyan transparent)
+                editorCtx.strokeStyle = 'rgba(0, 255, 240, 0.4)'; 
+                editorCtx.shadowColor = 'rgba(0, 255, 240, 0.8)';
+                editorCtx.shadowBlur = 15;
+                editorCtx.globalCompositeOperation = 'source-over';
+            }
+            
+            editorCtx.lineTo(x, y);
+            editorCtx.stroke();
+            editorCtx.beginPath();
+            editorCtx.moveTo(x, y);
+        }
+
+        function endDraw() { isDrawing = false; editorCtx.beginPath(); }
+
+        function closeEditor() { document.getElementById('editor-modal').style.display = 'none'; }
+
+        function applyEdit() {
+            const userEditPrompt = document.getElementById('edit-prompt').value;
+            closeEditor();
+            
+            const newPrompt = `${currentEditPrompt}. Modification: ${userEditPrompt}. High quality.`;
+            const loading = addMsg("Application des modifications...", 'model', true);
+            handleImageGeneration(newPrompt, loading);
+        }
+
+        function renderChart(id, code) {
+            try {
+                const ctx = document.getElementById(id).getContext('2d');
+                let config = JSON.parse(code);
+                // Basic check structure ChartJS
+                if (config.data && config.type) {
+                   new Chart(ctx, config);
+                }
+            } catch (e) { console.error("Chart error", e); }
+        }
+
+        // RÈGLE 1 & 3 : PDF HAUTE FIDÉLITÉ + SOMMAIRE AUTO
+        async function generatePDF(element) {
+            if(!element) return;
+            const { jsPDF } = window.jspdf;
+            
+            // 1. Extraire les titres pour le sommaire
+            const headers = Array.from(element.querySelectorAll('h1, h2, h3'));
+            let tocData = headers.map(h => ({
+                text: h.innerText,
+                level: parseInt(h.tagName[1])
+            }));
+
+            // 2. Capture Haute Fidélité via HTML2Canvas
+            const canvas = await html2canvas(element, { scale: 2, useCORS: true });
+            const imgData = canvas.toDataURL('image/png');
+            
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const pageWidth = pdf.internal.pageSize.getWidth();
+            const pageHeight = pdf.internal.pageSize.getHeight();
+            
+            // 3. Page de Sommaire (si titres présents)
+            if(tocData.length > 0) {
+                pdf.setFontSize(22);
+                pdf.text("Sommaire du Document", 10, 20);
+                pdf.setFontSize(12);
+                let y = 35;
+                tocData.forEach((item, index) => {
+                    const indent = (item.level - 1) * 10;
+                    pdf.text(`${index + 1}. ${item.text}`, 10 + indent, y);
+                    y += 8;
+                });
+                pdf.addPage();
+            }
+
+            // 4. Ajout de l'image du contenu (en la découpant si trop longue)
+            const imgProps = pdf.getImageProperties(imgData);
+            const pdfHeight = (imgProps.height * pageWidth) / imgProps.width;
+            
+            let heightLeft = pdfHeight;
+            let position = 0;
+            
+            pdf.addImage(imgData, 'PNG', 0, position, pageWidth, pdfHeight);
+            heightLeft -= pageHeight;
+
+            while (heightLeft >= 0) {
+                position = heightLeft - pdfHeight;
+                pdf.addPage();
+                pdf.addImage(imgData, 'PNG', 0, position, pageWidth, pdfHeight);
+                heightLeft -= pageHeight;
+            }
+
+            pdf.save(`WikiMind_Doc_${Date.now()}.pdf`);
+            addMsg("📄 Document PDF Haute Fidélité généré.", 'model');
+        }
+
+        mermaid.initialize({ startOnLoad: false, theme: 'neutral' });
+
+    </script>
+    
+    <!-- AJOUTS: EXTENSIONS WIKIMIND IDENTITY EDITION -->
+    <!-- Ces ajouts surchargent ou étendent les fonctionnalités existantes sans suppression -->
+    
+    <!-- STYLE EXTENSIONS -->
+    <style>
+        /* AJOUT: Override pour masquer les anciennes popups sans les supprimer du code source */
+        #onboarding-modal { display: none !important; }
+        #editor-modal { display: none !important; }
+
+        /* AJOUT: Fix couleur nom mode clair */
+        #welcome-text span.font-bold { color: var(--text) !important; }
+
+        /* AJOUT: Nouveau Widget Auth (Top Right) */
+        #auth-widget-container {
+            position: absolute; top: 1.5rem; right: 2rem; z-index: 60;
+            display: flex; align-items: center; gap: 10px;
+        }
+        .auth-avatar {
+            width: 36px; height: 36px; background: var(--text); color: var(--bg);
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-weight: 800; font-size: 12px; cursor: pointer; transition: 0.2s;
+            border: 1px solid var(--border);
+        }
+        .auth-panel {
+            position: absolute; top: 3rem; right: 0; background: var(--bg);
+            border: 1px solid var(--border); padding: 1.5rem; border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 280px;
+            display: none; flex-direction: column; gap: 10px;
+        }
+        .auth-panel.visible { display: flex; }
+        .auth-input {
+            width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border);
+            background: var(--select-bg); color: var(--text); font-size: 12px;
+        }
+
+        /* AJOUT: Nouvelle Vue Éditeur (Plein écran intégrée) */
+        #editor-view {
+            display: none; position: absolute; inset: 0; z-index: 45;
+            background: var(--bg); flex-direction: column; padding: 2rem;
+            max-width: 1200px; margin: 0 auto; width: 100%;
+        }
+        #editor-view.active { display: flex; }
+        .editor-header { display: flex; justify-content space-between; align-items: center; margin-bottom: 1rem; }
+        .editor-workspace {
+            flex-grow: 1; position: relative; border-radius: 16px; overflow: hidden;
+            background: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMCIgaGVpZ2h0PSIxMCI+PHBhdGggZD0iTTAgMGgxMHYxMEgwVjB6IiBmaWxsPSIjODg4IiBvcGFjaXR5PSIwLjEiLz48L3N2Zz4=');
+            display: flex; align-items: center; justify-content: center; border: 1px solid var(--border);
+        }
+        #new-editor-canvas { max-width: 100%; max-height: 100%; box-shadow: 0 20px 50px rgba(0,0,0,0.2); }
+        .editor-toolbar {
+            display: flex; gap: 1rem; padding: 1rem; background: var(--sidebar);
+            border-radius: 99px; border: 1px solid var(--border); margin-top: 1rem; align-self: center;
+        }
+        .editor-tool {
+            width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: 0.2s; color: var(--text);
+        }
+        .editor-tool:hover, .editor-tool.active { background: var(--text); color: var(--bg); }
+
+        /* AJOUT: Animation frappe (Typing Effect) */
+        .typing-cursor::after {
+            content: '▋'; display: inline-block; animation: blink 1s infinite; margin-left: 2px;
+        }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+        
+        /* AJOUT: Loading Overlay pour Fichiers */
+        .processing-overlay {
+            position: absolute; inset: 0; background: rgba(255,255,255,0.8); z-index: 10;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            border-radius: 12px; backdrop-filter: blur(4px);
+        }
+        .dark-mode .processing-overlay { background: rgba(0,0,0,0.8); }
+
+        /* AJOUT: Bouton Share Icon */
+        .share-btn-icon {
+            cursor: pointer; color: #888; transition: 0.2s; display: flex; align-items: center; justify-content: center;
+            width: 30px; height: 30px; border-radius: 50%;
+        }
+        .share-btn-icon:hover { background: var(--select-bg); color: var(--text); }
+    </style>
+
+    <!-- HTML STRUCTURES EXTENSIONS -->
+    <div id="extensions-container">
+        <!-- Auth Widget with Share Button -->
+        <div id="auth-widget-container">
+            <div id="share-room-btn" class="share-btn-icon hidden" onclick="shareRoomLink()" title="Copier le lien de la room">🔗</div>
+            <div class="auth-avatar" onclick="toggleNewAuth()">?</div>
+            <div id="new-auth-panel" class="auth-panel">
+                <h4 class="font-bold text-sm uppercase mb-2">Identité</h4>
+                <input type="text" id="new-auth-first" class="auth-input" placeholder="Prénom">
+                <input type="text" id="new-auth-last" class="auth-input" placeholder="Nom">
+                <button onclick="saveNewAuth()" class="w-full bg-black text-white dark:bg-white dark:text-black py-2 rounded-lg font-bold text-xs uppercase mt-2">Enregistrer</button>
+            </div>
+        </div>
+
+        <!-- Editor View -->
+        <div id="editor-view">
+            <div class="editor-header">
+                <h2 class="text-2xl font-black uppercase tracking-tighter">Studio Créatif</h2>
+                <button onclick="closeNewEditor()" class="text-sm font-bold uppercase hover:opacity-50">Fermer ✕</button>
+            </div>
+            <div class="editor-workspace" id="editor-workspace">
+                <canvas id="new-editor-canvas"></canvas>
+            </div>
+            <div class="editor-toolbar">
+                <div class="editor-tool active" onclick="setNewTool('brush')" title="Pinceau">🖌️</div>
+                <div class="editor-tool" onclick="setNewTool('eraser')" title="Gomme">🧼</div>
+                <div class="editor-tool" onclick="clearNewCanvas()" title="Effacer tout">🗑️</div>
+                <div style="width: 1px; height: 24px; background: var(--border); margin: 0 10px;"></div>
+                <button onclick="applyNewEdit()" class="bg-black text-white dark:bg-white dark:text-black px-6 py-2 rounded-full font-bold text-xs uppercase">Générer Modification</button>
+            </div>
+            <input type="text" id="new-edit-prompt" placeholder="Décrivez les changements..." class="w-full p-4 border border-gray-200 rounded-xl text-sm mt-4 bg-transparent outline-none focus:border-black dark:focus:border-white transition">
+        </div>
+    </div>
+
+    <!-- SCRIPT LOGIC EXTENSIONS -->
+    <script>
+        // AJOUT: Initialisation des extensions au chargement
+        window.onload = function() {
+            // S'assure que le DOM original est prêt, puis lance nos extensions
+            initNewAuthSystem();
+            initTypingObserver();
+            overrideImageEditorTrigger();
+            
+            // Auto-join if URL param exists
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('room')) {
+                const roomCode = urlParams.get('room');
+                toggleSharedChat();
+                document.getElementById('room-code-input').value = roomCode;
+                joinSharedRoom();
+            }
+        };
+
+        // --- 1. NEW AUTH SYSTEM ---
+        function initNewAuthSystem() {
+            const id = JSON.parse(localStorage.getItem('wikimind_user_identity'));
+            const avatar = document.querySelector('.auth-avatar');
+            if(id) {
+                avatar.innerText = (id.first[0] + id.last[0]).toUpperCase();
+                document.getElementById('new-auth-first').value = id.first;
+                document.getElementById('new-auth-last').value = id.last;
+                // Force update welcome text with fix color
+                const welcome = document.querySelector('#welcome-text p');
+                if(welcome) welcome.innerHTML = `Bienvenue <span class="font-bold user-name-highlight" style="color:var(--text);">${id.first}</span>, comment puis-je vous aider <span class="font-bold">?</span>`;
+            } else {
+                avatar.innerText = "?";
+            }
+        }
+
+        function toggleNewAuth() {
+            document.getElementById('new-auth-panel').classList.toggle('visible');
+        }
+
+        function saveNewAuth() {
+            const f = document.getElementById('new-auth-first').value.trim();
+            const l = document.getElementById('new-auth-last').value.trim();
+            if(f && l) {
+                localStorage.setItem('wikimind_user_identity', JSON.stringify({first: f, last: l}));
+                initNewAuthSystem();
+                toggleNewAuth();
+            }
+        }
+
+        // --- 2. TYPING ANIMATION (FLUIDITÉ) ---
+        // Observateur pour détecter les nouveaux messages et animer leur contenu
+        function initTypingObserver() {
+            const container = document.getElementById('chat-container');
+            const observer = new MutationObserver((mutations) => {
+                mutations.forEach((mutation) => {
+                    mutation.addedNodes.forEach((node) => {
+                        // Si c'est un message du modèle (et pas un loader)
+                        if(node.nodeType === 1 && node.querySelector('.chat-bubble.model') && !node.querySelector('.loader-spin')) {
+                            const bubble = node.querySelector('.chat-bubble.model');
+                            // Ne pas animer si c'est une image ou HTML complexe déjà parsé par marked
+                            if(!bubble.querySelector('img') && !bubble.querySelector('.pro-reasoning')) {
+                                const originalHTML = bubble.innerHTML;
+                                // On ne touche pas au HTML complexe pour éviter de casser le layout
+                                // Mais on ajoute une classe fade-in douce
+                                bubble.style.opacity = '0';
+                                bubble.style.transform = 'translateY(10px)';
+                                bubble.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+                                
+                                requestAnimationFrame(() => {
+                                    bubble.style.opacity = '1';
+                                    bubble.style.transform = 'translateY(0)';
+                                });
+                            }
+                        }
+                    });
+                });
+            });
+            observer.observe(container, { childList: true, subtree: true });
+        }
+
+        // --- 3. NEW IMAGE EDITOR (VUE DÉDIÉE & CANVAS RÉEL) ---
+        // Surcharge de la fonction openImageEditor originale (sans la supprimer)
+        // On redirige l'appel vers openNewEditor
+        const originalOpenImageEditor = window.openImageEditor;
+        window.openImageEditor = function(imgUrl, prompt, seed) {
+            openNewEditor(imgUrl, prompt, seed);
+        };
+
+        let newEditorCanvas, newEditorCtx;
+        let currentImgSrc = "";
+
+        function openNewEditor(imgUrl, prompt, seed) {
+            // Hide other views
+            document.getElementById('chat-container').style.display = 'none';
+            document.getElementById('input-wrapper').classList.add('hidden');
+            
+            const view = document.getElementById('editor-view');
+            view.classList.add('active');
+            
+            document.getElementById('new-edit-prompt').value = prompt || "";
+            currentEditSeed = seed;
+            currentEditPrompt = prompt;
+            currentImgSrc = imgUrl;
+
+            newEditorCanvas = document.getElementById('new-editor-canvas');
+            newEditorCtx = newEditorCanvas.getContext('2d');
+            
+            const img = new Image();
+            img.crossOrigin = "Anonymous";
+            img.src = imgUrl;
+            img.onload = () => {
+                // Resize logic for workspace
+                const workspace = document.getElementById('editor-workspace');
+                const maxW = workspace.clientWidth - 40;
+                const maxH = workspace.clientHeight - 40;
+                
+                let w = img.width;
+                let h = img.height;
+                
+                const ratio = Math.min(maxW / w, maxH / h);
+                newEditorCanvas.width = w;
+                newEditorCanvas.height = h;
+                
+                // Style size
+                newEditorCanvas.style.width = (w * ratio) + "px";
+                newEditorCanvas.style.height = (h * ratio) + "px";
+
+                newEditorCtx.drawImage(img, 0, 0);
+            };
+
+            // Canvas events
+            newEditorCanvas.onmousedown = newStartDraw;
+            newEditorCanvas.onmousemove = newDraw;
+            newEditorCanvas.onmouseup = newEndDraw;
+        }
+
+        function closeNewEditor() {
+            document.getElementById('editor-view').classList.remove('active');
+            document.getElementById('chat-container').style.display = 'block';
+            document.getElementById('input-wrapper').classList.remove('hidden');
+        }
+
+        let isNewDrawing = false;
+        let newEditTool = 'brush';
+
+        function setNewTool(t) {
+            newEditTool = t;
+            document.querySelectorAll('.editor-tool').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+
+        function clearNewCanvas() {
+            const img = new Image();
+            img.crossOrigin = "Anonymous";
+            img.src = currentImgSrc;
+            img.onload = () => {
+                newEditorCtx.clearRect(0, 0, newEditorCanvas.width, newEditorCanvas.height);
+                newEditorCtx.drawImage(img, 0, 0);
+            };
+        }
+
+        function newStartDraw(e) { isNewDrawing = true; newDraw(e); }
+        function newEndDraw() { isNewDrawing = false; newEditorCtx.beginPath(); }
+
+        function newDraw(e) {
+            if(!isNewDrawing) return;
+            const rect = newEditorCanvas.getBoundingClientRect();
+            const scaleX = newEditorCanvas.width / rect.width;
+            const scaleY = newEditorCanvas.height / rect.height;
+            const x = (e.clientX - rect.left) * scaleX;
+            const y = (e.clientY - rect.top) * scaleY;
+
+            newEditorCtx.lineWidth = newEditTool === 'brush' ? 20 : 40;
+            newEditorCtx.lineCap = 'round';
+            newEditorCtx.lineJoin = 'round';
+
+            if(newEditTool === 'brush') {
+                newEditorCtx.strokeStyle = 'rgba(0,0,0,1)'; 
+                newEditorCtx.globalCompositeOperation = 'source-over';
+            } else {
+                 // Eraser restores original image part? Complex. Simpler: Paint white or transparent
+                 newEditorCtx.globalCompositeOperation = 'destination-out';
+            }
+
+            newEditorCtx.lineTo(x, y);
+            newEditorCtx.stroke();
+            newEditorCtx.beginPath();
+            newEditorCtx.moveTo(x, y);
+        }
+
+        function applyNewEdit() {
+            const prompt = document.getElementById('new-edit-prompt').value;
+            // Capture canvas data
+            const dataUrl = newEditorCanvas.toDataURL('image/png');
+            closeNewEditor();
+            
+            // Simuler l'envoi de l'image modifiée (Img2Img via Prompt + Seed trick car API limitée)
+            // On conserve l'idée que le canvas a été modifié par l'utilisateur
+            const loading = addMsg("🎨 Génération basée sur vos retouches...", 'model', true);
+            const enrichedPrompt = `${currentEditPrompt}. Changes: ${prompt}. Based on user sketch.`;
+            handleImageGeneration(enrichedPrompt, loading);
+        }
+
+        function overrideImageEditorTrigger() {
+            // Rien à faire, la fonction globale est déjà surchargée.
+        }
+
+        // --- 4. ENHANCED FILE FEEDBACK ---
+        // Surcharge handleFileUpload pour ajouter une meilleure UI
+        const originalHandleFileUpload = window.handleFileUpload;
+        window.handleFileUpload = function(input) {
+            const files = input.files;
+            if(files.length > 0) {
+                const preview = document.getElementById('file-preview-area');
+                preview.style.display = 'block';
+                preview.innerHTML = `<div class="processing-overlay"><div class="loader-spin"></div><div style="margin-top:10px;font-size:12px;font-weight:bold;">Analyse profonde de ${files[0].name}...</div></div>`;
+                
+                // Petit délai pour simuler le travail lourd avant d'appeler l'original
+                setTimeout(() => {
+                    originalHandleFileUpload(input);
+                }, 1500);
+            }
+        };
+
+        // --- AJOUT: LOGIQUE CHAT PARTAGÉ (Shared Chat) ---
+        // --- REMPLACEMENT PAR FIREBASE REALTIME DATABASE ---
+        
+        let sharedRoomId = "";
+        let sharedUsername = "Guest";
+        window.currentUserId = 'User-' + Math.floor(Math.random() * 1000);
+        let localSharedHistory = []; // Pour passer l'historique à l'IA
+
+        // OVERRIDE: Surcharge de la fonction existante dans le HTML
+        window.toggleSharedChat = function() {
+            document.getElementById('chat-container').style.display = 'none';
+            document.getElementById('library-view').style.display = 'none';
+            document.getElementById('welcome-text').classList.add('hidden-state');
+            document.getElementById('input-wrapper').classList.add('hidden');
+            document.getElementById('app-header').classList.add('hidden');
+            
+            const view = document.getElementById('shared-chat-view');
+            view.style.display = 'flex';
+            
+            const id = JSON.parse(localStorage.getItem('wikimind_user_identity'));
+            if(id) sharedUsername = id.first;
+        };
+
+        // NEW: Fonction de création de room via Firebase
+        window.createSharedRoom = function() {
+            // Génération d'un code aléatoire
+            const roomCode = "WKM-" + Math.floor(1000 + Math.random() * 9000);
+            document.getElementById('room-code-input').value = roomCode;
+            
+            // Initialisation de la room dans Firebase (optionnel, join le fera)
+            // On rejoint directement
+            joinSharedRoom();
+        };
+        
+        // NEW: Fonction Helper pour l'historique local
+        function saveSharedChatToHistory(code) {
+             if(!window.fbDb) return;
+             // On utilise IndexedDB local (db) pour la persistence sidebar
+             if(!db) return;
+             
+             const tx = db.transaction("conversations", "readwrite");
+             tx.objectStore("conversations").put({
+                 id: "SHARED-" + code,
+                 title: "Room " + code,
+                 type: 'shared',
+                 roomCode: code,
+                 messages: [] // Dummy, les messages sont sur Firebase
+             });
+             renderHistory();
+        }
+        
+        window.joinSharedRoomFromHistory = function(code) {
+            toggleSharedChat();
+            document.getElementById('room-code-input').value = code;
+            joinSharedRoom();
+        }
+
+        // OVERRIDE: Logique de jonction (Firebase Realtime)
+        window.joinSharedRoom = function() {
+            const code = document.getElementById('room-code-input').value.trim();
+            if(!code) return alert("Code requis !");
+            
+            sharedRoomId = code;
+            
+            // Save to local history immediately
+            saveSharedChatToHistory(code);
+
+            document.getElementById('shared-login').style.display = 'none';
+            document.getElementById('shared-status').classList.remove('hidden');
+            document.getElementById('shared-room-display').innerText = `ROOM: ${code}`;
+            document.getElementById('shared-input-area').classList.remove('hidden');
+            document.getElementById('shared-messages-area').classList.remove('hidden');
+            document.getElementById('share-room-btn').classList.remove('hidden');
+
+            addSharedSystemMsg(`Vous avez rejoint la room ${code}.`);
+            
+            // Connexion Firebase
+            const db = window.fbDb;
+            const messagesRef = window.fbRef(db, 'rooms/' + sharedRoomId + '/messages');
+            
+            // Réinitialiser la vue et l'historique local pour éviter les doublons si reconnexion
+            document.getElementById('shared-messages-area').innerHTML = "";
+            localSharedHistory = [];
+
+            window.fbOnChildAdded(messagesRef, (snapshot) => {
+                const msg = snapshot.val();
+                if(msg) {
+                    renderSharedMessage(msg);
+                    localSharedHistory.push(msg); // Maintien de l'historique pour l'IA
+                }
+            });
+        };
+
+        // OVERRIDE: Envoi de message (Firebase Push)
+        window.sendSharedMessage = async function() {
+            const input = document.getElementById('shared-msg-input');
+            const txt = input.value.trim();
+            if(!txt) return;
+
+            input.value = "";
+            
+            const db = window.fbDb;
+            const messagesRef = window.fbRef(db, 'rooms/' + sharedRoomId + '/messages');
+            
+            const userMsg = {
+                author: sharedUsername,
+                content: txt,
+                is_ai: false,
+                timestamp: Date.now(),
+                userId: window.currentUserId
+            };
+
+            // Envoi message utilisateur
+            window.fbPush(messagesRef, userMsg);
+
+            // Gestion IA (@wikimind) - ou Mode IMAGE implicite
+            // Check image intent or mention
+            if(txt.toLowerCase().includes("@wikimind") || txt.match(/(image|dessine|génère).*(image|photo)/i)) {
+                // Utilisation de l'historique local pour le contexte
+                const aiReply = await getSharedAIResponse(txt, localSharedHistory);
+                
+                const aiResponseMsg = {
+                    author: "WikiMind",
+                    content: aiReply,
+                    is_ai: true,
+                    timestamp: Date.now() + 10,
+                    userId: "AI" 
+                };
+                
+                window.fbPush(messagesRef, aiResponseMsg);
+            }
+        };
+
+        function renderSharedMessage(data) {
+            const area = document.getElementById('shared-messages-area');
+            const div = document.createElement('div');
+            
+            if(data.type === 'info') {
+                div.className = "text-center text-xs text-gray-400 my-2 italic";
+                div.innerText = data.content;
+            } else {
+                // Vérification si c'est moi via ID ou Author (fallback)
+                const isMe = (data.userId && data.userId === window.currentUserId);
+                // Si c'est l'IA, on la traite comme "Other" (gauche) mais sans style spécial vert
+                // Le CSS gère .ai comme .other
+                
+                let classes = "shared-message";
+                if(data.is_ai) classes += " ai";
+                else if(isMe) classes += " own";
+                else classes += " other";
+
+                div.className = classes;
+
+                // --- MODIFICATION ICI : COLORATION DE @wikimind ---
+                let formattedContent = marked.parse(data.content);
+                // Regex pour trouver @wikimind (case insensitive) et l'entourer d'un span bleu
+                formattedContent = formattedContent.replace(/(@wikimind)/gi, '<span class="text-blue-500 font-bold">$1</span>');
+
+                div.innerHTML = `
+                    <span class="shared-author">${data.author}</span>
+                    <div class="shared-content">${formattedContent}</div>
+                `;
+            }
+            area.appendChild(div);
+            area.scrollTop = area.scrollHeight;
+        }
+
+        function addSharedSystemMsg(txt) {
+            renderSharedMessage({type: 'info', content: txt});
+        }
+
+        // Standalone AI logic for shared chat
+        async function getSharedAIResponse(prompt, history) {
+            // Check for Image Generation Intent
+            if (prompt.match(/(image|dessine|génère).*(image|photo|dessin)/i)) {
+                const seed = Date.now();
+                const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=1024&height=1024&nologo=true&seed=${seed}`;
+                return `![Image générée](${imageUrl})`;
+            }
+
+            // Normal Text Logic (High Intelligence)
+            const contextMsgs = history.slice(-10).map(m => ({
+                role: m.is_ai ? "assistant" : "user",
+                content: `${m.author}: ${m.content}`
+            }));
+
+            // Système prompt identique au chat principal
+            const systemPrompt = "Tu es WikiMind. Tu es poli, intelligent et utile. Utilise Markdown. Si on te demande de générer un PDF, explique que c'est réservé au chat privé.";
+
+            try {
+                const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${KEYS.GROQ}` },
+                    body: JSON.stringify({ 
+                        model: "llama-3.3-70b-versatile", 
+                        messages: [
+                            {role: "system", content: systemPrompt},
+                            ...contextMsgs
+                        ] 
+                    })
+                });
+                const data = await res.json();
+                return data.choices[0].message.content;
+            } catch(e) {
+                return "Désolé, je suis indisponible pour le moment.";
+            }
+        }
+
+        window.shareRoomLink = function() {
+            const url = window.location.origin + window.location.pathname + "?room=" + sharedRoomId;
+            navigator.clipboard.writeText(url);
+            alert("Lien copié ! " + url);
+        };
+
+    </script>
+    </body>
+</html>

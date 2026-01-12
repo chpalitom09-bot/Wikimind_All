@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WikiMind Create | Studio Pro</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg: #ffffff;
+            --surface: #f4f4f5;
+            --border: #e4e4e7;
+            --text-main: #09090b;
+            --text-muted: #71717a;
+            --accent: #000000;
+            --accent-fg: #ffffff;
+            --danger: #ef4444;
+        }
+
+        .dark-mode {
+            --bg: #09090b;
+            --surface: #18181b;
+            --border: #27272a;
+            --text-main: #fafafa;
+            --text-muted: #a1a1aa;
+            --accent: #ffffff;
+            --accent-fg: #000000;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            height: 100vh;
+            overflow: hidden;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        /* --- LAYOUT --- */
+        .layout-grid {
+            display: grid;
+            grid-template-columns: 80px 350px 1fr;
+            height: 100vh;
+        }
+
+        /* --- SIDEBAR ICONS --- */
+        .sidebar-icons {
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 24px 0;
+            gap: 24px;
+            background: var(--bg);
+            z-index: 20;
+        }
+
+        .logo-box {
+            width: 40px; height: 40px;
+            background: var(--accent); color: var(--accent-fg);
+            border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 900; font-size: 20px;
+            margin-bottom: 20px;
+        }
+
+        .nav-btn {
+            width: 40px; height: 40px;
+            border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            color: var(--text-muted);
+            transition: 0.2s;
+            cursor: pointer;
+        }
+        .nav-btn:hover, .nav-btn.active {
+            background: var(--surface);
+            color: var(--text-main);
+        }
+
+        /* --- CONTROL PANEL --- */
+        .control-panel {
+            border-right: 1px solid var(--border);
+            background: var(--bg);
+            display: flex;
+            flex-direction: column;
+            padding: 24px;
+            overflow-y: auto;
+        }
+
+        .panel-header {
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: -0.02em;
+            margin-bottom: 32px;
+            font-size: 14px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+
+        /* FORM ELEMENTS */
+        .form-group { margin-bottom: 24px; }
+        
+        .label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .input-area {
+            width: 100%;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 12px;
+            border-radius: 8px;
+            resize: none;
+            font-size: 13px;
+            line-height: 1.5;
+            outline: none;
+            transition: 0.2s;
+            min-height: 100px;
+        }
+        .input-area:focus { border-color: var(--text-main); }
+
+        .select-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+
+        .option-btn {
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            text-align: center;
+            cursor: pointer;
+            transition: 0.2s;
+            background: var(--bg);
+            color: var(--text-muted);
+        }
+        .option-btn:hover { border-color: var(--text-muted); }
+        .option-btn.selected {
+            background: var(--accent);
+            color: var(--accent-fg);
+            border-color: var(--accent);
+        }
+
+        /* GENERATE BUTTON */
+        .btn-generate {
+            width: 100%;
+            padding: 16px;
+            background: var(--text-main);
+            color: var(--bg);
+            border-radius: 8px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-size: 12px;
+            margin-top: auto;
+            cursor: pointer;
+            transition: transform 0.1s, opacity 0.2s;
+            border: none;
+            display: flex; justify-content: center; items-items: center; gap: 8px;
+        }
+        .btn-generate:hover { opacity: 0.9; }
+        .btn-generate:active { transform: scale(0.98); }
+        .btn-generate:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* --- WORKSPACE (PREVIEW) --- */
+        .workspace {
+            background: var(--surface);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+            padding: 40px;
+        }
+        
+        /* Checkboard pattern for transparency */
+        .workspace::before {
+            content: '';
+            position: absolute; inset: 0;
+            background-image: 
+                linear-gradient(45deg, var(--border) 25%, transparent 25%), 
+                linear-gradient(-45deg, var(--border) 25%, transparent 25%), 
+                linear-gradient(45deg, transparent 75%, var(--border) 75%), 
+                linear-gradient(-45deg, transparent 75%, var(--border) 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+            opacity: 0.2;
+            pointer-events: none;
+        }
+
+        .preview-container {
+            max-width: 100%;
+            max-height: 100%;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            align-items: center; justify-content: center;
+        }
+
+        .preview-media {
+            display: block;
+            max-width: 100%;
+            max-height: 80vh;
+            object-fit: contain;
+        }
+
+        /* --- THEME TOGGLE (CUSTOM) --- */
+        .theme-switch {
+            width: 40px; height: 20px;
+            background: var(--border);
+            border-radius: 20px;
+            position: relative;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .theme-switch::after {
+            content: '';
+            position: absolute; top: 2px; left: 2px;
+            width: 16px; height: 16px;
+            background: var(--text-main);
+            border-radius: 50%;
+            transition: 0.3s;
+        }
+        .dark-mode .theme-switch::after {
+            transform: translateX(20px);
+            background: var(--bg);
+        }
+
+        /* --- OVERLAYS --- */
+        .status-bar {
+            position: absolute; bottom: 20px; right: 20px;
+            background: var(--bg); border: 1px solid var(--border);
+            padding: 8px 16px; border-radius: 99px;
+            font-size: 11px; font-weight: 600;
+            display: none; align-items: center; gap: 8px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text-main); animation: pulse 1s infinite; }
+
+        .action-bar {
+            position: absolute; top: 20px; right: 20px;
+            display: flex; gap: 10px;
+        }
+        .action-btn {
+            background: var(--bg); border: 1px solid var(--border); color: var(--text-main);
+            padding: 8px 16px; border-radius: 8px; font-size: 12px; font-weight: 600;
+            cursor: pointer; transition: 0.2s; display: none;
+        }
+        .action-btn:hover { background: var(--surface); }
+
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+    </style>
+</head>
+<body>
+
+<div class="layout-grid">
+    <!-- 1. LEFT SIDEBAR (ICONS) -->
+    <nav class="sidebar-icons">
+        <div class="logo-box">W</div>
+        
+        <div class="nav-btn active" title="Studio">
+            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+        </div>
+        
+        <!-- Toggle Theme (NO MOON) -->
+        <div style="margin-top: auto;">
+            <div class="theme-switch" onclick="toggleTheme()" title="Basculer thème"></div>
+        </div>
+    </nav>
+
+    <!-- 2. CONTROL PANEL -->
+    <aside class="control-panel">
+        <div class="panel-header">
+            <span>Configuration</span>
+            <span class="text-[10px] text-gray-400">V.2.0 PRO</span>
+        </div>
+
+        <!-- Mode Selection -->
+        <div class="form-group">
+            <label class="label">Mode de Création</label>
+            <div class="select-grid">
+                <div class="option-btn selected" id="mode-image" onclick="setMode('image')">Image</div>
+                <div class="option-btn" id="mode-video" onclick="setMode('video')">Vidéo Pro</div>
+            </div>
+        </div>
+
+        <!-- Prompt -->
+        <div class="form-group">
+            <label class="label">Prompt (Description)</label>
+            <textarea id="prompt" class="input-area" placeholder="Décrivez votre vision avec précision... (ex: Une architecture brutaliste en béton, lumière dramatique, 8k, photoréaliste)"></textarea>
+        </div>
+
+        <!-- Settings: Aspect Ratio -->
+        <div class="form-group">
+            <label class="label">Format</label>
+            <div class="select-grid" style="grid-template-columns: repeat(3, 1fr);">
+                <div class="option-btn selected" onclick="setRatio(1024, 1024, this)">1:1</div>
+                <div class="option-btn" onclick="setRatio(1280, 720, this)">16:9</div>
+                <div class="option-btn" onclick="setRatio(720, 1280, this)">9:16</div>
+            </div>
+        </div>
+
+        <!-- Settings: Style -->
+        <div class="form-group">
+            <label class="label">Style Esthétique</label>
+            <div class="select-grid">
+                <div class="option-btn selected" onclick="setStyle('realistic', this)">Photoréaliste</div>
+                <div class="option-btn" onclick="setStyle('anime', this)">Anime / 2D</div>
+                <div class="option-btn" onclick="setStyle('3d', this)">Rendu 3D</div>
+                <div class="option-btn" onclick="setStyle('cinematic', this)">Cinématique</div>
+            </div>
+        </div>
+
+        <!-- Video Options (Hidden by default) -->
+        <div id="video-options" class="form-group hidden">
+            <label class="label">Mouvement Caméra</label>
+            <div class="select-grid">
+                <div class="option-btn selected" onclick="setMotion('zoom', this)">Zoom In</div>
+                <div class="option-btn" onclick="setMotion('pan', this)">Panoramique</div>
+            </div>
+            <p class="text-[10px] text-gray-500 mt-2">Le moteur de rendu client animera l'image générée en haute fréquence.</p>
+        </div>
+
+        <button id="generate-btn" class="btn-generate" onclick="handleGenerate()">
+            <span id="btn-text">Générer le Rendu</span>
+        </button>
+
+    </aside>
+
+    <!-- 3. MAIN WORKSPACE -->
+    <main class="workspace">
+        
+        <!-- Action Bar (Download) -->
+        <div class="action-bar">
+            <button id="btn-download" class="action-btn" onclick="downloadResult()">
+                Sauvegarder <span id="file-ext">.JPG</span>
+            </button>
+        </div>
+
+        <!-- Preview Area -->
+        <div class="preview-container" id="preview-container">
+            <!-- Content injected here (Img or Canvas) -->
+            <div class="text-center p-10 text-gray-400">
+                <svg class="w-16 h-16 mx-auto mb-4 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                <p class="text-sm font-medium opacity-50 uppercase tracking-widest">En attente de création</p>
+            </div>
+        </div>
+
+        <!-- Status Indicator -->
+        <div id="status-bar" class="status-bar">
+            <div class="status-dot"></div>
+            <span id="status-text">Traitement en cours...</span>
+        </div>
+
+    </main>
+</div>
+
+<!-- Hidden Canvas for Video Processing -->
+<canvas id="render-canvas" style="display: none;"></canvas>
+
+<script>
+    // --- STATE MANAGEMENT ---
+    const state = {
+        mode: 'image', // 'image' | 'video'
+        width: 1024,
+        height: 1024,
+        style: 'realistic',
+        motion: 'zoom',
+        prompt: '',
+        currentResultUrl: null
+    };
+
+    // --- UI CONTROLS ---
+
+    function toggleTheme() {
+        document.body.classList.toggle('dark-mode');
+        // Save preference logic could go here
+    }
+
+    function setMode(mode) {
+        state.mode = mode;
+        
+        // Update Buttons
+        document.getElementById('mode-image').className = `option-btn ${mode === 'image' ? 'selected' : ''}`;
+        document.getElementById('mode-video').className = `option-btn ${mode === 'video' ? 'selected' : ''}`;
+        
+        // Show/Hide Video Options
+        const vidOpts = document.getElementById('video-options');
+        const btnText = document.getElementById('btn-text');
+        const fileExt = document.getElementById('file-ext');
+
+        if(mode === 'video') {
+            vidOpts.classList.remove('hidden');
+            btnText.innerText = "Calculer la Vidéo";
+            fileExt.innerText = ".WEBM";
+        } else {
+            vidOpts.classList.add('hidden');
+            btnText.innerText = "Générer l'Image";
+            fileExt.innerText = ".JPG";
+        }
+    }
+
+    function setRatio(w, h, btn) {
+        state.width = w;
+        state.height = h;
+        // Reset selection visual
+        const siblings = btn.parentElement.children;
+        for(let sib of siblings) sib.classList.remove('selected');
+        btn.classList.add('selected');
+    }
+
+    function setStyle(style, btn) {
+        state.style = style;
+        const siblings = btn.parentElement.children;
+        for(let sib of siblings) sib.classList.remove('selected');
+        btn.classList.add('selected');
+    }
+
+    function setMotion(motion, btn) {
+        state.motion = motion;
+        const siblings = btn.parentElement.children;
+        for(let sib of siblings) sib.classList.remove('selected');
+        btn.classList.add('selected');
+    }
+
+    function updateStatus(show, text = "") {
+        const bar = document.getElementById('status-bar');
+        const txt = document.getElementById('status-text');
+        if(show) {
+            bar.style.display = 'flex';
+            txt.innerText = text;
+        } else {
+            bar.style.display = 'none';
+        }
+    }
+
+    // --- CORE GENERATION LOGIC ---
+
+    async function handleGenerate() {
+        const promptInput = document.getElementById('prompt').value.trim();
+        if(!promptInput) {
+            alert("Veuillez entrer une description.");
+            return;
+        }
+
+        const btn = document.getElementById('generate-btn');
+        btn.disabled = true;
+        document.getElementById('btn-download').style.display = 'none';
+
+        try {
+            // 1. GENERATE BASE IMAGE (Using Pollinations API - Robust & Free)
+            updateStatus(true, "Génération de l'image source...");
+            
+            // Enrich prompt based on style
+            let fullPrompt = promptInput;
+            if(state.style === 'realistic') fullPrompt += ", photorealistic, 8k, highly detailed, dramatic lighting, photography";
+            if(state.style === 'anime') fullPrompt += ", anime style, studio ghibli, vibrant colors, 2d, illustration";
+            if(state.style === '3d') fullPrompt += ", 3d render, unreal engine 5, octane render, isometric, blender";
+            if(state.style === 'cinematic') fullPrompt += ", cinematic shot, movie scene, depth of field, anamorphic lens";
+
+            const seed = Math.floor(Math.random() * 100000);
+            const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(fullPrompt)}?width=${state.width}&height=${state.height}&seed=${seed}&nologo=true&model=flux`;
+
+            // Load image
+            const imgObj = await loadImage(imageUrl);
+
+            if (state.mode === 'image') {
+                // Display Image directly
+                displayImage(imgObj.src);
+                state.currentResultUrl = imgObj.src;
+                updateStatus(false);
+                document.getElementById('btn-download').style.display = 'block';
+            } else {
+                // Video Mode
+                updateStatus(true, "Encodage vidéo en cours (Client-Side)...");
+                await generateVideo(imgObj);
+            }
+
+        } catch (error) {
+            console.error(error);
+            alert("Erreur lors de la génération. Veuillez réessayer.");
+            updateStatus(false);
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    function loadImage(url) {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.crossOrigin = "Anonymous"; // Essential for Canvas manipulation
+            img.src = url;
+            img.onload = () => resolve(img);
+            img.onerror = reject;
+        });
+    }
+
+    function displayImage(url) {
+        const container = document.getElementById('preview-container');
+        container.innerHTML = `<img src="${url}" class="preview-media" alt="Result">`;
+    }
+
+    // --- VIDEO ENGINE (CANVAS MOTION) ---
+
+    async function generateVideo(image) {
+        const canvas = document.getElementById('render-canvas');
+        const ctx = canvas.getContext('2d');
+        const container = document.getElementById('preview-container');
+        
+        // Setup resolution
+        canvas.width = state.width;
+        canvas.height = state.height;
+
+        // Display preview canvas
+        container.innerHTML = '';
+        const previewCanvas = document.createElement('canvas');
+        previewCanvas.className = 'preview-media';
+        previewCanvas.width = state.width;
+        previewCanvas.height = state.height;
+        // Fit preview visually
+        previewCanvas.style.maxHeight = '80vh';
+        previewCanvas.style.maxWidth = '100%';
+        container.appendChild(previewCanvas);
+        const previewCtx = previewCanvas.getContext('2d');
+
+        // Setup Media Recorder
+        const stream = canvas.captureStream(30); // 30 FPS
+        const mediaRecorder = new MediaRecorder(stream, {
+            mimeType: 'video/webm; codecs=vp9',
+            videoBitsPerSecond: 5000000 // 5 Mbps quality
+        });
+
+        const chunks = [];
+        mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
+
+        mediaRecorder.onstop = () => {
+            const blob = new Blob(chunks, { type: 'video/webm' });
+            const videoUrl = URL.createObjectURL(blob);
+            state.currentResultUrl = videoUrl;
+            
+            // Replace canvas with video element for playback
+            container.innerHTML = `
+                <video src="${videoUrl}" controls autoplay loop class="preview-media"></video>
+            `;
+            
+            updateStatus(false);
+            document.getElementById('btn-download').style.display = 'block';
+        };
+
+        // Animation Logic
+        mediaRecorder.start();
+
+        const duration = 120; // 4 seconds @ 30fps
+        let frame = 0;
+        const maxZoom = 1.15; // 15% zoom
+        
+        function renderFrame() {
+            if (frame >= duration) {
+                mediaRecorder.stop();
+                return;
+            }
+
+            const progress = frame / duration;
+            
+            // Clear
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            let scale, tx, ty;
+
+            if (state.motion === 'zoom') {
+                // Zoom In Center
+                scale = 1 + (maxZoom - 1) * progress;
+                const width = canvas.width * scale;
+                const height = canvas.height * scale;
+                tx = (canvas.width - width) / 2;
+                ty = (canvas.height - height) / 2;
+                ctx.drawImage(image, tx, ty, width, height);
+            } else {
+                // Pan (Left to Right slight zoom)
+                scale = 1.1; // constant zoom
+                const width = canvas.width * scale;
+                const height = canvas.height * scale;
+                const maxPanX = width - canvas.width;
+                tx = -maxPanX * progress; // Move left
+                ty = (canvas.height - height) / 2; // Center Y
+                ctx.drawImage(image, tx, ty, width, height);
+            }
+
+            // Copy to visible preview
+            previewCtx.drawImage(canvas, 0, 0);
+
+            frame++;
+            requestAnimationFrame(renderFrame);
+        }
+
+        renderFrame();
+    }
+
+    // --- DOWNLOAD HANDLER ---
+
+    function downloadResult() {
+        if (!state.currentResultUrl) return;
+
+        const a = document.createElement('a');
+        a.href = state.currentResultUrl;
+        
+        const timestamp = new Date().getTime();
+        if (state.mode === 'image') {
+            a.download = `WikiMind-Image-${timestamp}.jpg`;
+        } else {
+            a.download = `WikiMind-Video-${timestamp}.webm`;
+        }
+        
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }
+
+    // --- INIT ---
+    // Detect system dark mode preferences on load
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.body.classList.add('dark-mode');
+    }
+
+</script>
+</body>
+</html>
