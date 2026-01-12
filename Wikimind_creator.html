@@ -1,3 +1,4 @@
+<!-- START OF FILE WikiMind_creator.html -->
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -68,6 +69,7 @@
             display: flex; align-items: center; justify-content: center;
             font-weight: 900; font-size: 20px;
             margin-bottom: 20px;
+            text-decoration: none;
         }
 
         .nav-btn {
@@ -148,12 +150,31 @@
             transition: 0.2s;
             background: var(--bg);
             color: var(--text-muted);
+            position: relative;
+            overflow: hidden;
         }
         .option-btn:hover { border-color: var(--text-muted); }
         .option-btn.selected {
             background: var(--accent);
             color: var(--accent-fg);
             border-color: var(--accent);
+        }
+        .option-btn.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background: var(--surface);
+        }
+
+        /* Pro Badge */
+        .pro-badge {
+            position: absolute; top: 2px; right: 2px;
+            background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+            color: black; font-size: 8px; font-weight: 900;
+            padding: 1px 4px; border-radius: 4px;
+            text-transform: uppercase;
+        }
+        .lock-icon {
+            display: inline-block; margin-left: 4px; font-size: 10px;
         }
 
         /* GENERATE BUTTON */
@@ -171,7 +192,7 @@
             cursor: pointer;
             transition: transform 0.1s, opacity 0.2s;
             border: none;
-            display: flex; justify-content: center; items-items: center; gap: 8px;
+            display: flex; justify-content: center; items-center: center; gap: 8px;
         }
         .btn-generate:hover { opacity: 0.9; }
         .btn-generate:active { transform: scale(0.98); }
@@ -188,7 +209,6 @@
             padding: 40px;
         }
         
-        /* Checkboard pattern for transparency */
         .workspace::before {
             content: '';
             position: absolute; inset: 0;
@@ -198,50 +218,58 @@
                 linear-gradient(45deg, transparent 75%, var(--border) 75%), 
                 linear-gradient(-45deg, transparent 75%, var(--border) 75%);
             background-size: 20px 20px;
-            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
             opacity: 0.2;
             pointer-events: none;
         }
 
         .preview-container {
-            max-width: 100%;
-            max-height: 100%;
+            max-width: 100%; max-height: 100%;
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
             border-radius: 12px;
             overflow: hidden;
             position: relative;
-            display: flex;
-            align-items: center; justify-content: center;
+            display: flex; align-items: center; justify-content: center;
         }
 
         .preview-media {
-            display: block;
-            max-width: 100%;
-            max-height: 80vh;
+            display: block; max-width: 100%; max-height: 80vh;
             object-fit: contain;
         }
 
-        /* --- THEME TOGGLE (CUSTOM) --- */
+        /* --- THEME TOGGLE & AUTH --- */
         .theme-switch {
             width: 40px; height: 20px;
             background: var(--border);
             border-radius: 20px;
-            position: relative;
-            cursor: pointer;
-            transition: 0.3s;
+            position: relative; cursor: pointer; transition: 0.3s;
         }
         .theme-switch::after {
-            content: '';
-            position: absolute; top: 2px; left: 2px;
-            width: 16px; height: 16px;
-            background: var(--text-main);
-            border-radius: 50%;
-            transition: 0.3s;
+            content: ''; position: absolute; top: 2px; left: 2px;
+            width: 16px; height: 16px; background: var(--text-main);
+            border-radius: 50%; transition: 0.3s;
         }
-        .dark-mode .theme-switch::after {
-            transform: translateX(20px);
-            background: var(--bg);
+        .dark-mode .theme-switch::after { transform: translateX(20px); background: var(--bg); }
+
+        /* --- ACTION BAR --- */
+        .action-bar {
+            position: absolute; top: 20px; right: 20px;
+            display: flex; gap: 10px; align-items: center;
         }
+        .action-btn {
+            background: var(--bg); border: 1px solid var(--border); color: var(--text-main);
+            padding: 8px 16px; border-radius: 8px; font-size: 12px; font-weight: 600;
+            cursor: pointer; transition: 0.2s; display: none;
+        }
+        .action-btn:hover { background: var(--surface); }
+
+        .auth-btn-small {
+            display: flex; items-items: center; gap: 8px;
+            background: var(--bg); border: 1px solid var(--border);
+            padding: 6px 12px; border-radius: 99px;
+            font-size: 11px; font-weight: 700; color: var(--text-main);
+            text-decoration: none; transition: 0.2s; text-transform: uppercase; letter-spacing: 0.05em;
+        }
+        .auth-btn-small:hover { background: var(--surface); }
 
         /* --- OVERLAYS --- */
         .status-bar {
@@ -254,17 +282,6 @@
         }
         .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text-main); animation: pulse 1s infinite; }
 
-        .action-bar {
-            position: absolute; top: 20px; right: 20px;
-            display: flex; gap: 10px;
-        }
-        .action-btn {
-            background: var(--bg); border: 1px solid var(--border); color: var(--text-main);
-            padding: 8px 16px; border-radius: 8px; font-size: 12px; font-weight: 600;
-            cursor: pointer; transition: 0.2s; display: none;
-        }
-        .action-btn:hover { background: var(--surface); }
-
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
     </style>
 </head>
@@ -273,13 +290,13 @@
 <div class="layout-grid">
     <!-- 1. LEFT SIDEBAR (ICONS) -->
     <nav class="sidebar-icons">
-        <div class="logo-box">W</div>
+        <a href="Wikimind_home.html" class="logo-box">W</a>
         
         <div class="nav-btn active" title="Studio">
             <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
         </div>
         
-        <!-- Toggle Theme (NO MOON) -->
+        <!-- Toggle Theme -->
         <div style="margin-top: auto;">
             <div class="theme-switch" onclick="toggleTheme()" title="Basculer thème"></div>
         </div>
@@ -289,22 +306,28 @@
     <aside class="control-panel">
         <div class="panel-header">
             <span>Configuration</span>
-            <span class="text-[10px] text-gray-400">V.2.0 PRO</span>
+            <div id="user-status-display" class="text-[10px] bg-gray-200 dark:bg-gray-800 px-2 py-1 rounded text-gray-500 font-bold">VISITEUR</div>
         </div>
 
         <!-- Mode Selection -->
         <div class="form-group">
             <label class="label">Mode de Création</label>
             <div class="select-grid">
-                <div class="option-btn selected" id="mode-image" onclick="setMode('image')">Image</div>
-                <div class="option-btn" id="mode-video" onclick="setMode('video')">Vidéo Pro</div>
+                <div class="option-btn selected" id="mode-image" onclick="setMode('image')">
+                    Image
+                </div>
+                <div class="option-btn relative" id="mode-video" onclick="setMode('video')">
+                    Vidéo <span class="lock-icon">🔒</span>
+                    <span class="pro-badge">PRO</span>
+                </div>
             </div>
+            <p id="video-lock-msg" class="text-[10px] text-red-500 mt-2 hidden">Fonctionnalité réservée aux membres Pro.</p>
         </div>
 
         <!-- Prompt -->
         <div class="form-group">
             <label class="label">Prompt (Description)</label>
-            <textarea id="prompt" class="input-area" placeholder="Décrivez votre vision avec précision... (ex: Une architecture brutaliste en béton, lumière dramatique, 8k, photoréaliste)"></textarea>
+            <textarea id="prompt" class="input-area" placeholder="Décrivez votre vision avec précision... (ex: Une architecture brutaliste en béton, lumière dramatique, 8k)"></textarea>
         </div>
 
         <!-- Settings: Aspect Ratio -->
@@ -330,12 +353,16 @@
 
         <!-- Video Options (Hidden by default) -->
         <div id="video-options" class="form-group hidden">
-            <label class="label">Mouvement Caméra</label>
+            <label class="label">Mouvement Caméra (Pro)</label>
             <div class="select-grid">
                 <div class="option-btn selected" onclick="setMotion('zoom', this)">Zoom In</div>
                 <div class="option-btn" onclick="setMotion('pan', this)">Panoramique</div>
             </div>
-            <p class="text-[10px] text-gray-500 mt-2">Le moteur de rendu client animera l'image générée en haute fréquence.</p>
+        </div>
+
+        <!-- Info Filigrane -->
+        <div id="watermark-info" class="text-[10px] text-gray-400 mb-4 text-center">
+            Mode Gratuit : Filigrane ajouté. <a href="user.html" class="underline hover:text-white">Passer Pro</a>
         </div>
 
         <button id="generate-btn" class="btn-generate" onclick="handleGenerate()">
@@ -347,8 +374,14 @@
     <!-- 3. MAIN WORKSPACE -->
     <main class="workspace">
         
-        <!-- Action Bar (Download) -->
+        <!-- Action Bar (Top Right) -->
         <div class="action-bar">
+            <!-- Auth Button -->
+            <a href="user.html" id="auth-btn-top" class="auth-btn-small">
+                <span>Connexion</span>
+            </a>
+            
+            <!-- Download Button -->
             <button id="btn-download" class="action-btn" onclick="downloadResult()">
                 Sauvegarder <span id="file-ext">.JPG</span>
             </button>
@@ -356,7 +389,7 @@
 
         <!-- Preview Area -->
         <div class="preview-container" id="preview-container">
-            <!-- Content injected here (Img or Canvas) -->
+            <!-- Content injected here -->
             <div class="text-center p-10 text-gray-400">
                 <svg class="w-16 h-16 mx-auto mb-4 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                 <p class="text-sm font-medium opacity-50 uppercase tracking-widest">En attente de création</p>
@@ -372,8 +405,77 @@
     </main>
 </div>
 
-<!-- Hidden Canvas for Video Processing -->
+<!-- Hidden Canvas for Processing -->
 <canvas id="render-canvas" style="display: none;"></canvas>
+
+<!-- FIREBASE LOGIC -->
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
+    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyAsV27OD4bARFOSDlZN1MAARSv9q2WBkdo",
+        authDomain: "wikimind-pro.firebaseapp.com",
+        projectId: "wikimind-pro",
+        storageBucket: "wikimind-pro.firebasestorage.app",
+        messagingSenderId: "154490257518",
+        appId: "1:154490257518:web:3276b1e64f2db9894be67f"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // Global State for Auth
+    window.currentUser = { isPremium: false }; // Default to free
+
+    onAuthStateChanged(auth, async (user) => {
+        const btn = document.getElementById('auth-btn-top');
+        const statusDisplay = document.getElementById('user-status-display');
+        const watermarkInfo = document.getElementById('watermark-info');
+
+        if (user) {
+            // User connected, check DB for premium
+            const docRef = doc(db, "users", user.uid);
+            const docSnap = await getDoc(docRef);
+            
+            if (docSnap.exists() && docSnap.data().isPremium) {
+                window.currentUser.isPremium = true;
+                
+                // UI Update: Premium
+                btn.innerHTML = `<div class="w-2 h-2 rounded-full bg-green-500"></div> <span>Mon Espace</span>`;
+                statusDisplay.innerText = "MEMBRE PRO";
+                statusDisplay.className = "text-[10px] bg-black text-white dark:bg-white dark:text-black px-2 py-1 rounded font-bold";
+                
+                // Remove locks
+                document.querySelector('#mode-video .lock-icon').style.display = 'none';
+                document.querySelector('#mode-video .pro-badge').style.display = 'none';
+                watermarkInfo.style.display = 'none';
+            } else {
+                // Connected but Free
+                btn.innerHTML = `<span>Mon Compte</span>`;
+                statusDisplay.innerText = "VISITEUR";
+            }
+        } else {
+            // Disconnected
+            window.currentUser.isPremium = false;
+            btn.innerHTML = `<span>Connexion</span>`;
+            statusDisplay.innerText = "VISITEUR";
+            watermarkInfo.style.display = 'block';
+        }
+        
+        // Refresh mode logic based on new status
+        refreshModeUI();
+    });
+
+    function refreshModeUI() {
+        // If current mode is video but user is free, switch back to image
+        if (state.mode === 'video' && !window.currentUser.isPremium) {
+            setMode('image');
+        }
+    }
+</script>
 
 <script>
     // --- STATE MANAGEMENT ---
@@ -391,15 +493,26 @@
 
     function toggleTheme() {
         document.body.classList.toggle('dark-mode');
-        // Save preference logic could go here
     }
 
-    function setMode(mode) {
+    // Expose setMode globally for onclick events
+    window.setMode = function(mode) {
+        // PERMISSION CHECK FOR VIDEO
+        if (mode === 'video') {
+            if (!window.currentUser.isPremium) {
+                document.getElementById('video-lock-msg').classList.remove('hidden');
+                setTimeout(() => document.getElementById('video-lock-msg').classList.add('hidden'), 3000);
+                return; // Stop here
+            }
+        }
+
         state.mode = mode;
         
         // Update Buttons
         document.getElementById('mode-image').className = `option-btn ${mode === 'image' ? 'selected' : ''}`;
-        document.getElementById('mode-video').className = `option-btn ${mode === 'video' ? 'selected' : ''}`;
+        
+        const vidBtnClass = `option-btn relative ${mode === 'video' ? 'selected' : ''}`;
+        document.getElementById('mode-video').className = vidBtnClass;
         
         // Show/Hide Video Options
         const vidOpts = document.getElementById('video-options');
@@ -408,7 +521,7 @@
 
         if(mode === 'video') {
             vidOpts.classList.remove('hidden');
-            btnText.innerText = "Calculer la Vidéo";
+            btnText.innerText = "Calculer la Vidéo (Pro)";
             fileExt.innerText = ".WEBM";
         } else {
             vidOpts.classList.add('hidden');
@@ -417,23 +530,22 @@
         }
     }
 
-    function setRatio(w, h, btn) {
+    window.setRatio = function(w, h, btn) {
         state.width = w;
         state.height = h;
-        // Reset selection visual
         const siblings = btn.parentElement.children;
         for(let sib of siblings) sib.classList.remove('selected');
         btn.classList.add('selected');
     }
 
-    function setStyle(style, btn) {
+    window.setStyle = function(style, btn) {
         state.style = style;
         const siblings = btn.parentElement.children;
         for(let sib of siblings) sib.classList.remove('selected');
         btn.classList.add('selected');
     }
 
-    function setMotion(motion, btn) {
+    window.setMotion = function(motion, btn) {
         state.motion = motion;
         const siblings = btn.parentElement.children;
         for(let sib of siblings) sib.classList.remove('selected');
@@ -453,7 +565,7 @@
 
     // --- CORE GENERATION LOGIC ---
 
-    async function handleGenerate() {
+    window.handleGenerate = async function() {
         const promptInput = document.getElementById('prompt').value.trim();
         if(!promptInput) {
             alert("Veuillez entrer une description.");
@@ -465,10 +577,9 @@
         document.getElementById('btn-download').style.display = 'none';
 
         try {
-            // 1. GENERATE BASE IMAGE (Using Pollinations API - Robust & Free)
+            // 1. GENERATE BASE IMAGE
             updateStatus(true, "Génération de l'image source...");
             
-            // Enrich prompt based on style
             let fullPrompt = promptInput;
             if(state.style === 'realistic') fullPrompt += ", photorealistic, 8k, highly detailed, dramatic lighting, photography";
             if(state.style === 'anime') fullPrompt += ", anime style, studio ghibli, vibrant colors, 2d, illustration";
@@ -481,16 +592,22 @@
             // Load image
             const imgObj = await loadImage(imageUrl);
 
+            // 2. PROCESS CANVAS (ADD WATERMARK IF FREE)
+            const processedCanvas = processImageWithWatermark(imgObj);
+
             if (state.mode === 'image') {
-                // Display Image directly
-                displayImage(imgObj.src);
-                state.currentResultUrl = imgObj.src;
+                // Convert Canvas to Data URL for display
+                const finalUrl = processedCanvas.toDataURL('image/jpeg', 0.9);
+                displayImage(finalUrl);
+                state.currentResultUrl = finalUrl;
                 updateStatus(false);
                 document.getElementById('btn-download').style.display = 'block';
             } else {
-                // Video Mode
+                // Video Mode (Only reachable if Premium, so Watermark is handled by logic)
                 updateStatus(true, "Encodage vidéo en cours (Client-Side)...");
-                await generateVideo(imgObj);
+                // Note: We use the processedCanvas (with or without watermark) as base
+                const processedImg = await loadImage(processedCanvas.toDataURL());
+                await generateVideo(processedImg);
             }
 
         } catch (error) {
@@ -505,11 +622,46 @@
     function loadImage(url) {
         return new Promise((resolve, reject) => {
             const img = new Image();
-            img.crossOrigin = "Anonymous"; // Essential for Canvas manipulation
+            img.crossOrigin = "Anonymous"; 
             img.src = url;
             img.onload = () => resolve(img);
             img.onerror = reject;
         });
+    }
+
+    function processImageWithWatermark(img) {
+        const canvas = document.createElement('canvas');
+        canvas.width = state.width;
+        canvas.height = state.height;
+        const ctx = canvas.getContext('2d');
+        
+        // Draw Image
+        ctx.drawImage(img, 0, 0, state.width, state.height);
+
+        // Add Watermark if NOT Premium
+        if (!window.currentUser.isPremium) {
+            // Style
+            const fontSize = Math.floor(state.width / 20);
+            ctx.font = `900 ${fontSize}px Inter, sans-serif`;
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'bottom';
+            
+            // Shadow
+            ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
+            ctx.fillText("WikiMind Free", state.width - 20 + 2, state.height - 20 + 2);
+            
+            // Text
+            ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
+            ctx.fillText("WikiMind Free", state.width - 20, state.height - 20);
+            
+            // Grid Overlay Pattern (Subtle protection)
+            ctx.fillStyle = "rgba(255, 255, 255, 0.05)";
+            for(let i=0; i<state.width; i+=100) {
+                 ctx.fillRect(i, 0, 1, state.height);
+            }
+        }
+
+        return canvas;
     }
 
     function displayImage(url) {
@@ -524,27 +676,25 @@
         const ctx = canvas.getContext('2d');
         const container = document.getElementById('preview-container');
         
-        // Setup resolution
         canvas.width = state.width;
         canvas.height = state.height;
 
-        // Display preview canvas
+        // Preview setup
         container.innerHTML = '';
         const previewCanvas = document.createElement('canvas');
         previewCanvas.className = 'preview-media';
         previewCanvas.width = state.width;
         previewCanvas.height = state.height;
-        // Fit preview visually
         previewCanvas.style.maxHeight = '80vh';
         previewCanvas.style.maxWidth = '100%';
         container.appendChild(previewCanvas);
         const previewCtx = previewCanvas.getContext('2d');
 
-        // Setup Media Recorder
-        const stream = canvas.captureStream(30); // 30 FPS
+        // Media Recorder
+        const stream = canvas.captureStream(30); 
         const mediaRecorder = new MediaRecorder(stream, {
             mimeType: 'video/webm; codecs=vp9',
-            videoBitsPerSecond: 5000000 // 5 Mbps quality
+            videoBitsPerSecond: 5000000 
         });
 
         const chunks = [];
@@ -555,7 +705,6 @@
             const videoUrl = URL.createObjectURL(blob);
             state.currentResultUrl = videoUrl;
             
-            // Replace canvas with video element for playback
             container.innerHTML = `
                 <video src="${videoUrl}" controls autoplay loop class="preview-media"></video>
             `;
@@ -564,28 +713,32 @@
             document.getElementById('btn-download').style.display = 'block';
         };
 
-        // Animation Logic
         mediaRecorder.start();
 
-        const duration = 120; // 4 seconds @ 30fps
+        // ANIMATION LOOP
+        const durationFrames = 120; // 4 seconds @ 30fps
         let frame = 0;
         const maxZoom = 1.15; // 15% zoom
         
         function renderFrame() {
-            if (frame >= duration) {
+            if (frame >= durationFrames) {
                 mediaRecorder.stop();
                 return;
             }
 
-            const progress = frame / duration;
+            // Progress is linear 0.0 -> 1.0 from start to end
+            const progress = frame / durationFrames;
             
-            // Clear
             ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw background (Black)
+            ctx.fillStyle = "#000";
+            ctx.fillRect(0,0, canvas.width, canvas.height);
             
             let scale, tx, ty;
 
             if (state.motion === 'zoom') {
-                // Zoom In Center
+                // Smooth linear Zoom In Center
                 scale = 1 + (maxZoom - 1) * progress;
                 const width = canvas.width * scale;
                 const height = canvas.height * scale;
@@ -593,13 +746,14 @@
                 ty = (canvas.height - height) / 2;
                 ctx.drawImage(image, tx, ty, width, height);
             } else {
-                // Pan (Left to Right slight zoom)
+                // Smooth linear Pan (Left to Right)
                 scale = 1.1; // constant zoom
                 const width = canvas.width * scale;
                 const height = canvas.height * scale;
                 const maxPanX = width - canvas.width;
-                tx = -maxPanX * progress; // Move left
-                ty = (canvas.height - height) / 2; // Center Y
+                // Move linearly from 0 to -maxPanX
+                tx = -maxPanX * progress; 
+                ty = (canvas.height - height) / 2;
                 ctx.drawImage(image, tx, ty, width, height);
             }
 
@@ -615,7 +769,7 @@
 
     // --- DOWNLOAD HANDLER ---
 
-    function downloadResult() {
+    window.downloadResult = function() {
         if (!state.currentResultUrl) return;
 
         const a = document.createElement('a');
@@ -634,7 +788,6 @@
     }
 
     // --- INIT ---
-    // Detect system dark mode preferences on load
     if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
         document.body.classList.add('dark-mode');
     }
