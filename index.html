@@ -1,3 +1,4 @@
+<!-- START OF FILE Wikimind_home.html -->
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -108,17 +109,6 @@
             opacity: 0.9;
         }
 
-        .btn-outline {
-            background-color: transparent;
-            border: 1px solid var(--border);
-            color: var(--text);
-            transition: all 0.2s;
-        }
-        .btn-outline:hover {
-            border-color: var(--text);
-            background-color: var(--card-bg);
-        }
-
         .bg-grain {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E");
@@ -151,6 +141,12 @@
             
             <div class="flex items-center gap-4">
                 <button onclick="switchView('catalog')" class="hidden md:block text-xs font-bold uppercase tracking-widest hover:text-gray-500 transition">Catalogue</button>
+                
+                <!-- BOUTON MON COMPTE (NOUVEAU) -->
+                <a href="user.html" id="auth-btn" class="hidden md:flex items-center gap-2 px-4 py-2 rounded-full bg-gray-100 dark:bg-zinc-800 text-xs font-bold uppercase tracking-widest hover:bg-gray-200 dark:hover:bg-zinc-700 transition">
+                    <span>Mon Compte</span>
+                </a>
+
                 <button onclick="toggleTheme()" class="w-10 h-10 rounded-full border border-gray-200 dark:border-gray-700 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-zinc-800 transition">
                     <svg id="theme-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
                 </button>
@@ -174,13 +170,17 @@
                 <p class="text-lg text-gray-500 max-w-2xl mx-auto font-medium">
                     Une suite d'outils connectés pour apprendre, créer et s'organiser. Propulsé par une architecture IA de pointe.
                 </p>
+                <!-- CTA Home -->
+                <div class="mt-8">
+                     <a href="user.html" class="btn-primary px-8 py-4 rounded-full font-bold uppercase tracking-widest text-xs inline-flex items-center gap-2">
+                        Commencer Gratuitement
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
+                     </a>
+                </div>
             </div>
 
             <!-- HOME GRID (Top 6 Apps) -->
             <div class="flex flex-wrap justify-center gap-6 w-full mb-12">
-                <!-- App Cards will be injected by JS for consistency, or defined here. 
-                     For the Homepage, we keep the specific "Showcase" look but use JS onclick to go to details. -->
-                
                 <!-- Wikimind AI -->
                 <div onclick="openAppDetail('wikimind')" class="app-card p-8 group flex flex-col justify-between animate-fade delay-100 h-80 flex-[1_1_300px] max-w-[400px]">
                     <div>
@@ -260,11 +260,76 @@
             </div>
 
             <!-- BOUTON TOUTES LES APPS -->
-            <div class="text-center animate-fade delay-600">
+            <div class="text-center animate-fade delay-600 mb-24">
                 <button onclick="switchView('catalog')" class="inline-flex items-center gap-2 px-6 py-3 rounded-full border border-gray-200 dark:border-gray-800 hover:bg-gray-100 dark:hover:bg-zinc-900 transition-all duration-300 text-xs font-bold uppercase tracking-widest">
                     <span>Voir tout l'écosystème</span>
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
                 </button>
+            </div>
+
+            <!-- NOUVELLE SECTION : COMPARATIF PREMIUM (STYLE CANVA) -->
+            <div class="mb-24 animate-fade delay-300">
+                <div class="text-center mb-12">
+                    <h3 class="text-3xl font-black uppercase tracking-tight mb-4">Passez au niveau supérieur</h3>
+                    <p class="text-gray-500">Une seule identité pour libérer toute la puissance de l'IA.</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+                    <!-- PLAN GRATUIT -->
+                    <div class="p-8 rounded-3xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-zinc-900/50 flex flex-col">
+                        <div class="mb-6">
+                            <h4 class="text-xl font-bold">Visiteur</h4>
+                            <div class="text-4xl font-black mt-2">Gratuit</div>
+                            <p class="text-sm text-gray-500 mt-2">Pour découvrir l'écosystème.</p>
+                        </div>
+                        <ul class="space-y-4 mb-8 flex-grow">
+                            <li class="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
+                                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                Accès aux Apps Standard
+                            </li>
+                            <li class="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
+                                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                Modèles IA de base (Rapides)
+                            </li>
+                            <li class="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
+                                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                Filigrane sur les images
+                            </li>
+                        </ul>
+                        <button onclick="switchView('catalog')" class="w-full py-3 rounded-xl border border-gray-200 dark:border-gray-700 font-bold text-xs uppercase tracking-widest hover:bg-gray-100 dark:hover:bg-zinc-800 transition">Explorer</button>
+                    </div>
+
+                    <!-- PLAN PRO -->
+                    <div class="relative p-8 rounded-3xl border border-black dark:border-white bg-black dark:bg-white text-white dark:text-black flex flex-col transform md:-translate-y-4 shadow-2xl">
+                        <div class="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest">Recommandé</div>
+                        <div class="mb-6">
+                            <h4 class="text-xl font-bold">WikiMind Pro</h4>
+                            <div class="text-4xl font-black mt-2">Offert</div>
+                            <p class="text-sm opacity-70 mt-2">En créant un compte gratuit.</p>
+                        </div>
+                        <ul class="space-y-4 mb-8 flex-grow">
+                            <li class="flex items-center gap-3 text-sm font-medium">
+                                <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                Accès à WikiMind 6.2 (IA Avancée)
+                            </li>
+                            <li class="flex items-center gap-3 text-sm font-medium">
+                                <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                Génération Vidéo (Creator Studio)
+                            </li>
+                            <li class="flex items-center gap-3 text-sm font-medium">
+                                <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                0% Filigrane sur les images
+                            </li>
+                            <li class="flex items-center gap-3 text-sm font-medium">
+                                <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                Personnalisation Physio (Âge/Poids)
+                            </li>
+                        </ul>
+                        <a href="user.html" class="block w-full text-center py-3 rounded-xl bg-white text-black dark:bg-black dark:text-white font-bold text-xs uppercase tracking-widest hover:opacity-90 transition">
+                            Créer mon compte Pro
+                        </a>
+                    </div>
+                </div>
             </div>
 
             <!-- ABOUT SECTIONS -->
@@ -429,6 +494,36 @@
             <button onclick="closeModal('privacy-modal')" class="w-full mt-6 btn-primary py-3 rounded-xl font-bold text-xs uppercase tracking-widest">Fermer</button>
         </div>
     </div>
+
+    <!-- SCRIPT FIREBASE POUR HEADER UNIQUEMENT -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAsV27OD4bARFOSDlZN1MAARSv9q2WBkdo",
+            authDomain: "wikimind-pro.firebaseapp.com",
+            projectId: "wikimind-pro",
+            storageBucket: "wikimind-pro.firebasestorage.app",
+            messagingSenderId: "154490257518",
+            appId: "1:154490257518:web:3276b1e64f2db9894be67f"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        // Surveiller l'état pour changer le texte du bouton Header
+        onAuthStateChanged(auth, (user) => {
+            const btn = document.getElementById('auth-btn');
+            if (user) {
+                // Utilisateur connecté
+                btn.innerHTML = `<div class="w-2 h-2 rounded-full bg-green-500"></div> <span>Mon Espace</span>`;
+            } else {
+                // Utilisateur déconnecté
+                btn.innerHTML = `<span>Mon Compte</span>`;
+            }
+        });
+    </script>
 
     <script>
         // --- DATA SOURCE ---
