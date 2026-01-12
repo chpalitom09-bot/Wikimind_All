@@ -1,5 +1,7 @@
+<!-- START OF FILE Wikimind_BAC.html -->
 <!DOCTYPE html>
 <html lang="fr">
+<head>
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-29XYBNJ2CB"></script>
 <script>
@@ -8,6 +10,15 @@
   gtag('js', new Date());
 
   gtag('config', 'G-29XYBNJ2CB');
+</script>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-YNR6KZQD5D"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-YNR6KZQD5D');
 </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -67,21 +78,28 @@
 
     <header class="border-b border-gray-200 sticky top-0 bg-white/90 backdrop-blur-md z-50">
         <div class="max-w-5xl mx-auto px-6 py-4 flex justify-between items-center">
-            <div class="flex items-center gap-2 flex-shrink-0 cursor-pointer" onclick="location.reload()">
+            <div class="flex items-center gap-2 flex-shrink-0 cursor-pointer" onclick="location.href='Wikimind_home.html'">
                 <div class="w-8 h-8 bg-black rounded-lg flex items-center justify-center text-white font-black text-sm flex-shrink-0 shadow-sm">W</div>
                 <h1 class="text-xl font-black tracking-tighter uppercase italic whitespace-nowrap">WikiMind <span class="text-gray-400 not-italic font-medium">BAC</span></h1>
             </div>
             
-            <a href="https://chpalitom09-bot.github.io/Wikimind/" target="_blank" 
-               class="group flex items-center gap-2 text-sm font-medium hover:text-black transition-colors hidden sm:flex">
-                <span class="text-gray-500 group-hover:text-black transition">Besoin d'aide ?</span>
-                <span class="bg-gray-100 px-3 py-1.5 rounded-full font-bold border border-gray-200 group-hover:bg-black group-hover:text-white group-hover:border-black transition duration-300">
-                    Parler à @WikiMind
-                </span>
-            </a>
-            <a href="https://chpalitom09-bot.github.io/Wikimind/" target="_blank" class="sm:hidden w-8 h-8 flex items-center justify-center bg-gray-100 rounded-full text-black">
-                ?
-            </a>
+            <div class="flex items-center gap-4">
+                <!-- BOUTON MON COMPTE -->
+                <a href="user.html" id="auth-btn" class="hidden md:flex items-center gap-2 px-4 py-2 rounded-full bg-gray-100 text-xs font-bold uppercase tracking-widest hover:bg-gray-200 transition">
+                    <span>Mon Compte</span>
+                </a>
+
+                <a href="https://chpalitom09-bot.github.io/Wikimind/" target="_blank" 
+                class="group flex items-center gap-2 text-sm font-medium hover:text-black transition-colors hidden sm:flex">
+                    <span class="text-gray-500 group-hover:text-black transition">Besoin d'aide ?</span>
+                    <span class="bg-gray-100 px-3 py-1.5 rounded-full font-bold border border-gray-200 group-hover:bg-black group-hover:text-white group-hover:border-black transition duration-300">
+                        Parler à @WikiMind
+                    </span>
+                </a>
+                <a href="https://chpalitom09-bot.github.io/Wikimind/" target="_blank" class="sm:hidden w-8 h-8 flex items-center justify-center bg-gray-100 rounded-full text-black">
+                    ?
+                </a>
+            </div>
         </div>
     </header>
 
@@ -145,6 +163,35 @@
             </div>
         </div>
     </div>
+
+    <!-- SCRIPT FIREBASE POUR HEADER -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAsV27OD4bARFOSDlZN1MAARSv9q2WBkdo",
+            authDomain: "wikimind-pro.firebaseapp.com",
+            projectId: "wikimind-pro",
+            storageBucket: "wikimind-pro.firebasestorage.app",
+            messagingSenderId: "154490257518",
+            appId: "1:154490257518:web:3276b1e64f2db9894be67f"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        onAuthStateChanged(auth, (user) => {
+            const btn = document.getElementById('auth-btn');
+            if (btn) {
+                if (user) {
+                    btn.innerHTML = `<div class="w-2 h-2 rounded-full bg-green-500"></div> <span>Mon Espace</span>`;
+                } else {
+                    btn.innerHTML = `<span>Mon Compte</span>`;
+                }
+            }
+        });
+    </script>
 
     <script>
         // --- 1. CONFIGURATION DATA ---
@@ -411,5 +458,4 @@
 
     </script>
 </body>
-
 </html>
