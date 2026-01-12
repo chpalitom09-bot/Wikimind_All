@@ -2,7 +2,7 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <!-- Google tag (gtag.js) -->
+<!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-29XYBNJ2CB"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
@@ -10,7 +10,7 @@
   gtag('js', new Date());
 
   gtag('config', 'G-29XYBNJ2CB');
-</script> 
+</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WikiMind - La Suite Intelligente</title>
@@ -151,7 +151,7 @@
             <div class="flex items-center gap-4">
                 <button onclick="switchView('catalog')" class="hidden md:block text-xs font-bold uppercase tracking-widest hover:text-gray-500 transition">Catalogue</button>
                 
-                <!-- BOUTON MON COMPTE (NOUVEAU) -->
+                <!-- BOUTON MON COMPTE -->
                 <a href="user.html" id="auth-btn" class="hidden md:flex items-center gap-2 px-4 py-2 rounded-full bg-gray-100 dark:bg-zinc-800 text-xs font-bold uppercase tracking-widest hover:bg-gray-200 dark:hover:bg-zinc-700 transition">
                     <span>Mon Compte</span>
                 </a>
@@ -276,7 +276,7 @@
                 </button>
             </div>
 
-            <!-- NOUVELLE SECTION : COMPARATIF PREMIUM (STYLE CANVA) -->
+            <!-- NOUVELLE SECTION : COMPARATIF PREMIUM (MISE À JOUR) -->
             <div class="mb-24 animate-fade delay-300">
                 <div class="text-center mb-12">
                     <h3 class="text-3xl font-black uppercase tracking-tight mb-4">Passez au niveau supérieur</h3>
@@ -292,17 +292,45 @@
                             <p class="text-sm text-gray-500 mt-2">Pour découvrir l'écosystème.</p>
                         </div>
                         <ul class="space-y-4 mb-8 flex-grow">
+                            <!-- Ligne 1 -->
                             <li class="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
-                                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                <svg class="w-5 h-5 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
                                 Accès aux Apps Standard
                             </li>
-                            <li class="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
-                                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                                Modèles IA de base (Rapides)
+                            <!-- Ligne 2 -->
+                            <li class="flex items-center gap-3 text-sm text-gray-400 dark:text-gray-600 line-through decoration-gray-400/50">
+                                <svg class="w-5 h-5 text-red-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                Accès à WikiMind 6.2 Illimité
                             </li>
-                            <li class="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
-                                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                                Filigrane sur les images
+                             <!-- Ligne 3 -->
+                             <li class="flex items-center gap-3 text-sm text-gray-400 dark:text-gray-600 line-through decoration-gray-400/50">
+                                <svg class="w-5 h-5 text-red-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                Accès à WikiMind 7.0 Illimité
+                            </li>
+                            <!-- Ligne 4 -->
+                            <li class="flex items-center gap-3 text-sm text-gray-400 dark:text-gray-600 line-through decoration-gray-400/50">
+                                <svg class="w-5 h-5 text-red-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                Génération Vidéo (Creator Studio)
+                            </li>
+                            <!-- Ligne 5 -->
+                            <li class="flex items-center gap-3 text-sm text-gray-400 dark:text-gray-600 line-through decoration-gray-400/50">
+                                <svg class="w-5 h-5 text-red-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                Aucun filligrane sur les Images et vidéos
+                            </li>
+                            <!-- Ligne 6 -->
+                            <li class="flex items-center gap-3 text-sm text-gray-400 dark:text-gray-600 line-through decoration-gray-400/50">
+                                <svg class="w-5 h-5 text-red-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                Personnalisation de WikiMind
+                            </li>
+                            <!-- Ligne 7 -->
+                            <li class="flex items-center gap-3 text-sm text-gray-400 dark:text-gray-600 line-through decoration-gray-400/50">
+                                <svg class="w-5 h-5 text-red-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                Mémoire intelligente
+                            </li>
+                             <!-- Ligne 8 -->
+                             <li class="flex items-center gap-3 text-sm text-gray-400 dark:text-gray-600 line-through decoration-gray-400/50">
+                                <svg class="w-5 h-5 text-red-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                Accès aux nouveautés en anticipation (Bêta)
                             </li>
                         </ul>
                         <button onclick="switchView('catalog')" class="w-full py-3 rounded-xl border border-gray-200 dark:border-gray-700 font-bold text-xs uppercase tracking-widest hover:bg-gray-100 dark:hover:bg-zinc-800 transition">Explorer</button>
@@ -317,21 +345,45 @@
                             <p class="text-sm opacity-70 mt-2">En créant un compte gratuit.</p>
                         </div>
                         <ul class="space-y-4 mb-8 flex-grow">
-                            <li class="flex items-center gap-3 text-sm font-medium">
-                                <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                                Accès à WikiMind 6.2 (IA Avancée)
+                             <!-- Ligne 1 -->
+                             <li class="flex items-center gap-3 text-sm font-medium">
+                                <svg class="w-5 h-5 text-blue-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                Accès aux Apps Standard
                             </li>
+                            <!-- Ligne 2 -->
                             <li class="flex items-center gap-3 text-sm font-medium">
-                                <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                <svg class="w-5 h-5 text-blue-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                Accès à WikiMind 6.2 Illimité
+                            </li>
+                             <!-- Ligne 3 -->
+                             <li class="flex items-center gap-3 text-sm font-medium">
+                                <svg class="w-5 h-5 text-blue-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                Accès à WikiMind 7.0 Illimité
+                            </li>
+                            <!-- Ligne 4 -->
+                            <li class="flex items-center gap-3 text-sm font-medium">
+                                <svg class="w-5 h-5 text-blue-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
                                 Génération Vidéo (Creator Studio)
                             </li>
+                            <!-- Ligne 5 -->
                             <li class="flex items-center gap-3 text-sm font-medium">
-                                <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                                0% Filigrane sur les images
+                                <svg class="w-5 h-5 text-blue-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                Aucun filligrane sur les Images et vidéos
                             </li>
+                            <!-- Ligne 6 -->
                             <li class="flex items-center gap-3 text-sm font-medium">
-                                <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                                Personnalisation Physio (Âge/Poids)
+                                <svg class="w-5 h-5 text-blue-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                Personnalisation de WikiMind
+                            </li>
+                             <!-- Ligne 7 -->
+                             <li class="flex items-center gap-3 text-sm font-medium">
+                                <svg class="w-5 h-5 text-blue-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                Mémoire intelligente
+                            </li>
+                            <!-- Ligne 8 -->
+                            <li class="flex items-center gap-3 text-sm font-medium">
+                                <svg class="w-5 h-5 text-blue-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                Accès aux nouveautés en anticipation (Bêta)
                             </li>
                         </ul>
                         <a href="user.html" class="block w-full text-center py-3 rounded-xl bg-white text-black dark:bg-black dark:text-white font-bold text-xs uppercase tracking-widest hover:opacity-90 transition">
