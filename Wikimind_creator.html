@@ -1,8 +1,8 @@
-<!-- START OF FILE WikiMind_creator.html -->
+<!-- START OF FILE WikiMind_creator_mobile.html -->
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <!-- Google tag (gtag.js) -->
+<!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-29XYBNJ2CB"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
@@ -12,7 +12,7 @@
   gtag('config', 'G-29XYBNJ2CB');
 </script>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>WikiMind Create | Studio Pro</title>
     
     <!-- Tailwind CSS -->
@@ -48,15 +48,17 @@
             background-color: var(--bg);
             color: var(--text-main);
             height: 100vh;
+            height: 100dvh; /* Mobile viewport fix */
             overflow: hidden;
             transition: background-color 0.3s ease, color 0.3s ease;
+            margin: 0;
         }
 
-        /* --- LAYOUT --- */
+        /* --- LAYOUT DEFAULT (DESKTOP) --- */
         .layout-grid {
             display: grid;
             grid-template-columns: 80px 350px 1fr;
-            height: 100vh;
+            height: 100%;
         }
 
         /* --- SIDEBAR ICONS --- */
@@ -79,6 +81,7 @@
             font-weight: 900; font-size: 20px;
             margin-bottom: 20px;
             text-decoration: none;
+            flex-shrink: 0;
         }
 
         .nav-btn {
@@ -102,6 +105,8 @@
             flex-direction: column;
             padding: 24px;
             overflow-y: auto;
+            position: relative;
+            z-index: 10;
         }
 
         .panel-header {
@@ -201,7 +206,8 @@
             cursor: pointer;
             transition: transform 0.1s, opacity 0.2s;
             border: none;
-            display: flex; justify-content: center; items-center: center; gap: 8px;
+            display: flex; justify-content: center; align-items: center; gap: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
         .btn-generate:hover { opacity: 0.9; }
         .btn-generate:active { transform: scale(0.98); }
@@ -263,6 +269,7 @@
         .action-bar {
             position: absolute; top: 20px; right: 20px;
             display: flex; gap: 10px; align-items: center;
+            z-index: 30;
         }
         .action-btn {
             background: var(--bg); border: 1px solid var(--border); color: var(--text-main);
@@ -272,7 +279,7 @@
         .action-btn:hover { background: var(--surface); }
 
         .auth-btn-small {
-            display: flex; items-items: center; gap: 8px;
+            display: flex; align-items: center; gap: 8px;
             background: var(--bg); border: 1px solid var(--border);
             padding: 6px 12px; border-radius: 99px;
             font-size: 11px; font-weight: 700; color: var(--text-main);
@@ -288,25 +295,88 @@
             font-size: 11px; font-weight: 600;
             display: none; align-items: center; gap: 8px;
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            z-index: 40;
         }
         .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text-main); animation: pulse 1s infinite; }
 
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+
+        /* ================= MOBILE RESPONSIVE ================= */
+        @media (max-width: 768px) {
+            .layout-grid {
+                display: flex;
+                flex-direction: column;
+                height: 100%;
+                overflow: hidden;
+            }
+
+            /* 1. Header Bar (was Sidebar) */
+            .sidebar-icons {
+                flex-direction: row;
+                width: 100%;
+                height: 60px;
+                min-height: 60px;
+                padding: 0 16px;
+                border-right: none;
+                border-bottom: 1px solid var(--border);
+                justify-content: space-between;
+                gap: 0;
+            }
+            .sidebar-icons > div { margin-top: 0 !important; } /* Reset spacer */
+            .logo-box { margin-bottom: 0; transform: scale(0.9); }
+            
+            /* 2. Workspace (Preview) */
+            .workspace {
+                order: 1;
+                flex: 0 0 40%; /* Take top 40% of screen */
+                padding: 16px;
+                border-bottom: 1px solid var(--border);
+            }
+            .preview-media {
+                max-height: 35vh; /* Ensure image fits */
+            }
+            .action-bar {
+                top: 10px; right: 10px;
+                transform: scale(0.9); transform-origin: top right;
+            }
+
+            /* 3. Control Panel (Bottom) */
+            .control-panel {
+                order: 2;
+                flex: 1;
+                width: 100%;
+                border-right: none;
+                padding: 20px;
+                padding-bottom: 80px; /* Space for scrolling */
+            }
+            
+            .btn-generate {
+                position: fixed; /* Stick to bottom on mobile */
+                bottom: 16px; left: 16px; right: 16px;
+                width: calc(100% - 32px);
+                z-index: 50;
+                box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3);
+            }
+
+            .panel-header {
+                margin-bottom: 20px;
+            }
+        }
     </style>
 </head>
 <body>
 
 <div class="layout-grid">
-    <!-- 1. LEFT SIDEBAR (ICONS) -->
+    <!-- 1. LEFT SIDEBAR (ICONS) -> BECOMES HEADER ON MOBILE -->
     <nav class="sidebar-icons">
-        <a href="Wikimind_home.html" class="logo-box">W</a>
+        <a href="index.html" class="logo-box">W</a>
         
-        <div class="nav-btn active" title="Studio">
-            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
-        </div>
-        
-        <!-- Toggle Theme -->
-        <div style="margin-top: auto;">
+        <!-- Desktop: spacer is managed by margin-top: auto in JS logic/CSS, but for flex row we justify-between -->
+        <div class="flex gap-4 items-center">
+            <div class="nav-btn active" title="Studio">
+                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+            </div>
+            <!-- Theme Toggle -->
             <div class="theme-switch" onclick="toggleTheme()" title="Basculer thème"></div>
         </div>
     </nav>
@@ -336,7 +406,7 @@
         <!-- Prompt -->
         <div class="form-group">
             <label class="label">Prompt (Description)</label>
-            <textarea id="prompt" class="input-area" placeholder="Décrivez votre vision avec précision... (ex: Une architecture brutaliste en béton, lumière dramatique, 8k)"></textarea>
+            <textarea id="prompt" class="input-area" placeholder="Décrivez votre vision... (ex: Architecture brutaliste, lumière néon)"></textarea>
         </div>
 
         <!-- Settings: Aspect Ratio -->
@@ -373,6 +443,9 @@
         <div id="watermark-info" class="text-[10px] text-gray-400 mb-4 text-center">
             Mode Gratuit : Filigrane ajouté. <a href="user.html" class="underline hover:text-white">Passer Pro</a>
         </div>
+        
+        <!-- Spacer for mobile scroll -->
+        <div class="h-12 md:h-0"></div>
 
         <button id="generate-btn" class="btn-generate" onclick="handleGenerate()">
             <span id="btn-text">Générer le Rendu</span>
@@ -401,14 +474,14 @@
             <!-- Content injected here -->
             <div class="text-center p-10 text-gray-400">
                 <svg class="w-16 h-16 mx-auto mb-4 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                <p class="text-sm font-medium opacity-50 uppercase tracking-widest">En attente de création</p>
+                <p class="text-sm font-medium opacity-50 uppercase tracking-widest">En attente</p>
             </div>
         </div>
 
         <!-- Status Indicator -->
         <div id="status-bar" class="status-bar">
             <div class="status-dot"></div>
-            <span id="status-text">Traitement en cours...</span>
+            <span id="status-text">Traitement...</span>
         </div>
 
     </main>
@@ -584,10 +657,15 @@
         const btn = document.getElementById('generate-btn');
         btn.disabled = true;
         document.getElementById('btn-download').style.display = 'none';
+        
+        // Mobile UX: Scroll to top to see preview
+        if(window.innerWidth <= 768) {
+             document.querySelector('.workspace').scrollIntoView({behavior: 'smooth'});
+        }
 
         try {
             // 1. GENERATE BASE IMAGE
-            updateStatus(true, "Génération de l'image source...");
+            updateStatus(true, "Génération...");
             
             let fullPrompt = promptInput;
             if(state.style === 'realistic') fullPrompt += ", photorealistic, 8k, highly detailed, dramatic lighting, photography";
@@ -613,7 +691,7 @@
                 document.getElementById('btn-download').style.display = 'block';
             } else {
                 // Video Mode (Only reachable if Premium, so Watermark is handled by logic)
-                updateStatus(true, "Encodage vidéo en cours (Client-Side)...");
+                updateStatus(true, "Encodage vidéo...");
                 // Note: We use the processedCanvas (with or without watermark) as base
                 const processedImg = await loadImage(processedCanvas.toDataURL());
                 await generateVideo(processedImg);
@@ -657,7 +735,7 @@
             
             // Shadow
             ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
-            ctx.fillText("WikiMind Free", state.width - 20 + 2, state.height - 20 + 2);
+            ctx.fillText("WikiMind", state.width - 20 + 2, state.height - 20 + 2);
             
             // Text
             ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
@@ -804,4 +882,3 @@
 </script>
 </body>
 </html>
-
