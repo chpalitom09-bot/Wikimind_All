@@ -12,7 +12,7 @@
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WikiMind Cloud</title>
+    <title>WikiMind Cloud - DB Version</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -24,8 +24,8 @@
                     fontFamily: { sans: ['Inter', 'sans-serif'] },
                     colors: {
                         bg: '#0f0f0f',
-                        surface: '#18181b',
-                        border: '#27272a',
+                        surface: '#18181b', // zinc-900
+                        border: '#27272a',  // zinc-800
                         primary: '#ffffff'
                     }
                 }
@@ -40,7 +40,7 @@
     <style>
         body { background-color: #0f0f0f; color: #fff; font-family: 'Inter', sans-serif; overflow-x: hidden; }
         
-        /* Loader Global */
+        /* Loader */
         #loading-screen {
             position: fixed; inset: 0; z-index: 100;
             background-color: #0f0f0f; display: flex; align-items: center; justify-content: center;
@@ -52,133 +52,123 @@
         }
         @keyframes spin { 100% { transform: rotate(360deg); } }
 
-        /* UI Elements */
-        .glass { background: rgba(24, 24, 27, 0.9); backdrop-filter: blur(8px); border-bottom: 1px solid #27272a; }
-        .drag-active { background-color: rgba(255,255,255,0.05); border-color: #fff; transform: scale(1.01); }
-        
-        /* Transitions */
+        /* UI Utilities */
+        .glass { background: rgba(24, 24, 27, 0.8); backdrop-filter: blur(12px); border-bottom: 1px solid #27272a; }
         .fade-in { animation: fadeIn 0.4s ease-out forwards; opacity: 0; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Drag Zone */
+        .drag-active { background-color: rgba(255,255,255,0.05); border-color: #fff; transform: scale(1.01); }
     </style>
 </head>
 <body class="flex flex-col min-h-screen relative">
 
-    <!-- 0. ECRAN DE CHARGEMENT GLOBAL -->
+    <!-- LOADER -->
     <div id="loading-screen">
         <div class="flex flex-col items-center gap-4">
             <div class="spinner"></div>
-            <p class="text-sm text-gray-500 font-mono animate-pulse">Connexion à WikiMind...</p>
+            <p class="text-xs text-gray-500 font-mono tracking-widest uppercase">Initialisation Database</p>
         </div>
     </div>
 
-    <!-- NOTIFICATION TOAST -->
-    <div id="toast" class="fixed top-6 right-6 z-50 transform translate-x-full transition-transform duration-300 bg-white text-black px-5 py-3 rounded-lg shadow-2xl flex items-center gap-3 font-medium text-sm max-w-sm border-l-4 border-black">
-        <i id="toast-icon" class="fa-solid fa-info-circle"></i>
+    <!-- TOAST NOTIFICATION -->
+    <div id="toast" class="fixed top-6 right-6 z-50 transform translate-x-full transition-transform duration-300 bg-white text-black px-5 py-4 rounded-xl shadow-2xl flex items-center gap-3 font-bold text-xs uppercase tracking-wider max-w-sm border border-gray-200">
+        <i id="toast-icon" class="fa-solid fa-info-circle text-lg"></i>
         <span id="toast-message">Notification</span>
     </div>
 
-    <!-- 1. AUTH SECTION -->
+    <!-- VIEW: AUTH -->
     <section id="auth-section" class="hidden flex-grow flex items-center justify-center p-4 min-h-screen">
-        <div class="w-full max-w-md bg-surface border border-border p-8 rounded-2xl shadow-2xl fade-in">
+        <div class="w-full max-w-md bg-surface border border-border p-8 rounded-3xl shadow-2xl fade-in">
             <div class="text-center mb-8">
-                <div class="w-10 h-10 bg-white text-black rounded-lg mx-auto flex items-center justify-center text-xl font-black mb-4">W</div>
+                <div class="w-12 h-12 bg-white text-black rounded-xl mx-auto flex items-center justify-center text-2xl font-black mb-4">W</div>
                 <h1 class="text-2xl font-bold tracking-tight">WikiMind Cloud</h1>
-                <p class="text-gray-500 text-sm mt-1">Espace de stockage personnel sécurisé</p>
+                <p class="text-gray-500 text-xs mt-2 uppercase tracking-widest">Base de données en Temps Réel</p>
             </div>
 
             <form id="auth-form" class="space-y-4">
                 <div>
-                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Email</label>
-                    <input type="email" id="auth-email" class="w-full bg-[#0f0f0f] border border-border rounded-lg px-4 py-3 focus:border-white focus:outline-none transition-colors text-sm" placeholder="exemple@wikimind.ai" required>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Email</label>
+                    <input type="email" id="auth-email" class="w-full bg-[#0f0f0f] border border-border rounded-xl px-4 py-3 focus:border-white focus:outline-none transition-colors text-sm" placeholder="user@wikimind.ai" required>
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Mot de passe</label>
-                    <input type="password" id="auth-pass" class="w-full bg-[#0f0f0f] border border-border rounded-lg px-4 py-3 focus:border-white focus:outline-none transition-colors text-sm" placeholder="••••••••" required>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Mot de passe</label>
+                    <input type="password" id="auth-pass" class="w-full bg-[#0f0f0f] border border-border rounded-xl px-4 py-3 focus:border-white focus:outline-none transition-colors text-sm" placeholder="••••••••" required>
                 </div>
                 
-                <p id="auth-error" class="text-red-500 text-xs hidden"></p>
+                <p id="auth-error" class="text-red-500 text-xs hidden text-center font-medium"></p>
 
-                <button type="submit" id="auth-submit-btn" class="w-full bg-white text-black font-bold uppercase tracking-widest text-xs py-3.5 rounded-lg hover:bg-gray-200 transition-all active:scale-95">
+                <button type="submit" id="auth-submit-btn" class="w-full bg-white text-black font-bold uppercase tracking-widest text-xs py-4 rounded-xl hover:bg-gray-200 transition-all active:scale-95">
                     Se Connecter
                 </button>
             </form>
 
             <div class="mt-6 text-center border-t border-border pt-4">
-                <button id="auth-toggle-btn" class="text-xs text-gray-400 hover:text-white transition">Pas encore de compte ? Créer un compte</button>
+                <button id="auth-toggle-btn" class="text-xs text-gray-400 hover:text-white transition font-medium">Créer un compte</button>
             </div>
         </div>
     </section>
 
-    <!-- 2. APP SECTION (DASHBOARD) -->
-    <section id="app-section" class="hidden flex-col w-full min-h-screen">
-        <!-- Navbar -->
+    <!-- VIEW: DASHBOARD -->
+    <section id="app-section" class="hidden flex-col w-full min-h-screen pb-20">
+        <!-- Header -->
         <header class="sticky top-0 z-40 glass">
-            <div class="max-w-6xl mx-auto px-6 py-3 flex justify-between items-center">
+            <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
                 <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 bg-white text-black rounded-md flex items-center justify-center font-black text-sm">W</div>
-                    <span class="font-semibold text-sm tracking-tight hidden sm:block">WikiMind Cloud</span>
+                    <div class="w-8 h-8 bg-white text-black rounded-lg flex items-center justify-center font-black text-xs">W</div>
+                    <span class="font-bold text-sm tracking-tight hidden sm:block">WikiMind DB</span>
                 </div>
                 <div class="flex items-center gap-4">
-                    <span id="user-email-display" class="text-xs text-gray-500 hidden md:block"></span>
-                    <button id="logout-btn" class="text-xs font-bold uppercase tracking-widest hover:text-gray-400 transition">
-                        <i class="fa-solid fa-power-off sm:hidden"></i>
-                        <span class="hidden sm:inline">Déconnexion</span>
+                    <span id="user-email-display" class="text-xs text-gray-500 hidden md:block font-mono"></span>
+                    <button id="logout-btn" class="text-xs font-bold uppercase tracking-widest text-gray-400 hover:text-white transition">
+                        Déconnexion
                     </button>
                 </div>
             </div>
         </header>
 
-        <main class="flex-grow w-full max-w-6xl mx-auto px-6 py-8">
+        <main class="flex-grow w-full max-w-7xl mx-auto px-6 py-10">
             
-            <!-- Quota & Stats -->
-            <div class="mb-8 fade-in" style="animation-delay: 0.1s;">
-                <div class="flex justify-between items-end mb-2">
-                    <h2 class="text-sm font-bold uppercase tracking-widest text-gray-400">Utilisation du Stockage</h2>
-                    <span id="quota-text" class="text-xs font-mono text-white">0 Mo / 100 Mo</span>
+            <!-- Quota System -->
+            <div class="mb-10 fade-in" style="animation-delay: 0.1s;">
+                <div class="flex justify-between items-end mb-3">
+                    <h2 class="text-xs font-bold uppercase tracking-widest text-gray-400">Quota Database (Max 10 Mo)</h2>
+                    <span id="quota-text" class="text-xs font-mono text-white">Calcul...</span>
                 </div>
-                <div class="w-full h-2 bg-surface rounded-full overflow-hidden border border-border">
+                <div class="w-full h-3 bg-surface rounded-full overflow-hidden border border-border">
                     <div id="quota-bar" class="h-full bg-white w-0 transition-all duration-1000"></div>
                 </div>
             </div>
 
             <!-- Upload Zone -->
-            <div id="drop-zone" class="mb-10 border-2 border-dashed border-border rounded-2xl p-8 flex flex-col items-center justify-center cursor-pointer hover:bg-surface transition-all group fade-in" style="animation-delay: 0.2s;">
+            <div id="drop-zone" class="mb-12 border-2 border-dashed border-border rounded-3xl p-10 flex flex-col items-center justify-center cursor-pointer hover:bg-surface hover:border-gray-500 transition-all group fade-in bg-[#121212]" style="animation-delay: 0.2s;">
                 <input type="file" id="file-input" class="hidden">
-                <div class="w-12 h-12 bg-[#0f0f0f] rounded-full flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                    <i class="fa-solid fa-cloud-arrow-up text-gray-400 group-hover:text-white"></i>
+                <div class="w-14 h-14 bg-surface rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform border border-border">
+                    <i class="fa-solid fa-database text-gray-400 group-hover:text-white text-xl"></i>
                 </div>
-                <p class="font-medium text-sm">Glissez un fichier ou cliquez ici</p>
-                <p class="text-xs text-gray-600 mt-1">Max 100 Mo par fichier</p>
-
-                <!-- Progress Bar Upload -->
-                <div id="upload-progress-container" class="hidden w-full max-w-xs mt-4">
-                    <div class="flex justify-between text-[10px] mb-1 uppercase font-bold text-gray-500">
-                        <span>Upload...</span>
-                        <span id="upload-pct">0%</span>
-                    </div>
-                    <div class="w-full h-1 bg-gray-800 rounded-full">
-                        <div id="upload-bar" class="h-full bg-blue-500 w-0 transition-all"></div>
-                    </div>
+                <h3 class="font-bold text-lg mb-1">Stocker un fichier</h3>
+                <p class="text-xs text-gray-500 uppercase tracking-wider">Max 2 Mo par fichier (Base64)</p>
+                
+                <div id="upload-status" class="hidden mt-4 flex items-center gap-2 text-xs font-bold text-blue-400">
+                    <i class="fa-solid fa-circle-notch fa-spin"></i> Encodage & Envoi...
                 </div>
             </div>
 
-            <!-- Toolbar -->
+            <!-- List Header -->
             <div class="flex justify-between items-center mb-6 border-b border-border pb-4 fade-in" style="animation-delay: 0.3s;">
-                <h3 class="font-bold text-lg">Vos Fichiers</h3>
-                <button onclick="window.reloadFiles()" class="w-8 h-8 rounded-full hover:bg-surface flex items-center justify-center transition-colors">
-                    <i class="fa-solid fa-rotate-right text-xs text-gray-400"></i>
-                </button>
+                <h3 class="font-bold text-xl">Mes Données</h3>
+                <span class="text-xs text-gray-500 bg-surface px-3 py-1 rounded-full border border-border" id="file-count">0 fichier(s)</span>
             </div>
 
-            <!-- File Grid -->
-            <div id="file-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 fade-in" style="animation-delay: 0.4s;">
-                <!-- Files injected via JS -->
+            <!-- Grid -->
+            <div id="file-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 fade-in" style="animation-delay: 0.4s;">
+                <!-- Items injected here -->
             </div>
 
             <!-- Empty State -->
-            <div id="empty-state" class="hidden text-center py-12 text-gray-600">
-                <i class="fa-regular fa-folder-open text-3xl mb-3 opacity-50"></i>
-                <p class="text-sm">Votre cloud est vide.</p>
+            <div id="empty-state" class="hidden flex flex-col items-center justify-center py-20 opacity-50">
+                <i class="fa-regular fa-folder-open text-4xl mb-4 text-gray-600"></i>
+                <p class="text-sm text-gray-500">Aucune donnée stockée.</p>
             </div>
 
         </main>
@@ -186,291 +176,281 @@
 
     <!-- FIREBASE LOGIC -->
     <script type="module">
-        // --- 1. IMPORTS & CONFIG ---
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
-        import { getStorage, ref, uploadBytesResumable, getDownloadURL, listAll, deleteObject, getMetadata } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-storage.js";
+        // Importation des modules Firebase v10.7.0
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
+        import { getDatabase, ref, set, push, onValue, remove, child } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js";
 
+        // CONFIGURATION (Fournie)
         const firebaseConfig = {
-            apiKey: "AIzaSyANlBgeT5iQAUbVUa5CohN-nmTa86VcrRE",
-            authDomain: "wikimind-cloud.firebaseapp.com",
-            projectId: "wikimind-cloud",
-            storageBucket: "wikimind-cloud.firebasestorage.app",
-            messagingSenderId: "33492114916",
-            appId: "1:33492114916:web:564018b131602b40c93bf1"
+            apiKey: "AIzaSyAaBAVhq3cbXFtF5jKZLJmbadbv7LXwyfg",
+            authDomain: "wikicloud-181e3.firebaseapp.com",
+            databaseURL: "https://wikicloud-181e3-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "wikicloud-181e3",
+            storageBucket: "wikicloud-181e3.firebasestorage.app",
+            messagingSenderId: "294518286953",
+            appId: "1:294518286953:web:4a3fc0b16a22bc660d10f8"
         };
 
-        // Init Services
+        // Initialisation
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
-        const storage = getStorage(app);
+        const db = getDatabase(app);
 
-        // --- 2. STATE & CONSTANTS ---
+        // --- ETAT GLOBAL ---
         let currentUser = null;
         let isLoginMode = true;
-        const MAX_QUOTA = 100 * 1024 * 1024; // 100 MB
-        
-        // DOM Elements
+        let currentUsage = 0;
+        const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2 Mo (Limite technique Base64/RTDB pour la fluidité)
+        const MAX_QUOTA = 10 * 1024 * 1024;   // 10 Mo (Quota total)
+
+        // --- DOM ---
         const loader = document.getElementById('loading-screen');
         const authSection = document.getElementById('auth-section');
         const appSection = document.getElementById('app-section');
-        const authForm = document.getElementById('auth-form');
         const dropZone = document.getElementById('drop-zone');
         const fileGrid = document.getElementById('file-grid');
+        const emptyState = document.getElementById('empty-state');
+
+        // --- 1. AUTHENTIFICATION ---
         
-        // --- 3. AUTH LOGIC ---
-        
-        // Routeur Principal
         onAuthStateChanged(auth, (user) => {
-            // Cache le loader dès qu'on a une réponse, quelle qu'elle soit
+            if (user) {
+                currentUser = user;
+                document.getElementById('user-email-display').textContent = user.email;
+                toggleView('app');
+                initRealtimeListener(user.uid);
+                showToast(`Bienvenue ${user.email.split('@')[0]}`, 'success');
+            } else {
+                currentUser = null;
+                toggleView('auth');
+            }
+            // Hide Loader
             setTimeout(() => {
                 loader.style.opacity = '0';
                 setTimeout(() => loader.style.display = 'none', 500);
             }, 500);
-
-            if (user) {
-                // User connecté
-                currentUser = user;
-                document.getElementById('user-email-display').textContent = user.email;
-                toggleView('app');
-                loadFiles();
-            } else {
-                // User déconnecté
-                currentUser = null;
-                toggleView('auth');
-            }
         });
 
-        // Toggle Auth Mode (Login <-> Register)
+        // Toggle Login/Register
         document.getElementById('auth-toggle-btn').addEventListener('click', (e) => {
             e.preventDefault();
             isLoginMode = !isLoginMode;
-            const btn = document.getElementById('auth-toggle-btn');
-            const submitBtn = document.getElementById('auth-submit-btn');
+            const btn = document.getElementById('auth-submit-btn');
+            const toggle = document.getElementById('auth-toggle-btn');
             const title = document.querySelector('#auth-section h1');
             
             if (isLoginMode) {
                 title.textContent = "WikiMind Cloud";
-                submitBtn.textContent = "SE CONNECTER";
-                btn.textContent = "Pas encore de compte ? Créer un compte";
+                btn.textContent = "SE CONNECTER";
+                toggle.textContent = "Créer un compte";
             } else {
-                title.textContent = "Créer un compte";
-                submitBtn.textContent = "S'INSCRIRE";
-                btn.textContent = "Déjà un compte ? Se connecter";
+                title.textContent = "Inscription";
+                btn.textContent = "S'INSCRIRE";
+                toggle.textContent = "J'ai déjà un compte";
             }
         });
 
-        // Submit Form
-        authForm.addEventListener('submit', async (e) => {
+        // Form Submit
+        document.getElementById('auth-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const email = document.getElementById('auth-email').value;
             const pass = document.getElementById('auth-pass').value;
-            const errorMsg = document.getElementById('auth-error');
-            const submitBtn = document.getElementById('auth-submit-btn');
+            const errDiv = document.getElementById('auth-error');
             
-            errorMsg.classList.add('hidden');
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<span class="spinner w-4 h-4 border-2 inline-block"></span>';
+            errDiv.classList.add('hidden');
 
             try {
                 if (isLoginMode) {
                     await signInWithEmailAndPassword(auth, email, pass);
                 } else {
-                    await createUserWithEmailAndPassword(auth, email, pass);
-                    showToast("Compte créé avec succès", "success");
+                    const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
+                    // Création du noeud utilisateur initial
+                    const userId = userCredential.user.uid;
+                    set(ref(db, 'users/' + userId), {
+                        email: email,
+                        createdAt: new Date().toISOString()
+                    });
                 }
             } catch (error) {
-                console.error(error);
-                errorMsg.textContent = getFriendlyError(error.code);
-                errorMsg.classList.remove('hidden');
-                submitBtn.disabled = false;
-                submitBtn.textContent = isLoginMode ? "SE CONNECTER" : "S'INSCRIRE";
+                errDiv.textContent = translateError(error.code);
+                errDiv.classList.remove('hidden');
+                showToast("Erreur d'authentification", "error");
             }
         });
 
         document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
 
-        // --- 4. STORAGE LOGIC ---
+        // --- 2. GESTION BASE DE DONNEES (Fichiers) ---
 
-        async function loadFiles() {
-            if (!currentUser) return;
+        function initRealtimeListener(uid) {
+            const filesRef = ref(db, `users/${uid}/files`);
             
-            fileGrid.innerHTML = '';
-            document.getElementById('empty-state').classList.add('hidden');
-            
-            const listRef = ref(storage, `users/${currentUser.uid}/files/`);
-            let totalBytes = 0;
+            // Écouteur en temps réel
+            onValue(filesRef, (snapshot) => {
+                fileGrid.innerHTML = '';
+                currentUsage = 0;
+                let count = 0;
 
-            try {
-                // Utilisation de listAll. Si le dossier n'existe pas, cela renvoie vide, pas d'erreur critique
-                const res = await listAll(listRef);
-                
-                if (res.items.length === 0) {
-                    document.getElementById('empty-state').classList.remove('hidden');
+                const data = snapshot.val();
+
+                if (!data) {
+                    emptyState.classList.remove('hidden');
                     updateQuotaUI(0);
+                    document.getElementById('file-count').textContent = "0 fichier";
                     return;
                 }
 
-                // Récupération des métadonnées pour le quota et l'affichage
-                const promises = res.items.map(item => getMetadata(item));
-                const filesMeta = await Promise.all(promises);
+                emptyState.classList.add('hidden');
 
-                // Tri : Plus récent en premier
-                filesMeta.sort((a, b) => new Date(b.timeCreated) - new Date(a.timeCreated));
-
-                filesMeta.forEach(meta => {
-                    totalBytes += meta.size;
-                    renderFileCard(meta);
+                // Parcours des fichiers
+                Object.entries(data).forEach(([key, fileData]) => {
+                    count++;
+                    currentUsage += fileData.size;
+                    renderFileCard(key, fileData);
                 });
 
-                updateQuotaUI(totalBytes);
-
-            } catch (error) {
-                console.warn("Info: Nouveau compte ou dossier vide.", error);
-                // Si erreur 404 (Object not found), c'est normal pour un nouveau compte
-                document.getElementById('empty-state').classList.remove('hidden');
-                updateQuotaUI(0);
-            }
+                updateQuotaUI(currentUsage);
+                document.getElementById('file-count').textContent = `${count} fichier(s)`;
+            });
         }
+
+        // --- 3. UPLOAD (BASE64) ---
+
+        dropZone.addEventListener('click', () => document.getElementById('file-input').click());
+        
+        document.getElementById('file-input').addEventListener('change', (e) => {
+            if(e.target.files[0]) processFile(e.target.files[0]);
+        });
+
+        // Drag & Drop visual
+        dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('drag-active'); });
+        dropZone.addEventListener('dragleave', (e) => { e.preventDefault(); dropZone.classList.remove('drag-active'); });
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('drag-active');
+            if(e.dataTransfer.files[0]) processFile(e.dataTransfer.files[0]);
+        });
+
+        function processFile(file) {
+            if (!currentUser) return;
+
+            // 1. Validation Taille Fichier
+            if (file.size > MAX_FILE_SIZE) {
+                showToast(`Fichier trop lourd (> ${formatBytes(MAX_FILE_SIZE)})`, 'error');
+                return;
+            }
+
+            // 2. Validation Quota Total
+            if (currentUsage + file.size > MAX_QUOTA) {
+                showToast("Quota de stockage dépassé (10 Mo)", 'error');
+                return;
+            }
+
+            // 3. UI Chargement
+            const status = document.getElementById('upload-status');
+            status.classList.remove('hidden');
+
+            // 4. Conversion Base64
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            
+            reader.onload = function () {
+                const base64String = reader.result;
+                
+                // 5. Envoi vers Firebase RTDB
+                const newFileRef = push(ref(db, `users/${currentUser.uid}/files`));
+                set(newFileRef, {
+                    name: file.name,
+                    type: file.type,
+                    size: file.size,
+                    data: base64String, // Le fichier est stocké ici sous forme de texte
+                    uploadedAt: new Date().toISOString()
+                })
+                .then(() => {
+                    showToast("Fichier sauvegardé !", 'success');
+                    status.classList.add('hidden');
+                })
+                .catch((err) => {
+                    console.error(err);
+                    showToast("Erreur sauvegarde", 'error');
+                    status.classList.add('hidden');
+                });
+            };
+            
+            reader.onerror = function (error) {
+                console.error('Error: ', error);
+                showToast("Erreur lecture fichier", 'error');
+                status.classList.add('hidden');
+            };
+        }
+
+        // --- 4. UI RENDERING ---
+
+        function renderFileCard(key, file) {
+            const card = document.createElement('div');
+            card.className = "bg-surface border border-border rounded-2xl p-5 flex flex-col justify-between h-44 group hover:border-white transition-all relative overflow-hidden fade-in";
+            
+            const icon = getIcon(file.type);
+
+            card.innerHTML = `
+                <div class="flex justify-between items-start z-10">
+                    <div class="text-2xl">${icon}</div>
+                    <button class="delete-btn w-8 h-8 rounded-full flex items-center justify-center text-gray-500 hover:text-red-500 hover:bg-white/10 transition" data-key="${key}">
+                        <i class="fa-solid fa-trash text-xs"></i>
+                    </button>
+                </div>
+                <div class="z-10 mt-auto">
+                    <h4 class="font-bold text-sm truncate text-white mb-1" title="${file.name}">${file.name}</h4>
+                    <div class="flex justify-between items-end">
+                        <span class="text-[10px] text-gray-500 font-mono">${formatBytes(file.size)}</span>
+                        <button class="download-btn text-[10px] font-bold bg-white text-black px-3 py-1.5 rounded-lg hover:bg-gray-200 transition" data-key="${key}">
+                            Télécharger
+                        </button>
+                    </div>
+                </div>
+                <!-- Background decoration -->
+                <div class="absolute -bottom-4 -right-4 text-8xl text-white/5 pointer-events-none group-hover:text-white/10 transition-colors">
+                    ${icon}
+                </div>
+            `;
+
+            // Bouton Supprimer
+            card.querySelector('.delete-btn').addEventListener('click', () => {
+                if(confirm('Supprimer définitivement ce fichier ?')) {
+                    remove(ref(db, `users/${currentUser.uid}/files/${key}`))
+                        .then(() => showToast("Fichier supprimé", 'success'));
+                }
+            });
+
+            // Bouton Télécharger
+            card.querySelector('.download-btn').addEventListener('click', () => {
+                downloadBase64File(file.data, file.name);
+            });
+
+            fileGrid.appendChild(card);
+        }
+
+        function downloadBase64File(base64Data, fileName) {
+            const link = document.createElement("a");
+            link.href = base64Data;
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showToast("Téléchargement lancé...", 'success');
+        }
+
+        // --- UTILS ---
 
         function updateQuotaUI(bytes) {
             const pct = Math.min((bytes / MAX_QUOTA) * 100, 100);
             const bar = document.getElementById('quota-bar');
-            
             bar.style.width = `${pct}%`;
-            document.getElementById('quota-text').textContent = `${formatBytes(bytes)} / 100 Mo`;
-
-            if (pct > 90) bar.className = "h-full bg-red-500 transition-all duration-1000";
+            document.getElementById('quota-text').innerText = `${formatBytes(bytes)} / ${formatBytes(MAX_QUOTA)}`;
+            
+            if(pct > 90) bar.className = "h-full bg-red-500 transition-all duration-1000";
             else bar.className = "h-full bg-white transition-all duration-1000";
-        }
-
-        function renderFileCard(meta) {
-            const div = document.createElement('div');
-            div.className = "bg-surface border border-border hover:border-white transition-colors rounded-xl p-4 flex flex-col justify-between h-36 relative group";
-            
-            const icon = getFileIcon(meta.contentType);
-            
-            div.innerHTML = `
-                <div class="flex justify-between items-start">
-                    <div class="text-2xl">${icon}</div>
-                    <button class="w-6 h-6 rounded flex items-center justify-center text-gray-500 hover:text-red-500 hover:bg-white/10 transition delete-btn">
-                        <i class="fa-solid fa-trash text-xs"></i>
-                    </button>
-                </div>
-                <div>
-                    <h4 class="font-bold text-sm truncate mb-1" title="${meta.name}">${meta.name}</h4>
-                    <div class="flex justify-between items-end">
-                        <span class="text-[10px] text-gray-500">${formatBytes(meta.size)}</span>
-                        <button class="text-[10px] font-bold bg-white text-black px-2 py-1 rounded hover:bg-gray-200 download-btn">
-                            <i class="fa-solid fa-download mr-1"></i>Ouvrir
-                        </button>
-                    </div>
-                </div>
-            `;
-
-            div.querySelector('.delete-btn').addEventListener('click', () => deleteFile(meta.fullPath));
-            div.querySelector('.download-btn').addEventListener('click', () => downloadFile(meta.fullPath));
-            
-            fileGrid.appendChild(div);
-        }
-
-        // --- 5. ACTIONS (Upload, Delete, Download) ---
-
-        async function handleUpload(file) {
-            if (!file || !currentUser) return;
-            
-            if (file.size > MAX_QUOTA) { // Check file size limit
-                showToast("Fichier > 100 Mo refusé", "error");
-                return;
-            }
-
-            // UI
-            const container = document.getElementById('upload-progress-container');
-            const bar = document.getElementById('upload-bar');
-            const pctText = document.getElementById('upload-pct');
-            container.classList.remove('hidden');
-
-            const storageRef = ref(storage, `users/${currentUser.uid}/files/${file.name}`);
-            const uploadTask = uploadBytesResumable(storageRef, file);
-
-            uploadTask.on('state_changed',
-                (snapshot) => {
-                    const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                    bar.style.width = `${progress}%`;
-                    pctText.textContent = `${Math.round(progress)}%`;
-                },
-                (error) => {
-                    console.error(error);
-                    showToast("Erreur upload", "error");
-                    container.classList.add('hidden');
-                },
-                () => {
-                    showToast("Fichier envoyé !", "success");
-                    container.classList.add('hidden');
-                    loadFiles();
-                }
-            );
-        }
-
-        async function deleteFile(path) {
-            if (!confirm("Supprimer ce fichier ?")) return;
-            const fileRef = ref(storage, path);
-            try {
-                await deleteObject(fileRef);
-                showToast("Fichier supprimé", "success");
-                loadFiles();
-            } catch (e) {
-                showToast("Erreur suppression", "error");
-            }
-        }
-
-        async function downloadFile(path) {
-            const fileRef = ref(storage, path);
-            try {
-                const url = await getDownloadURL(fileRef);
-                window.open(url, '_blank');
-            } catch (e) {
-                showToast("Erreur lien", "error");
-            }
-        }
-
-        // --- 6. DRAG & DROP UI ---
-        
-        dropZone.addEventListener('click', () => document.getElementById('file-input').click());
-        
-        document.getElementById('file-input').addEventListener('change', (e) => {
-            if(e.target.files[0]) handleUpload(e.target.files[0]);
-        });
-
-        ['dragenter', 'dragover'].forEach(eventName => {
-            dropZone.addEventListener(eventName, (e) => {
-                e.preventDefault();
-                dropZone.classList.add('drag-active');
-            }, false);
-        });
-
-        ['dragleave', 'drop'].forEach(eventName => {
-            dropZone.addEventListener(eventName, (e) => {
-                e.preventDefault();
-                dropZone.classList.remove('drag-active');
-            }, false);
-        });
-
-        dropZone.addEventListener('drop', (e) => {
-            const dt = e.dataTransfer;
-            if(dt.files[0]) handleUpload(dt.files[0]);
-        });
-
-        // --- UTILS ---
-
-        function toggleView(view) {
-            if (view === 'auth') {
-                authSection.classList.remove('hidden');
-                appSection.classList.add('hidden');
-            } else {
-                authSection.classList.add('hidden');
-                appSection.classList.remove('hidden');
-            }
         }
 
         function formatBytes(bytes) {
@@ -481,13 +461,21 @@
             return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
         }
 
-        function getFileIcon(type) {
-            if (!type) return '<i class="fa-solid fa-file text-gray-400"></i>';
+        function getIcon(type) {
             if (type.includes('image')) return '<i class="fa-solid fa-image text-purple-400"></i>';
             if (type.includes('pdf')) return '<i class="fa-solid fa-file-pdf text-red-500"></i>';
-            if (type.includes('video')) return '<i class="fa-solid fa-video text-blue-400"></i>';
-            if (type.includes('audio')) return '<i class="fa-solid fa-music text-yellow-400"></i>';
-            return '<i class="fa-solid fa-file-lines text-gray-400"></i>';
+            if (type.includes('text') || type.includes('json')) return '<i class="fa-solid fa-file-code text-green-400"></i>';
+            return '<i class="fa-solid fa-file text-blue-400"></i>';
+        }
+
+        function toggleView(viewName) {
+            if (viewName === 'auth') {
+                authSection.classList.remove('hidden');
+                appSection.classList.add('hidden');
+            } else {
+                authSection.classList.add('hidden');
+                appSection.classList.remove('hidden');
+            }
         }
 
         function showToast(msg, type) {
@@ -496,23 +484,20 @@
             const text = document.getElementById('toast-message');
             
             text.textContent = msg;
-            icon.className = type === 'success' ? 'fa-solid fa-check text-green-500' : 'fa-solid fa-circle-exclamation text-red-500';
-            toast.style.borderColor = type === 'success' ? '#22c55e' : '#ef4444';
-
+            icon.className = type === 'success' ? 'fa-solid fa-check text-green-500 text-lg' : 'fa-solid fa-triangle-exclamation text-red-500 text-lg';
+            
             toast.classList.remove('translate-x-full');
             setTimeout(() => toast.classList.add('translate-x-full'), 3000);
         }
 
-        function getFriendlyError(code) {
+        function translateError(code) {
             switch(code) {
                 case 'auth/invalid-credential': return "Email ou mot de passe incorrect.";
                 case 'auth/email-already-in-use': return "Cet email est déjà utilisé.";
-                case 'auth/weak-password': return "Mot de passe trop faible (6 car. min).";
-                default: return "Une erreur est survenue. Réessayez.";
+                case 'auth/weak-password': return "Mot de passe trop court (6 car. min).";
+                default: return "Une erreur est survenue.";
             }
         }
-
-        window.reloadFiles = loadFiles; // Expose globalement
     </script>
 </body>
 </html>
