@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="fr" class="dark">
+<head>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-29XYBNJ2CB"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-29XYBNJ2CB');
+    </script>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WikiMind Cloud - Stockage Sécurisé</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        bg: '#0f0f0f',
+                        card: '#161616',
+                        border: '#27272a',
+                        accent: '#ffffff',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        body {
+            background-color: #0f0f0f;
+            color: #eeeeee;
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+        }
+
+        /* Animations */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade { animation: fadeIn 0.4s ease-out forwards; }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0f0f0f; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #555; }
+
+        /* Utilities */
+        .glass {
+            background: rgba(22, 22, 22, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .loader {
+            border: 3px solid rgba(255,255,255,0.1);
+            border-left-color: #fff;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* Drag & Drop Zone Active State */
+        .drag-active {
+            border-color: #ffffff !important;
+            background-color: rgba(255, 255, 255, 0.05) !important;
+            transform: scale(1.01);
+        }
+
+        /* Views management */
+        .view { display: none; }
+        .view.active { display: block; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col relative">
+
+    <!-- NOTIFICATION TOAST -->
+    <div id="toast" class="fixed top-5 right-5 z-50 transform translate-x-full transition-transform duration-300">
+        <div class="bg-white text-black px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3 font-medium">
+            <i id="toast-icon" class="fa-solid fa-circle-info"></i>
+            <span id="toast-msg">Notification</span>
+        </div>
+    </div>
+
+    <!-- VIEW: AUTH (Login/Register) -->
+    <div id="view-auth" class="view active w-full h-screen flex items-center justify-center p-6">
+        <div class="bg-card border border-border w-full max-w-md p-8 rounded-3xl shadow-2xl animate-fade">
+            <div class="text-center mb-8">
+                <div class="w-12 h-12 bg-white text-black rounded-xl flex items-center justify-center font-black text-2xl mx-auto mb-4">W</div>
+                <h1 class="text-2xl font-black uppercase tracking-tight">WikiMind Cloud</h1>
+                <p class="text-gray-500 text-sm mt-2">Accédez à votre espace sécurisé.</p>
+            </div>
+
+            <form id="auth-form" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-widest text-gray-500 mb-2">Email</label>
+                    <input type="email" id="email" required class="w-full bg-[#0f0f0f] border border-border rounded-xl px-4 py-3 text-white focus:outline-none focus:border-white transition-colors" placeholder="vous@exemple.com">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-widest text-gray-500 mb-2">Mot de passe</label>
+                    <input type="password" id="password" required class="w-full bg-[#0f0f0f] border border-border rounded-xl px-4 py-3 text-white focus:outline-none focus:border-white transition-colors" placeholder="••••••••">
+                </div>
+                
+                <div id="auth-error" class="text-red-500 text-xs hidden">Erreur d'authentification</div>
+
+                <button type="submit" id="auth-btn" class="w-full bg-white text-black font-bold uppercase tracking-widest text-xs py-4 rounded-xl hover:bg-gray-200 transition-transform hover:scale-[1.02] flex justify-center items-center gap-2">
+                    <span>Connexion</span>
+                </button>
+            </form>
+
+            <div class="mt-6 text-center">
+                <button id="toggle-auth-mode" class="text-xs text-gray-500 hover:text-white transition underline">Créer un compte</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- VIEW: DASHBOARD -->
+    <div id="view-dashboard" class="view w-full min-h-screen pb-20">
+        
+        <!-- NAVBAR -->
+        <header class="sticky top-0 z-40 glass border-b border-border">
+            <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 bg-white text-black rounded-lg flex items-center justify-center font-black text-sm">W</div>
+                    <span class="font-bold tracking-tight hidden sm:inline">WikiMind Cloud</span>
+                </div>
+                
+                <div class="flex items-center gap-6">
+                    <span id="user-email" class="text-xs text-gray-500 hidden md:block">user@email.com</span>
+                    <button id="logout-btn" class="text-xs font-bold uppercase tracking-widest text-gray-400 hover:text-white transition">
+                        Déconnexion
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- MAIN CONTENT -->
+        <main class="max-w-7xl mx-auto px-6 pt-10">
+            
+            <!-- QUOTA SECTION -->
+            <div class="mb-10 animate-fade">
+                <div class="flex justify-between items-end mb-3">
+                    <h2 class="text-xl font-bold">Stockage</h2>
+                    <span id="quota-text" class="text-xs font-mono text-gray-400">Calcul en cours...</span>
+                </div>
+                <div class="w-full h-4 bg-card border border-border rounded-full overflow-hidden relative">
+                    <div id="quota-bar" class="h-full bg-gradient-to-r from-gray-500 to-white transition-all duration-1000 w-0"></div>
+                </div>
+                <p class="text-[10px] text-gray-600 mt-2 uppercase tracking-widest">Limite : 100 Mo par compte • Fichier Max : 100 Mo</p>
+            </div>
+
+            <!-- UPLOAD ZONE -->
+            <div id="drop-zone" class="w-full border-2 border-dashed border-border rounded-3xl p-10 flex flex-col items-center justify-center bg-card/50 transition-all duration-300 cursor-pointer hover:border-gray-600 mb-12 animate-fade group">
+                <input type="file" id="file-input" class="hidden">
+                <div class="w-16 h-16 rounded-full bg-[#0f0f0f] border border-border flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                    <i class="fa-solid fa-cloud-arrow-up text-2xl text-gray-400"></i>
+                </div>
+                <h3 class="text-lg font-bold mb-1">Glissez vos fichiers ici</h3>
+                <p class="text-sm text-gray-500">ou cliquez pour parcourir</p>
+                <div id="upload-progress-container" class="mt-4 w-full max-w-xs hidden">
+                    <div class="flex justify-between text-xs mb-1">
+                        <span>Upload...</span>
+                        <span id="upload-percent">0%</span>
+                    </div>
+                    <div class="w-full h-1 bg-gray-800 rounded-full">
+                        <div id="upload-bar" class="h-full bg-white rounded-full w-0 transition-all"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- FILES GRID -->
+            <div class="flex justify-between items-center mb-6 border-b border-border pb-4">
+                <h2 class="text-xl font-bold">Mes Fichiers</h2>
+                <button onclick="refreshFiles()" class="text-gray-500 hover:text-white transition"><i class="fa-solid fa-rotate-right"></i></button>
+            </div>
+
+            <div id="file-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pb-20">
+                <!-- Les fichiers seront injectés ici par JS -->
+                
+                <!-- Skeleton Loader -->
+                <div class="skeleton-card bg-card border border-border rounded-xl p-4 h-32 animate-pulse hidden"></div>
+                <div class="skeleton-card bg-card border border-border rounded-xl p-4 h-32 animate-pulse hidden"></div>
+            </div>
+
+            <!-- EMPTY STATE -->
+            <div id="empty-state" class="hidden text-center py-20 opacity-50">
+                <i class="fa-regular fa-folder-open text-4xl mb-4 text-gray-600"></i>
+                <p>Aucun fichier stocké pour le moment.</p>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- FIREBASE LOGIC -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getStorage, ref, uploadBytesResumable, getDownloadURL, listAll, deleteObject, getMetadata } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+
+        // 1. CONFIGURATION
+        const firebaseConfig = {
+            apiKey: "AIzaSyANlBgeT5iQAUbVUa5CohN-nmTa86VcrRE",
+            authDomain: "wikimind-cloud.firebaseapp.com",
+            projectId: "wikimind-cloud",
+            storageBucket: "wikimind-cloud.firebasestorage.app",
+            messagingSenderId: "33492114916",
+            appId: "1:33492114916:web:564018b131602b40c93bf1"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const storage = getStorage(app);
+
+        // State
+        let currentUser = null;
+        let isLoginMode = true;
+        let totalUsage = 0;
+        const MAX_QUOTA = 100 * 1024 * 1024; // 100 MB
+        const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100 MB
+
+        // DOM Elements
+        const viewAuth = document.getElementById('view-auth');
+        const viewDashboard = document.getElementById('view-dashboard');
+        const authForm = document.getElementById('auth-form');
+        const authBtn = document.getElementById('auth-btn');
+        const authError = document.getElementById('auth-error');
+        const toggleAuthBtn = document.getElementById('toggle-auth-mode');
+        const logoutBtn = document.getElementById('logout-btn');
+        const fileList = document.getElementById('file-list');
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+        const quotaBar = document.getElementById('quota-bar');
+        const quotaText = document.getElementById('quota-text');
+
+        // --- UTILS ---
+        function formatBytes(bytes, decimals = 2) {
+            if (!+bytes) return '0 Octets';
+            const k = 1024;
+            const dm = decimals < 0 ? 0 : decimals;
+            const sizes = ['Octets', 'Ko', 'Mo', 'Go', 'To'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
+        }
+
+        function getIconForType(contentType) {
+            if (contentType.includes('image')) return '<i class="fa-solid fa-image text-purple-400"></i>';
+            if (contentType.includes('pdf')) return '<i class="fa-solid fa-file-pdf text-red-400"></i>';
+            if (contentType.includes('video')) return '<i class="fa-solid fa-film text-blue-400"></i>';
+            if (contentType.includes('audio')) return '<i class="fa-solid fa-music text-yellow-400"></i>';
+            if (contentType.includes('text') || contentType.includes('code')) return '<i class="fa-solid fa-file-code text-green-400"></i>';
+            return '<i class="fa-solid fa-file text-gray-400"></i>';
+        }
+
+        function showToast(msg, type = 'info') {
+            const toast = document.getElementById('toast');
+            const msgEl = document.getElementById('toast-msg');
+            const iconEl = document.getElementById('toast-icon');
+            
+            msgEl.textContent = msg;
+            toast.classList.remove('translate-x-full');
+            
+            if(type === 'error') {
+                iconEl.className = "fa-solid fa-circle-xmark text-red-500";
+            } else if (type === 'success') {
+                iconEl.className = "fa-solid fa-circle-check text-green-500";
+            } else {
+                iconEl.className = "fa-solid fa-circle-info text-blue-500";
+            }
+
+            setTimeout(() => {
+                toast.classList.add('translate-x-full');
+            }, 3000);
+        }
+
+        // --- AUTHENTICATION ---
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                document.getElementById('user-email').textContent = user.email;
+                viewAuth.classList.remove('active');
+                viewDashboard.classList.add('active');
+                loadFiles();
+            } else {
+                currentUser = null;
+                viewDashboard.classList.remove('active');
+                viewAuth.classList.add('active');
+                // Reset UI
+                fileList.innerHTML = '';
+                totalUsage = 0;
+                updateQuotaUI();
+            }
+        });
+
+        toggleAuthBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            isLoginMode = !isLoginMode;
+            authBtn.querySelector('span').textContent = isLoginMode ? "Connexion" : "S'inscrire";
+            toggleAuthBtn.textContent = isLoginMode ? "Créer un compte" : "Déjà un compte ?";
+            authError.classList.add('hidden');
+        });
+
+        authForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            authError.classList.add('hidden');
+            
+            // Loader on button
+            const originalBtnText = authBtn.innerHTML;
+            authBtn.innerHTML = '<div class="loader"></div>';
+            authBtn.disabled = true;
+
+            try {
+                if (isLoginMode) {
+                    await signInWithEmailAndPassword(auth, email, password);
+                } else {
+                    await createUserWithEmailAndPassword(auth, email, password);
+                }
+            } catch (error) {
+                authError.textContent = error.message;
+                authError.classList.remove('hidden');
+            } finally {
+                authBtn.innerHTML = originalBtnText;
+                authBtn.disabled = false;
+            }
+        });
+
+        logoutBtn.addEventListener('click', () => signOut(auth));
+
+        // --- FILES & STORAGE ---
+
+        async function loadFiles() {
+            if (!currentUser) return;
+            
+            fileList.innerHTML = ''; // Clear but keeping skeletons would be better
+            const skeletons = document.querySelectorAll('.skeleton-card');
+            skeletons.forEach(s => s.classList.remove('hidden'));
+            document.getElementById('empty-state').classList.add('hidden');
+
+            const listRef = ref(storage, `users/${currentUser.uid}/files/`);
+            
+            try {
+                const res = await listAll(listRef);
+                totalUsage = 0;
+                
+                if (res.items.length === 0) {
+                    document.getElementById('empty-state').classList.remove('hidden');
+                    updateQuotaUI();
+                    return;
+                }
+
+                // Fetch metadata for all files to get size and type
+                const promises = res.items.map(async (itemRef) => {
+                    const metadata = await getMetadata(itemRef);
+                    totalUsage += metadata.size;
+                    return { ref: itemRef, metadata };
+                });
+
+                const files = await Promise.all(promises);
+
+                // Sort by time created (newest first)
+                files.sort((a, b) => new Date(b.metadata.timeCreated) - new Date(a.metadata.timeCreated));
+
+                files.forEach(file => renderFileCard(file));
+                updateQuotaUI();
+
+            } catch (error) {
+                console.error(error);
+                showToast("Erreur lors du chargement des fichiers", "error");
+            }
+        }
+
+        function renderFileCard(file) {
+            const div = document.createElement('div');
+            div.className = "bg-card border border-border hover:border-white transition-colors rounded-xl p-4 flex flex-col justify-between group h-36 relative animate-fade";
+            
+            const icon = getIconForType(file.metadata.contentType || '');
+            const size = formatBytes(file.metadata.size);
+            const date = new Date(file.metadata.timeCreated).toLocaleDateString();
+
+            div.innerHTML = `
+                <div class="flex justify-between items-start">
+                    <div class="w-10 h-10 bg-[#0f0f0f] rounded-lg flex items-center justify-center text-xl">
+                        ${icon}
+                    </div>
+                    <button class="delete-btn w-8 h-8 rounded-full hover:bg-red-500/20 text-gray-500 hover:text-red-500 flex items-center justify-center transition-colors" data-path="${file.ref.fullPath}">
+                        <i class="fa-solid fa-trash-can text-xs"></i>
+                    </button>
+                </div>
+                <div class="mt-2">
+                    <h4 class="font-bold text-sm truncate" title="${file.metadata.name}">${file.metadata.name}</h4>
+                    <div class="flex justify-between items-end mt-1">
+                        <p class="text-[10px] text-gray-500">${size} • ${date}</p>
+                        <button class="download-btn text-xs font-bold uppercase tracking-wider text-white bg-black/50 hover:bg-white hover:text-black px-3 py-1 rounded-md transition-colors" data-path="${file.ref.fullPath}">
+                            <i class="fa-solid fa-download"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            // Attach Events
+            div.querySelector('.delete-btn').addEventListener('click', () => deleteFile(file.ref));
+            div.querySelector('.download-btn').addEventListener('click', () => downloadFile(file.ref));
+
+            fileList.appendChild(div);
+        }
+
+        function updateQuotaUI() {
+            const percent = (totalUsage / MAX_QUOTA) * 100;
+            quotaBar.style.width = `${Math.min(percent, 100)}%`;
+            quotaText.textContent = `${formatBytes(totalUsage)} / ${formatBytes(MAX_QUOTA)}`;
+            
+            if (percent > 90) {
+                quotaBar.className = "h-full bg-red-500 transition-all duration-1000";
+            } else {
+                quotaBar.className = "h-full bg-gradient-to-r from-gray-500 to-white transition-all duration-1000";
+            }
+        }
+
+        async function uploadFile(file) {
+            if (!currentUser) return;
+
+            // 1. Checks
+            if (file.size > MAX_FILE_SIZE) {
+                showToast(`Fichier trop volumineux (>100Mo)`, 'error');
+                return;
+            }
+            if (totalUsage + file.size > MAX_QUOTA) {
+                showToast(`Espace de stockage insuffisant`, 'error');
+                return;
+            }
+
+            // 2. UI Setup
+            const progressContainer = document.getElementById('upload-progress-container');
+            const progressBar = document.getElementById('upload-bar');
+            const progressText = document.getElementById('upload-percent');
+            progressContainer.classList.remove('hidden');
+
+            // 3. Upload
+            const storageRef = ref(storage, `users/${currentUser.uid}/files/${file.name}`);
+            const uploadTask = uploadBytesResumable(storageRef, file);
+
+            uploadTask.on('state_changed', 
+                (snapshot) => {
+                    const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                    progressBar.style.width = progress + '%';
+                    progressText.textContent = Math.round(progress) + '%';
+                }, 
+                (error) => {
+                    console.error(error);
+                    showToast("Échec de l'upload", 'error');
+                    progressContainer.classList.add('hidden');
+                }, 
+                () => {
+                    // Success
+                    showToast("Fichier envoyé avec succès", 'success');
+                    progressContainer.classList.add('hidden');
+                    loadFiles(); // Reload list to update UI and quota
+                }
+            );
+        }
+
+        async function deleteFile(fileRef) {
+            if(!confirm("Voulez-vous vraiment supprimer ce fichier ?")) return;
+
+            try {
+                await deleteObject(fileRef);
+                showToast("Fichier supprimé", 'success');
+                // Remove element from DOM immediately for better UX
+                loadFiles(); // Full reload to ensure quota sync
+            } catch (error) {
+                console.error(error);
+                showToast("Erreur lors de la suppression", 'error');
+            }
+        }
+
+        async function downloadFile(fileRef) {
+            try {
+                const url = await getDownloadURL(fileRef);
+                // Open in new tab or trigger download
+                const link = document.createElement('a');
+                link.href = url;
+                link.target = '_blank';
+                link.download = fileRef.name;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            } catch (error) {
+                console.error(error);
+                showToast("Lien de téléchargement introuvable", 'error');
+            }
+        }
+
+        // --- DRAG & DROP EVENTS ---
+        
+        dropZone.addEventListener('click', () => fileInput.click());
+        
+        fileInput.addEventListener('change', (e) => {
+            if(e.target.files.length > 0) uploadFile(e.target.files[0]);
+        });
+
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => dropZone.classList.add('drag-active'), false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => dropZone.classList.remove('drag-active'), false);
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            if (files.length > 0) {
+                uploadFile(files[0]);
+            }
+        });
+
+        // Global Refresh
+        window.refreshFiles = loadFiles;
+
+    </script>
+</body>
+</html>
