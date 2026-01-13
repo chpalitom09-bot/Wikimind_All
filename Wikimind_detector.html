@@ -1,0 +1,424 @@
+<!-- START OF FILE Wikimind_detector.html -->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-29XYBNJ2CB"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-29XYBNJ2CB');
+</script>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WikiMind 6.2 | AI Detector</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- Markdown Parser (pour l'explication) -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <style>
+        :root {
+            --bg: #ffffff;
+            --text: #111111;
+            --card-bg: #f9fafb;
+            --border: #e5e7eb;
+            --accent: #000000;
+            --accent-text: #ffffff;
+            --ai-color: #ef4444; /* Rouge pour IA */
+            --human-color: #22c55e; /* Vert pour Humain */
+        }
+
+        .dark-mode {
+            --bg: #0f0f0f;
+            --text: #eeeeee;
+            --card-bg: #161616;
+            --border: #252525;
+            --accent: #ffffff;
+            --accent-text: #000000;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            transition: background-color 0.4s ease, color 0.4s ease;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* --- Components --- */
+        .glass-header {
+            background: rgba(var(--bg), 0.8);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .input-area {
+            width: 100%;
+            background: transparent;
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            font-size: 1rem;
+            line-height: 1.6;
+            color: var(--text);
+            resize: none;
+            transition: border-color 0.3s, box-shadow 0.3s;
+            min-height: 300px;
+        }
+
+        .input-area:focus {
+            outline: none;
+            border-color: var(--text);
+            box-shadow: 0 0 0 4px rgba(125, 125, 125, 0.1);
+        }
+
+        .btn-primary {
+            background-color: var(--accent);
+            color: var(--accent-text);
+            border: 1px solid var(--accent);
+            padding: 14px 28px;
+            border-radius: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: transform 0.2s, opacity 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            opacity: 0.9;
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Gauge / Score Bar */
+        .score-container {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 2rem;
+            margin-top: 2rem;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+            display: none; /* Hidden by default */
+        }
+
+        .score-container.visible {
+            opacity: 1;
+            transform: translateY(0);
+            display: block;
+        }
+
+        .progress-bg {
+            width: 100%;
+            height: 12px;
+            background: var(--border);
+            border-radius: 99px;
+            overflow: hidden;
+            margin: 1rem 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--human-color), var(--ai-color));
+            border-radius: 99px;
+            transition: width 1.5s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        /* Loader */
+        .loader {
+            border: 2px solid var(--accent-text);
+            border-top: 2px solid transparent;
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            animation: spin 1s linear infinite;
+            display: none;
+        }
+
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    </style>
+</head>
+<body>
+
+    <!-- SCRIPT FIREBASE (AUTH) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAsV27OD4bARFOSDlZN1MAARSv9q2WBkdo",
+            authDomain: "wikimind-pro.firebaseapp.com",
+            projectId: "wikimind-pro",
+            storageBucket: "wikimind-pro.firebasestorage.app",
+            messagingSenderId: "154490257518",
+            appId: "1:154490257518:web:3276b1e64f2db9894be67f"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        onAuthStateChanged(auth, (user) => {
+            const btn = document.getElementById('auth-btn');
+            if (user) {
+                // Utilisateur connecté
+                btn.innerHTML = `<div class="w-2 h-2 rounded-full bg-green-500"></div> <span>${user.displayName || 'Mon Espace'}</span>`;
+            } else {
+                // Utilisateur déconnecté
+                btn.innerHTML = `<span>Mon Compte</span>`;
+            }
+        });
+    </script>
+
+    <!-- NAVBAR -->
+    <header class="fixed top-0 w-full z-50 glass-header transition-colors duration-500">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="flex items-center gap-3 cursor-pointer" onclick="window.location.href='index.html'">
+                <div class="w-10 h-10 bg-black dark:bg-white text-white dark:text-black rounded-xl flex items-center justify-center font-black text-xl hover:rotate-12 transition-transform duration-300">W</div>
+                <div class="leading-none">
+                    <h1 class="text-lg font-black uppercase tracking-tighter italic">WikiMind</h1>
+                    <span class="text-[10px] font-bold uppercase tracking-widest text-gray-400">Detector 6.2</span>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-4">
+                <a href="index.html" class="hidden md:block text-xs font-bold uppercase tracking-widest hover:text-gray-500 transition">Retour Accueil</a>
+                
+                <!-- BOUTON MON COMPTE -->
+                <a href="user.html" id="auth-btn" class="hidden md:flex items-center gap-2 px-4 py-2 rounded-full bg-gray-100 dark:bg-zinc-800 text-xs font-bold uppercase tracking-widest hover:bg-gray-200 dark:hover:bg-zinc-700 transition text-black dark:text-white">
+                    <span>Mon Compte</span>
+                </a>
+
+                <button onclick="toggleTheme()" class="w-10 h-10 rounded-full border border-gray-200 dark:border-gray-700 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-zinc-800 transition text-black dark:text-white">
+                    <svg id="theme-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-grow pt-32 pb-20 px-4 w-full flex flex-col items-center">
+        
+        <div class="w-full max-w-[850px]">
+            <div class="text-center mb-10">
+                <h2 class="text-4xl md:text-5xl font-black tracking-tighter mb-4">Détection d'IA</h2>
+                <p class="text-gray-500 text-sm md:text-base max-w-xl mx-auto">
+                    Analysez n'importe quel texte pour déterminer s'il a été généré par une intelligence artificielle.
+                    <br><span class="text-xs font-bold uppercase tracking-wider mt-2 inline-block opacity-60">Propulsé par Wikimind 6.2 Engine</span>
+                </p>
+            </div>
+
+            <!-- Input Area -->
+            <textarea id="text-input" class="input-area" placeholder="Collez votre texte ici pour analyse (Minimum 50 mots)..."></textarea>
+
+            <div class="flex justify-between items-center mt-4">
+                <span id="word-count" class="text-xs font-bold text-gray-400 uppercase tracking-widest">0 mots</span>
+                <button id="analyze-btn" onclick="analyzeText()" class="btn-primary">
+                    <div class="loader" id="btn-loader"></div>
+                    <span id="btn-text">Lancer l'analyse</span>
+                </button>
+            </div>
+
+            <!-- Result Area -->
+            <div id="result-box" class="score-container">
+                <div class="flex justify-between items-end mb-2">
+                    <span class="text-xs font-bold uppercase tracking-widest text-gray-500">Probabilité IA</span>
+                    <span id="score-text" class="text-3xl font-black tracking-tighter">0%</span>
+                </div>
+                
+                <div class="progress-bg">
+                    <div id="progress-bar" class="progress-fill"></div>
+                </div>
+                
+                <div class="flex justify-between text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-6">
+                    <span>Humain</span>
+                    <span>Mixte</span>
+                    <span>Artificiel</span>
+                </div>
+
+                <div class="bg-gray-50 dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 p-6 rounded-xl">
+                    <h3 class="text-sm font-bold uppercase mb-2 flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        Analyse Détaillée
+                    </h3>
+                    <div id="explanation-text" class="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+                        <!-- Le texte généré par l'IA ira ici -->
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- LOGIC -->
+    <script>
+        // CONFIGURATION
+        const API_KEY = "O2qQ4mSRs2cyQ2osownAGbGq9foyvPXR"; // Mistral API Key
+        const API_URL = "https://api.mistral.ai/v1/chat/completions";
+
+        // THEME MANAGEMENT
+        function toggleTheme() {
+            const body = document.body;
+            body.classList.toggle('dark-mode');
+            const isDark = body.classList.contains('dark-mode');
+            localStorage.setItem('wikimind_landing_theme', isDark ? 'dark' : 'light');
+            updateThemeIcon(isDark);
+        }
+
+        function updateThemeIcon(isDark) {
+            const path = document.querySelector('#theme-icon path');
+            if(isDark) {
+                path.setAttribute('d', 'M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z');
+            } else {
+                path.setAttribute('d', 'M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z');
+            }
+        }
+
+        // Init Theme
+        const savedTheme = localStorage.getItem('wikimind_landing_theme');
+        if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.body.classList.add('dark-mode');
+            updateThemeIcon(true);
+        }
+
+        // WORD COUNT
+        document.getElementById('text-input').addEventListener('input', function() {
+            const text = this.value.trim();
+            const count = text ? text.split(/\s+/).length : 0;
+            document.getElementById('word-count').innerText = count + " mots";
+        });
+
+        // ANALYSIS LOGIC
+        async function analyzeText() {
+            const text = document.getElementById('text-input').value.trim();
+            const btn = document.getElementById('analyze-btn');
+            const loader = document.getElementById('btn-loader');
+            const btnText = document.getElementById('btn-text');
+            const resultBox = document.getElementById('result-box');
+
+            if (text.length < 50) {
+                alert("Le texte est trop court pour une analyse fiable (min 50 caractères).");
+                return;
+            }
+
+            // UI Loading State
+            btn.disabled = true;
+            loader.style.display = 'block';
+            btnText.innerText = "Analyse en cours...";
+            resultBox.classList.remove('visible');
+
+            // System Prompt: Force JSON for clean UI parsing
+            const systemPrompt = `Tu es l'outil Wikimind 6.2. Ton rôle est d'analyser le texte suivant et de déterminer s'il a été écrit par une IA ou un humain.
+            Réponds UNIQUEMENT au format JSON strict suivant :
+            {
+                "ai_score": <nombre entre 0 et 100 représentant la probabilité que ce soit une IA>,
+                "explanation": "<Une explication claire et concise de pourquoi, en 3 phrases maximum>"
+            }`;
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${API_KEY}`
+                    },
+                    body: JSON.stringify({
+                        model: "mistral-large-latest", // Better reasoning for detection
+                        messages: [
+                            { role: "system", content: systemPrompt },
+                            { role: "user", content: text }
+                        ],
+                        response_format: { type: "json_object" }
+                    })
+                });
+
+                if (!response.ok) throw new Error("Erreur API");
+
+                const data = await response.json();
+                const content = JSON.parse(data.choices[0].message.content);
+
+                // Update UI with Results
+                displayResult(content.ai_score, content.explanation);
+
+            } catch (error) {
+                console.error(error);
+                alert("Une erreur est survenue lors de l'analyse. Veuillez réessayer.");
+            } finally {
+                // Reset UI
+                btn.disabled = false;
+                loader.style.display = 'none';
+                btnText.innerText = "Lancer l'analyse";
+            }
+        }
+
+        function displayResult(score, explanation) {
+            const resultBox = document.getElementById('result-box');
+            const scoreText = document.getElementById('score-text');
+            const progressBar = document.getElementById('progress-bar');
+            const explanationText = document.getElementById('explanation-text');
+
+            resultBox.classList.add('visible');
+            
+            // Animation des nombres
+            let currentScore = 0;
+            const duration = 1000;
+            const stepTime = Math.abs(Math.floor(duration / score));
+            
+            if (score > 0) {
+                const timer = setInterval(() => {
+                    currentScore++;
+                    scoreText.innerText = currentScore + "%";
+                    if (currentScore >= score) clearInterval(timer);
+                }, stepTime);
+            } else {
+                scoreText.innerText = "0%";
+            }
+
+            // Barre de progression
+            progressBar.style.width = score + "%";
+            
+            // Couleur dynamique
+            if (score < 30) {
+                scoreText.style.color = "var(--human-color)";
+                progressBar.style.background = "var(--human-color)";
+            } else if (score < 70) {
+                scoreText.style.color = "#f59e0b"; // Orange
+                progressBar.style.background = "linear-gradient(90deg, var(--human-color), var(--ai-color))";
+            } else {
+                scoreText.style.color = "var(--ai-color)";
+                progressBar.style.background = "var(--ai-color)";
+            }
+
+            // Explication (Markdown supported via library included)
+            explanationText.innerHTML = marked.parse(explanation);
+        }
+
+    </script>
+</body>
+</html>
