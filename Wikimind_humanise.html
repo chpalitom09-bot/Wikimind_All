@@ -1,0 +1,352 @@
+<!-- START OF FILE Wikimind_humanise.html -->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WikiMind 6.2 | Humanizer</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- Markdown Parser -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <style>
+        :root {
+            --bg: #ffffff;
+            --text: #111111;
+            --card-bg: #f9fafb;
+            --border: #e5e7eb;
+            --accent: #8b5cf6; /* Violet pour l'humanisation */
+            --accent-text: #ffffff;
+        }
+
+        .dark-mode {
+            --bg: #0f0f0f;
+            --text: #eeeeee;
+            --card-bg: #161616;
+            --border: #252525;
+            --accent: #a78bfa;
+            --accent-text: #000000;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            transition: background-color 0.4s ease, color 0.4s ease;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .glass-header {
+            background: rgba(var(--bg), 0.8);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .input-area {
+            width: 100%;
+            background: transparent;
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            font-size: 1rem;
+            line-height: 1.6;
+            color: var(--text);
+            resize: none;
+            transition: border-color 0.3s, box-shadow 0.3s;
+            min-height: 200px;
+        }
+
+        .input-area:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.1);
+        }
+
+        .btn-primary {
+            background-color: var(--accent);
+            color: var(--accent-text);
+            border: 1px solid var(--accent);
+            padding: 14px 28px;
+            border-radius: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: transform 0.2s, opacity 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            opacity: 0.9;
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .output-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 2rem;
+            margin-top: 2rem;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+            display: none;
+            position: relative;
+        }
+
+        .output-card.visible {
+            opacity: 1;
+            transform: translateY(0);
+            display: block;
+        }
+
+        .copy-btn {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: rgba(0,0,0,0.05);
+            border-radius: 8px;
+            padding: 6px 12px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            cursor: pointer;
+            border: 1px solid transparent;
+            transition: all 0.2s;
+        }
+        
+        .dark-mode .copy-btn { background: rgba(255,255,255,0.1); }
+        .copy-btn:hover { background: var(--accent); color: var(--accent-text); }
+
+        .loader {
+            border: 2px solid var(--accent-text);
+            border-top: 2px solid transparent;
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            animation: spin 1s linear infinite;
+            display: none;
+        }
+
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    </style>
+</head>
+<body>
+
+    <!-- NAVBAR -->
+    <header class="fixed top-0 w-full z-50 glass-header transition-colors duration-500">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="flex items-center gap-3 cursor-pointer" onclick="window.location.href='index.html'">
+                <div class="w-10 h-10 bg-purple-600 text-white rounded-xl flex items-center justify-center font-black text-xl hover:rotate-12 transition-transform duration-300">W</div>
+                <div class="leading-none">
+                    <h1 class="text-lg font-black uppercase tracking-tighter italic">WikiMind</h1>
+                    <span class="text-[10px] font-bold uppercase tracking-widest text-purple-500">Humanizer 1.0</span>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-4">
+                <a href="Wikimind_detector.html" class="text-xs font-bold uppercase tracking-widest hover:text-purple-500 transition flex items-center gap-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                    Retour Détecteur
+                </a>
+
+                <button onclick="toggleTheme()" class="w-10 h-10 rounded-full border border-gray-200 dark:border-gray-700 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-zinc-800 transition text-black dark:text-white">
+                    <svg id="theme-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-grow pt-32 pb-20 px-4 w-full flex flex-col items-center">
+        
+        <div class="w-full max-w-[850px]">
+            <div class="text-center mb-10">
+                <h2 class="text-4xl md:text-5xl font-black tracking-tighter mb-4 text-purple-600 dark:text-purple-400">Humaniseur de Texte</h2>
+                <p class="text-gray-500 text-sm md:text-base max-w-xl mx-auto">
+                    Transformez les textes générés par l'IA en écriture naturelle, nuancée et indétectable.
+                </p>
+            </div>
+
+            <!-- Input Area -->
+            <textarea id="text-input" class="input-area" placeholder="Collez votre texte à humaniser ici..."></textarea>
+
+            <div class="flex justify-between items-center mt-4">
+                <span id="word-count" class="text-xs font-bold text-gray-400 uppercase tracking-widest">0 mots</span>
+                <button id="humanize-btn" onclick="humanizeText()" class="btn-primary">
+                    <div class="loader" id="btn-loader"></div>
+                    <svg id="btn-icon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+                    <span id="btn-text">Lancer l'Humanisation</span>
+                </button>
+            </div>
+
+            <!-- Result Area -->
+            <div id="result-box" class="output-card">
+                <div class="flex items-center gap-2 mb-4 border-b border-gray-100 dark:border-zinc-800 pb-4">
+                    <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                    <h3 class="font-bold text-lg">Résultat Humanisé</h3>
+                </div>
+                
+                <button class="copy-btn" onclick="copyResult()">Copier le texte</button>
+                
+                <div id="output-text" class="text-base leading-relaxed text-gray-700 dark:text-gray-200">
+                    <!-- Le résultat ira ici -->
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- LOGIC -->
+    <script>
+        const API_KEY = "O2qQ4mSRs2cyQ2osownAGbGq9foyvPXR";
+        const API_URL = "https://api.mistral.ai/v1/chat/completions";
+
+        // --- INIT & THEME ---
+        function toggleTheme() {
+            const body = document.body;
+            body.classList.toggle('dark-mode');
+            const isDark = body.classList.contains('dark-mode');
+            localStorage.setItem('wikimind_landing_theme', isDark ? 'dark' : 'light');
+            updateThemeIcon(isDark);
+        }
+
+        function updateThemeIcon(isDark) {
+            const path = document.querySelector('#theme-icon path');
+            if(isDark) {
+                path.setAttribute('d', 'M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z');
+            } else {
+                path.setAttribute('d', 'M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z');
+            }
+        }
+
+        // Chargement du thème et du texte transféré
+        window.onload = function() {
+            // Theme
+            const savedTheme = localStorage.getItem('wikimind_landing_theme');
+            if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.body.classList.add('dark-mode');
+                updateThemeIcon(true);
+            }
+
+            // Récupération du texte depuis le détecteur
+            const transferredText = localStorage.getItem('wikimind_text_transfer');
+            if (transferredText) {
+                document.getElementById('text-input').value = transferredText;
+                document.getElementById('word-count').innerText = transferredText.split(/\s+/).length + " mots";
+                // On ne supprime pas le texte tout de suite au cas où l'user refresh
+            }
+        };
+
+        document.getElementById('text-input').addEventListener('input', function() {
+            const text = this.value.trim();
+            const count = text ? text.split(/\s+/).length : 0;
+            document.getElementById('word-count').innerText = count + " mots";
+        });
+
+        // --- API HUMANIZER LOGIC ---
+        async function humanizeText() {
+            const text = document.getElementById('text-input').value.trim();
+            const btn = document.getElementById('humanize-btn');
+            const loader = document.getElementById('btn-loader');
+            const btnText = document.getElementById('btn-text');
+            const btnIcon = document.getElementById('btn-icon');
+            const resultBox = document.getElementById('result-box');
+            const outputText = document.getElementById('output-text');
+
+            if (text.length < 10) {
+                alert("Le texte est trop court.");
+                return;
+            }
+
+            // UI Loading
+            btn.disabled = true;
+            loader.style.display = 'block';
+            btnIcon.style.display = 'none';
+            btnText.innerText = "Réécriture...";
+            resultBox.classList.remove('visible');
+
+            // Prompt puissant pour humaniser
+            const systemPrompt = `Tu es un expert en écriture créative et en humanisation de texte.
+            Ta tâche est de réécrire le texte fourni par l'utilisateur pour qu'il soit totalement indétectable par les détecteurs d'IA.
+            
+            Consignes strictes :
+            1. Adopte un ton naturel, fluide et engageant.
+            2. Varie la longueur des phrases (mélange phrases courtes percutantes et phrases longues complexes).
+            3. Ajoute des nuances émotionnelles et du vocabulaire moins "standardisé".
+            4. Évite les répétitions robotiques et les structures de listes typiques des IA si elles ne sont pas nécessaires.
+            5. Garde le sens original exact, mais change la forme.
+            
+            Réponds uniquement avec le texte réécrit, sans introduction ni conclusion.`;
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${API_KEY}`
+                    },
+                    body: JSON.stringify({
+                        model: "mistral-large-latest",
+                        messages: [
+                            { role: "system", content: systemPrompt },
+                            { role: "user", content: text }
+                        ]
+                    })
+                });
+
+                if (!response.ok) throw new Error("Erreur API");
+
+                const data = await response.json();
+                const newText = data.choices[0].message.content;
+
+                // Affichage (support du markdown simple)
+                outputText.innerHTML = marked.parse(newText);
+                resultBox.classList.add('visible');
+                
+                // Scroll vers le résultat
+                resultBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+            } catch (error) {
+                console.error(error);
+                alert("Erreur lors de l'humanisation. Vérifiez la clé API ou réessayez.");
+            } finally {
+                btn.disabled = false;
+                loader.style.display = 'none';
+                btnIcon.style.display = 'block';
+                btnText.innerText = "Lancer l'Humanisation";
+            }
+        }
+
+        function copyResult() {
+            const content = document.getElementById('output-text').innerText;
+            navigator.clipboard.writeText(content).then(() => {
+                const btn = document.querySelector('.copy-btn');
+                const originalText = btn.innerText;
+                btn.innerText = "Copié !";
+                setTimeout(() => btn.innerText = originalText, 2000);
+            });
+        }
+    </script>
+</body>
+</html>
