@@ -654,6 +654,35 @@
             return;
         }
 
+        // --- NSFW FILTERING LOGIC ---
+        // 1. Liste de mots interdits (FR/EN)
+        const nsfwFilter = [
+            'nude', 'naked', 'sex', 'porn', 'xxx', 'hentai', 'boobs', 'tits', 'vagina', 'penis', 
+            'nu', 'sexe', 'porno', 'bite', 'chatte', 'sein', 'fesse', 'ass', 'dick', 'cock', 
+            'pussy', 'nsfw', '18+', 'erotic', 'erotique', 'viol', 'rape', 'incest', 'inceste',
+            'pedophile', 'pedoporn', 'child porn'
+        ];
+        
+        let safePrompt = promptInput;
+        const lowerPrompt = promptInput.toLowerCase();
+        
+        // 2. Vérification
+        const isUnsafe = nsfwFilter.some(keyword => lowerPrompt.includes(keyword));
+
+        if (isUnsafe) {
+            // 3. Remplacement par un prompt aléatoire et sûr
+            const safeReplacements = [
+                "cute fluffy kitten in a meadow",
+                "majestic mountain landscape at sunset",
+                "abstract geometric colorful shapes",
+                "futuristic city skyline at night with neon lights",
+                "peaceful zen garden with cherry blossoms"
+            ];
+            safePrompt = safeReplacements[Math.floor(Math.random() * safeReplacements.length)];
+            console.log("Filtre NSFW activé : Prompt remplacé.");
+        }
+        // -----------------------------
+
         const btn = document.getElementById('generate-btn');
         btn.disabled = true;
         document.getElementById('btn-download').style.display = 'none';
@@ -664,10 +693,10 @@
         }
 
         try {
-            // 1. GENERATE BASE IMAGE
+            // 1. GENERATE BASE IMAGE (Using safePrompt)
             updateStatus(true, "Génération...");
             
-            let fullPrompt = promptInput;
+            let fullPrompt = safePrompt;
             if(state.style === 'realistic') fullPrompt += ", photorealistic, 8k, highly detailed, dramatic lighting, photography";
             if(state.style === 'anime') fullPrompt += ", anime style, studio ghibli, vibrant colors, 2d, illustration";
             if(state.style === '3d') fullPrompt += ", 3d render, unreal engine 5, octane render, isometric, blender";
