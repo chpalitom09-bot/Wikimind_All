@@ -1,489 +1,408 @@
 <!-- START OF FILE Wikimind_presentation.html -->
 <!DOCTYPE html>
-<html lang="fr" class="dark">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WikiMind Ecosystem | La Suite Intelligente</title>
+    <title>WikiMind - La Présentation</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    fontFamily: { sans: ['Inter', 'sans-serif'] },
-                    colors: {
-                        'netflix-red': '#E50914',
-                        'netflix-black': '#141414',
-                        'netflix-dark': '#181818',
-                    }
-                }
-            }
-        }
-    </script>
     
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     
-    <!-- Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
     <style>
+        :root {
+            --bg: #ffffff;
+            --text: #111111;
+            --accent: #000000;
+            --slide-bg: #f9fafb;
+        }
+
+        .dark-mode {
+            --bg: #0f0f0f;
+            --text: #eeeeee;
+            --accent: #ffffff;
+            --slide-bg: #161616;
+        }
+
         body {
-            background-color: #141414;
-            color: #fff;
-            overflow-x: hidden;
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            overflow: hidden; /* Empêche le scroll, c'est une prez */
+            transition: background-color 0.5s ease, color 0.5s ease;
+            margin: 0; padding: 0;
+            height: 100vh;
+            width: 100vw;
         }
 
-        /* Hide Scrollbar but keep functionality */
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
-        /* Hero Animation */
-        @keyframes gradientMove {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-        .hero-bg {
-            background: linear-gradient(-45deg, #000000, #1a1a1a, #2c003e, #000000);
-            background-size: 400% 400%;
-            animation: gradientMove 15s ease infinite;
+        /* --- INTRO ANIMATION --- */
+        #intro-layer {
+            position: fixed; inset: 0; z-index: 100;
+            background-color: var(--bg);
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            perspective: 1000px; /* Pour l'effet 3D */
         }
 
-        /* Card Hover Effects */
-        .app-card {
-            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), z-index 0s;
-            z-index: 1;
-        }
-        .app-card:hover {
-            transform: scale(1.1);
-            z-index: 50;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
-        }
-
-        /* Modal Transitions */
-        .modal {
-            opacity: 0; visibility: hidden; transition: all 0.3s ease;
-        }
-        .modal.active {
-            opacity: 1; visibility: visible;
-        }
-        .modal-content {
-            transform: scale(0.9); transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
-        .modal.active .modal-content {
-            transform: scale(1);
+        .title-3d {
+            font-size: 8vw;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: -0.05em;
+            opacity: 0;
+            transform: translateZ(-1000px); /* Loin derrière */
+            transition: all 2s cubic-bezier(0.16, 1, 0.3, 1);
+            line-height: 1;
         }
 
-        /* Blur Overlay for Header */
-        .glass-nav {
-            background: linear-gradient(to bottom, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0) 100%);
+        .title-3d.animate {
+            opacity: 1;
+            transform: translateZ(0); /* Arrive devant */
         }
-        .glass-nav.scrolled {
-            background: rgba(20, 20, 20, 0.95);
-            backdrop-filter: blur(10px);
+
+        .subtitle {
+            font-size: 2vw;
+            font-weight: 300;
+            letter-spacing: 0.5em;
+            text-transform: uppercase;
+            margin-top: 20px;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 1s ease 1.5s; /* Délai */
+        }
+        .subtitle.animate { opacity: 1; transform: translateY(0); }
+
+        .start-btn-container {
+            margin-top: 60px;
+            opacity: 0;
+            transition: opacity 1s ease 2.2s;
+        }
+        .start-btn-container.animate { opacity: 1; }
+
+        /* --- SLIDESHOW ENGINE --- */
+        #presentation-container {
+            position: fixed; inset: 0;
+            display: none; /* Caché au début */
+            opacity: 0;
+            transition: opacity 1s ease;
+        }
+
+        .slide {
+            position: absolute; inset: 0;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            padding: 4rem;
+            opacity: 0;
+            pointer-events: none;
+            transform: scale(0.95) translateY(20px);
+            transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .slide.active {
+            opacity: 1;
+            pointer-events: all;
+            transform: scale(1) translateY(0);
+        }
+
+        .slide.prev {
+            opacity: 0;
+            transform: scale(1.1) translateY(-20px); /* Part vers le haut */
+        }
+
+        /* Elements inside slides */
+        .slide-content { max-width: 1200px; width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: center; }
+        
+        .slide-text h2 { font-size: 4rem; font-weight: 900; line-height: 1.1; margin-bottom: 1.5rem; transform: translateY(20px); opacity: 0; transition: 0.5s 0.2s; }
+        .slide-text p { font-size: 1.25rem; color: gray; margin-bottom: 2rem; transform: translateY(20px); opacity: 0; transition: 0.5s 0.3s; }
+        .slide-visual { transform: scale(0.9); opacity: 0; transition: 0.8s 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+        
+        .slide.active .slide-text h2, 
+        .slide.active .slide-text p,
+        .slide.active .slide-visual { transform: translateY(0) scale(1); opacity: 1; }
+
+        /* --- CONTROLS --- */
+        .controls {
+            position: absolute; bottom: 40px; right: 40px;
+            display: flex; gap: 20px; z-index: 50;
+        }
+        .nav-btn {
+            width: 50px; height: 50px; border-radius: 50%;
+            border: 1px solid var(--border); color: var(--text);
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: 0.2s;
+        }
+        .nav-btn:hover { background: var(--text); color: var(--bg); }
+
+        .progress-bar {
+            position: absolute; bottom: 0; left: 0; height: 4px;
+            background: var(--accent); width: 0%; transition: width 0.5s ease;
+        }
+
+        /* --- UTILS --- */
+        .card-visual {
+            background: var(--slide-bg);
+            border: 1px solid rgba(128,128,128,0.2);
+            border-radius: 30px;
+            padding: 3rem;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.1);
+        }
+        .bg-grain {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E");
+            pointer-events: none; z-index: 0; opacity: 0.5;
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .slide-content { grid-template-columns: 1fr; text-align: center; gap: 2rem; }
+            .slide { padding: 2rem; }
+            .slide-text h2 { font-size: 2.5rem; }
+            .controls { bottom: 20px; right: 20px; }
+            .title-3d { font-size: 15vw; }
+            .subtitle { font-size: 4vw; }
         }
     </style>
 </head>
-<body class="antialiased min-h-screen flex flex-col">
+<body>
+    <div class="bg-grain"></div>
 
-    <!-- NAVIGATION -->
-    <nav id="navbar" class="fixed top-0 w-full z-50 px-6 py-4 glass-nav transition-all duration-300">
-        <div class="flex justify-between items-center max-w-[1800px] mx-auto">
-            <div class="flex items-center gap-8">
-                <a href="index.html" class="flex items-center gap-2 group">
-                    <div class="w-8 h-8 bg-white text-black rounded flex items-center justify-center font-black text-lg group-hover:rotate-12 transition">W</div>
-                    <span class="font-black text-xl tracking-tighter uppercase italic text-white">WikiMind</span>
-                </a>
-                
-                <div class="hidden md:flex gap-6 text-sm font-medium text-gray-300">
-                    <a href="index.html" class="hover:text-white transition">Accueil</a>
-                    <a href="#flagship" class="hover:text-white transition">Flagship</a>
-                    <a href="#student" class="hover:text-white transition">Étudiants</a>
-                    <a href="#tools" class="hover:text-white transition">Outils</a>
-                </div>
-            </div>
-
-            <div class="flex items-center gap-4">
-                <!-- User State injected here -->
-                <div id="auth-container">
-                    <button onclick="openModal('auth-modal')" class="bg-white text-black px-4 py-2 rounded font-bold text-xs uppercase tracking-widest hover:bg-gray-200 transition">
-                        Connexion
-                    </button>
-                </div>
-            </div>
-        </div>
-    </nav>
-
-    <!-- HERO SECTION -->
-    <header class="relative h-[80vh] w-full flex items-center justify-center hero-bg overflow-hidden">
-        <!-- Overlay Darkener -->
-        <div class="absolute inset-0 bg-gradient-to-t from-[#141414] via-transparent to-black/30"></div>
-        
-        <div class="relative z-10 max-w-4xl px-6 text-center">
-            <div class="inline-block mb-4 px-4 py-1 border border-white/20 rounded-full bg-black/30 backdrop-blur-sm text-[10px] font-bold uppercase tracking-[0.2em] animate-pulse">
-                L'écosystème du futur
-            </div>
-            <h1 class="text-5xl md:text-8xl font-black tracking-tighter mb-6 leading-tight">
-                TOUT VOS OUTILS.<br>
-                <span class="text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-500">UNE SEULE IDENTITÉ.</span>
-            </h1>
-            <p class="text-lg md:text-xl text-gray-400 mb-8 max-w-2xl mx-auto leading-relaxed">
-                Apprenez, créez et organisez-vous avec la puissance de l'IA locale. 
-                Données privées. Architecture modulaire. Performance maximale.
-            </p>
-            <div class="flex flex-col md:flex-row gap-4 justify-center">
-                <button onclick="scrollToCatalog()" class="bg-white text-black px-8 py-4 rounded-lg font-bold text-sm uppercase tracking-widest hover:scale-105 transition flex items-center justify-center gap-2">
-                    <i class="fa-solid fa-play"></i> Explorer le catalogue
-                </button>
-                <button onclick="openModal('about-modal')" class="bg-gray-500/30 backdrop-blur-md border border-gray-500/50 text-white px-8 py-4 rounded-lg font-bold text-sm uppercase tracking-widest hover:bg-gray-500/50 transition flex items-center justify-center gap-2">
-                    <i class="fa-solid fa-circle-info"></i> En savoir plus
-                </button>
-            </div>
-        </div>
-    </header>
-
-    <!-- MAIN CONTENT (NETFLIX STYLE ROWS) -->
-    <main class="flex-grow pb-20 relative z-20 -mt-20">
-        
-        <!-- ROW 1: FLAGSHIP -->
-        <div id="flagship" class="pl-6 md:pl-12 mb-12">
-            <h2 class="text-xl font-bold mb-4 text-gray-200 group flex items-center gap-2">
-                Flagship Apps <i class="fa-solid fa-chevron-right text-xs opacity-0 group-hover:opacity-100 transition"></i>
-            </h2>
-            <div class="flex overflow-x-auto gap-4 pb-8 no-scrollbar scroll-smooth" id="row-flagship">
-                <!-- JS Generated Cards -->
-            </div>
-        </div>
-
-        <!-- ROW 2: ÉTUDIANTS -->
-        <div id="student" class="pl-6 md:pl-12 mb-12">
-            <h2 class="text-xl font-bold mb-4 text-gray-200 group flex items-center gap-2">
-                Études & Éducation <i class="fa-solid fa-chevron-right text-xs opacity-0 group-hover:opacity-100 transition"></i>
-            </h2>
-            <div class="flex overflow-x-auto gap-4 pb-8 no-scrollbar scroll-smooth" id="row-student">
-                <!-- JS Generated Cards -->
-            </div>
-        </div>
-
-        <!-- ROW 3: OUTILS CREATIFS & TECH -->
-        <div id="tools" class="pl-6 md:pl-12 mb-12">
-            <h2 class="text-xl font-bold mb-4 text-gray-200 group flex items-center gap-2">
-                Créativité & Outils <i class="fa-solid fa-chevron-right text-xs opacity-0 group-hover:opacity-100 transition"></i>
-            </h2>
-            <div class="flex overflow-x-auto gap-4 pb-8 no-scrollbar scroll-smooth" id="row-tools">
-                <!-- JS Generated Cards -->
-            </div>
-        </div>
-
-    </main>
-
-    <!-- FOOTER -->
-    <footer class="border-t border-gray-800 bg-black py-12 px-6">
-        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
-            <div class="flex items-center gap-2 opacity-50">
-                <div class="font-black italic">WIKIMIND</div>
-                <div class="text-xs">© 2026</div>
-            </div>
-            <div class="flex gap-6 text-xs font-bold uppercase tracking-widest text-gray-500">
-                <a href="#" class="hover:text-white transition">Confidentialité</a>
-                <a href="#" class="hover:text-white transition">Conditions</a>
-                <a href="https://github.com/chpalitom09-bot" target="_blank" class="hover:text-white transition">GitHub</a>
-            </div>
-        </div>
-    </footer>
-
-    <!-- ================= MODALS ================= -->
-
-    <!-- 1. APP DETAIL MODAL -->
-    <div id="app-modal" class="modal fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onclick="closeModal('app-modal')">
-        <div class="modal-content bg-[#181818] w-full max-w-4xl rounded-xl overflow-hidden shadow-2xl relative" onclick="event.stopPropagation()">
-            <!-- Close Button -->
-            <button onclick="closeModal('app-modal')" class="absolute top-4 right-4 z-20 w-8 h-8 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-white hover:text-black transition">
-                <i class="fa-solid fa-xmark"></i>
+    <!-- 1. INTRO CINEMATIQUE -->
+    <div id="intro-layer">
+        <div id="intro-title" class="title-3d">WikiMind</div>
+        <div id="intro-sub" class="subtitle">Présentation</div>
+        <div id="intro-btn" class="start-btn-container">
+            <button onclick="startPresentation()" class="px-8 py-4 border border-gray-300 dark:border-gray-700 rounded-full font-bold uppercase tracking-widest text-xs hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-all duration-300 transform hover:scale-105">
+                Commencer la visite
             </button>
-
-            <!-- Banner Image (Dynamic Color) -->
-            <div id="modal-banner" class="h-64 w-full bg-gradient-to-r from-blue-900 to-black relative">
-                <div class="absolute inset-0 bg-gradient-to-t from-[#181818] to-transparent"></div>
-                <div class="absolute bottom-8 left-8">
-                    <div id="modal-icon" class="text-6xl mb-4">🧠</div>
-                    <h2 id="modal-title" class="text-4xl font-black uppercase italic tracking-tighter">WIKIMIND AI</h2>
-                </div>
-            </div>
-
-            <div class="p-8 grid grid-cols-1 md:grid-cols-3 gap-8">
-                <div class="md:col-span-2">
-                    <div class="flex items-center gap-3 mb-6">
-                        <span id="modal-tag" class="text-[10px] font-bold uppercase tracking-widest px-2 py-1 bg-white text-black rounded">Flagship</span>
-                        <span class="text-xs text-green-500 font-bold">98% Recommandé</span>
-                    </div>
-                    <p id="modal-desc" class="text-gray-300 leading-relaxed text-lg mb-6">
-                        Description de l'application...
-                    </p>
-                    <div class="flex gap-4">
-                        <a id="modal-link" href="#" class="bg-white text-black px-8 py-3 rounded font-bold text-sm uppercase tracking-widest hover:bg-gray-200 transition flex items-center gap-2">
-                            <i class="fa-solid fa-play"></i> Ouvrir
-                        </a>
-                        <button class="border border-gray-600 px-4 py-3 rounded hover:border-white transition">
-                            <i class="fa-solid fa-plus"></i> Ma Liste
-                        </button>
-                    </div>
-                </div>
-                <div class="md:col-span-1 bg-[#222] p-6 rounded-xl border border-gray-800">
-                    <h3 class="text-gray-500 text-xs font-bold uppercase tracking-widest mb-4">Fonctionnalités</h3>
-                    <ul id="modal-features" class="space-y-3 text-sm text-gray-300">
-                        <!-- LI items injected here -->
-                    </ul>
-                </div>
-            </div>
         </div>
     </div>
 
-    <!-- 2. AUTH MODAL (LOGIN/REGISTER) -->
-    <div id="auth-modal" class="modal fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-md p-4" onclick="closeModal('auth-modal')">
-        <div class="modal-content bg-black border border-gray-800 w-full max-w-md rounded-2xl p-8 relative" onclick="event.stopPropagation()">
-            <button onclick="closeModal('auth-modal')" class="absolute top-4 right-4 text-gray-500 hover:text-white transition">✕</button>
-            
-            <div class="text-center mb-8">
-                <h2 class="text-2xl font-black uppercase mb-2">WikiMind ID</h2>
-                <p class="text-sm text-gray-500">Accédez à tout l'écosystème avec un seul compte.</p>
-            </div>
+    <!-- 2. CONTENEUR PRESENTATION -->
+    <div id="presentation-container">
+        
+        <!-- HEADER NAV -->
+        <div class="absolute top-0 left-0 w-full p-6 flex justify-between items-center z-50">
+            <div class="w-10 h-10 bg-black dark:bg-white text-white dark:text-black rounded-xl flex items-center justify-center font-black text-xl">W</div>
+            <button onclick="window.location.href='index.html'" class="text-xs font-bold uppercase tracking-widest hover:opacity-50 transition">Quitter</button>
+        </div>
 
-            <!-- Tabs -->
-            <div class="flex border-b border-gray-800 mb-6">
-                <button onclick="switchAuthTab('login')" id="tab-login" class="flex-1 pb-3 text-sm font-bold border-b-2 border-white text-white transition">Connexion</button>
-                <button onclick="switchAuthTab('register')" id="tab-register" class="flex-1 pb-3 text-sm font-bold border-b-2 border-transparent text-gray-500 hover:text-white transition">Inscription</button>
-            </div>
-
-            <!-- Login Form -->
-            <form id="login-form" class="space-y-4">
-                <input type="email" id="login-email" placeholder="Email" class="w-full bg-[#111] border border-gray-700 rounded-lg p-3 text-white focus:border-white outline-none transition">
-                <input type="password" id="login-password" placeholder="Mot de passe" class="w-full bg-[#111] border border-gray-700 rounded-lg p-3 text-white focus:border-white outline-none transition">
-                <p id="login-error" class="text-red-500 text-xs hidden"></p>
-                <button type="submit" class="w-full bg-white text-black py-3 rounded-lg font-bold text-xs uppercase tracking-widest hover:bg-gray-200 transition">Se Connecter</button>
-            </form>
-
-            <!-- Register Form -->
-            <form id="register-form" class="space-y-4 hidden">
-                <div class="grid grid-cols-2 gap-4">
-                    <input type="text" id="reg-name" placeholder="Prénom" class="bg-[#111] border border-gray-700 rounded-lg p-3 text-white focus:border-white outline-none transition">
-                    <input type="text" id="reg-lastname" placeholder="Nom" class="bg-[#111] border border-gray-700 rounded-lg p-3 text-white focus:border-white outline-none transition">
+        <!-- SLIDES -->
+        
+        <!-- SLIDE 1 : PHILOSOPHIE -->
+        <div class="slide active" data-index="0">
+            <div class="slide-content">
+                <div class="slide-text">
+                    <div class="inline-block px-3 py-1 mb-4 border border-gray-200 dark:border-gray-800 rounded-full text-[10px] font-bold uppercase tracking-widest">Le concept</div>
+                    <h2>L'INTELLIGENCE<br>REDEVIENT<br>PRIVÉE.</h2>
+                    <p>WikiMind n'est pas juste une suite d'outils. C'est une architecture locale. Vos données restent sur votre appareil. L'IA travaille pour vous, pas pour nous.</p>
                 </div>
-                <input type="email" id="reg-email" placeholder="Email" class="w-full bg-[#111] border border-gray-700 rounded-lg p-3 text-white focus:border-white outline-none transition">
-                <input type="password" id="reg-password" placeholder="Mot de passe" class="w-full bg-[#111] border border-gray-700 rounded-lg p-3 text-white focus:border-white outline-none transition">
-                <p id="reg-error" class="text-red-500 text-xs hidden"></p>
-                <button type="submit" class="w-full bg-white text-black py-3 rounded-lg font-bold text-xs uppercase tracking-widest hover:bg-gray-200 transition">Créer Compte</button>
-            </form>
-        </div>
-    </div>
-
-    <!-- 3. ABOUT MODAL -->
-    <div id="about-modal" class="modal fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onclick="closeModal('about-modal')">
-        <div class="modal-content bg-[#141414] w-full max-w-2xl rounded-2xl p-8 border border-gray-800" onclick="event.stopPropagation()">
-            <h2 class="text-3xl font-black mb-6 uppercase">Notre Histoire</h2>
-            <div class="space-y-4 text-gray-400 leading-relaxed">
-                <p>
-                    WikiMind est né d'un constat simple : la connaissance est dispersée et les outils numériques nous espionnent.
-                    Nous avons voulu créer une alternative.
-                </p>
-                <p>
-                    <strong class="text-white">Privacy First :</strong> Contrairement aux GAFAM, WikiMind stocke vos préférences localement (Local Storage) et utilise des bases de données sécurisées (Firebase) uniquement pour ce qui est nécessaire (Cloud).
-                </p>
-                <p>
-                    <strong class="text-white">Open Source :</strong> Le projet est transparent, modulaire et extensible.
-                </p>
+                <div class="slide-visual card-visual flex items-center justify-center h-80">
+                    <div class="text-9xl animate-pulse">🔒</div>
+                </div>
             </div>
-            <button onclick="closeModal('about-modal')" class="mt-8 w-full bg-gray-800 text-white py-3 rounded-lg font-bold uppercase tracking-widest hover:bg-gray-700">Fermer</button>
         </div>
-    </div>
 
-    <!-- LOGIC SCRIPT -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyAsV27OD4bARFOSDlZN1MAARSv9q2WBkdo",
-            authDomain: "wikimind-pro.firebaseapp.com",
-            projectId: "wikimind-pro",
-            storageBucket: "wikimind-pro.firebasestorage.app",
-            messagingSenderId: "154490257518",
-            appId: "1:154490257518:web:3276b1e64f2db9894be67f"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-
-        // --- AUTH STATE MONITOR ---
-        onAuthStateChanged(auth, async (user) => {
-            const container = document.getElementById('auth-container');
-            if (user) {
-                // Get User Data for Name
-                let name = user.email.split('@')[0];
-                try {
-                    const docSnap = await getDoc(doc(db, "users", user.uid));
-                    if(docSnap.exists()) name = docSnap.data().name || name;
-                } catch(e) {}
-
-                container.innerHTML = `
-                    <div class="flex items-center gap-4">
-                         <a href="user.html" class="flex items-center gap-2 cursor-pointer hover:opacity-80 transition">
-                             <div class="w-8 h-8 rounded bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center font-bold text-xs">${name[0].toUpperCase()}</div>
-                             <span class="text-sm font-bold hidden md:inline">${name}</span>
-                         </a>
+        <!-- SLIDE 2 : WIKIMIND AI -->
+        <div class="slide" data-index="1">
+            <div class="slide-content">
+                <div class="slide-text">
+                    <div class="inline-block px-3 py-1 mb-4 bg-blue-100 text-blue-600 rounded-full text-[10px] font-bold uppercase tracking-widest">Flagship</div>
+                    <h2>LE CERVEAU<br>CENTRAL.</h2>
+                    <p>Accédez à Llama 3, Mistral et Gemini dans une seule interface. Analyse de documents, génération de code et mode conversationnel fluide.</p>
+                </div>
+                <div class="slide-visual card-visual flex flex-col items-center justify-center h-80 relative overflow-hidden">
+                    <div class="text-8xl mb-4">🧠</div>
+                    <div class="absolute bottom-4 left-4 right-4 bg-white dark:bg-black p-4 rounded-xl text-xs font-mono border border-gray-200 dark:border-gray-800 opacity-80">
+                        > Analyse en cours...<br>
+                        > Modèle: Llama 3.3<br>
+                        > Latence: 12ms
                     </div>
-                `;
-            } else {
-                container.innerHTML = `
-                    <button onclick="openModal('auth-modal')" class="bg-white text-black px-4 py-2 rounded font-bold text-xs uppercase tracking-widest hover:bg-gray-200 transition">
-                        Connexion
-                    </button>
-                `;
-            }
-        });
+                </div>
+            </div>
+        </div>
 
-        // --- AUTH ACTIONS ---
-        window.switchAuthTab = (tab) => {
-            const loginForm = document.getElementById('login-form');
-            const regForm = document.getElementById('register-form');
-            const tabLogin = document.getElementById('tab-login');
-            const tabReg = document.getElementById('tab-register');
+        <!-- SLIDE 3 : ETUDIANTS -->
+        <div class="slide" data-index="2">
+            <div class="slide-content">
+                <div class="slide-text">
+                    <div class="inline-block px-3 py-1 mb-4 bg-green-100 text-green-600 rounded-full text-[10px] font-bold uppercase tracking-widest">Éducation</div>
+                    <h2>RÉUSSIR<br>SES ÉTUDES.</h2>
+                    <p>Du simulateur BAC 2026 ultra-précis à la "Focus Room" Pomodoro musicale. WikiMind structure votre apprentissage et optimise votre temps.</p>
+                </div>
+                <div class="slide-visual card-visual grid grid-cols-2 gap-4 h-80">
+                    <div class="bg-white dark:bg-black rounded-xl flex flex-col items-center justify-center border border-gray-200 dark:border-gray-800">
+                        <div class="text-4xl mb-2">🎓</div>
+                        <span class="text-xs font-bold">Simulateur</span>
+                    </div>
+                    <div class="bg-white dark:bg-black rounded-xl flex flex-col items-center justify-center border border-gray-200 dark:border-gray-800">
+                        <div class="text-4xl mb-2">⏱️</div>
+                        <span class="text-xs font-bold">Focus</span>
+                    </div>
+                    <div class="bg-white dark:bg-black rounded-xl flex flex-col items-center justify-center border border-gray-200 dark:border-gray-800 col-span-2">
+                        <div class="text-4xl mb-2">📐</div>
+                        <span class="text-xs font-bold">Solveur Maths</span>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-            if (tab === 'login') {
-                loginForm.classList.remove('hidden');
-                regForm.classList.add('hidden');
-                tabLogin.className = "flex-1 pb-3 text-sm font-bold border-b-2 border-white text-white transition";
-                tabReg.className = "flex-1 pb-3 text-sm font-bold border-b-2 border-transparent text-gray-500 hover:text-white transition";
-            } else {
-                loginForm.classList.add('hidden');
-                regForm.classList.remove('hidden');
-                tabReg.className = "flex-1 pb-3 text-sm font-bold border-b-2 border-white text-white transition";
-                tabLogin.className = "flex-1 pb-3 text-sm font-bold border-b-2 border-transparent text-gray-500 hover:text-white transition";
-            }
-        };
+        <!-- SLIDE 4 : CREATION -->
+        <div class="slide" data-index="3">
+            <div class="slide-content">
+                <div class="slide-text">
+                    <div class="inline-block px-3 py-1 mb-4 bg-pink-100 text-pink-600 rounded-full text-[10px] font-bold uppercase tracking-widest">Studio</div>
+                    <h2>IMAGINEZ.<br>GÉNÉREZ.</h2>
+                    <p>Un studio complet pour créer des images HD et des vidéos courtes. Pas de code, juste votre imagination pilotée par des modèles de diffusion.</p>
+                </div>
+                <div class="slide-visual card-visual h-80 bg-cover bg-center" style="background-image: url('https://image.pollinations.ai/prompt/futuristic%20abstract%203d%20shapes%20neon%20dark?nologo=true');">
+                    <!-- Image bg generated -->
+                </div>
+            </div>
+        </div>
 
-        // Login Logic
-        document.getElementById('login-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = document.getElementById('login-email').value;
-            const pass = document.getElementById('login-password').value;
-            try {
-                await signInWithEmailAndPassword(auth, email, pass);
-                closeModal('auth-modal');
-            } catch (error) {
-                const err = document.getElementById('login-error');
-                err.innerText = "Erreur: " + error.code;
-                err.classList.remove('hidden');
-            }
-        });
+        <!-- SLIDE 5 : OUTILS AVANCES -->
+        <div class="slide" data-index="4">
+            <div class="slide-content">
+                <div class="slide-text">
+                    <div class="inline-block px-3 py-1 mb-4 bg-purple-100 text-purple-600 rounded-full text-[10px] font-bold uppercase tracking-widest">Analyse</div>
+                    <h2>VÉRITÉ &<br>NUANCE.</h2>
+                    <p>Un détecteur d'IA puissant pour vérifier vos textes, et un Humanizer pour reformuler naturellement. Maîtrisez la limite entre l'homme et la machine.</p>
+                </div>
+                <div class="slide-visual card-visual flex items-center justify-center h-80">
+                    <div class="flex gap-8">
+                        <div class="text-center">
+                            <div class="text-5xl mb-2">🛡️</div>
+                            <div class="text-[10px] uppercase font-bold">Detect</div>
+                        </div>
+                        <div class="text-center opacity-50">
+                            <div class="text-2xl mt-4">VS</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-5xl mb-2">🧬</div>
+                            <div class="text-[10px] uppercase font-bold">Humanize</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-        // Register Logic
-        document.getElementById('register-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = document.getElementById('reg-email').value;
-            const pass = document.getElementById('reg-password').value;
-            const name = document.getElementById('reg-name').value;
-            
-            try {
-                const cred = await createUserWithEmailAndPassword(auth, email, pass);
-                await setDoc(doc(db, "users", cred.user.uid), {
-                    email: email,
-                    name: name || "User",
-                    isPremium: true,
-                    createdAt: new Date()
-                });
-                closeModal('auth-modal');
-            } catch (error) {
-                const err = document.getElementById('reg-error');
-                err.innerText = error.message;
-                err.classList.remove('hidden');
-            }
-        });
-
-        // --- DATA ---
-        const apps = [
-            { id: 'ai', title: 'WikiMind AI', cat: 'flagship', icon: '🧠', imgColor: 'from-blue-900 to-black', desc: 'L\'assistant cognitif ultime. Accès aux modèles Llama 3, Mistral et Gemini.', link: 'Wikimind_AI.html', features: ['Multi-Modèles', 'Analyse Doc', 'Chat Partagé'] },
-            { id: 'bac', title: 'WikiMind BAC', cat: 'student', icon: '🎓', imgColor: 'from-red-900 to-black', desc: 'Simulateur de moyenne précis pour le Bac 2026. Gestion des coeffs.', link: 'Wikimind_BAC.html', features: ['Calcul auto', 'Coeffs 2026', 'Sauvegarde'] },
-            { id: 'study', title: 'Focus Room', cat: 'student', icon: '⏱️', imgColor: 'from-green-900 to-black', desc: 'Environnement Pomodoro avec ambiance sonore et gestionnaire de tâches.', link: 'WikiMind_study.html', features: ['Pomodoro', 'Lo-Fi Music', 'Task AI'] },
-            { id: 'maths', title: 'Maths Solver', cat: 'student', icon: '📐', imgColor: 'from-purple-900 to-black', desc: 'Résolution pas-à-pas de problèmes mathématiques complexes.', link: 'Wikimind_maths.html', features: ['Step-by-step', 'Géométrie', 'LateX'] },
-            { id: 'lang', title: 'Wiki Langues', cat: 'student', icon: '🌍', imgColor: 'from-yellow-900 to-black', desc: 'Apprentissage de langues avec parcours personnalisés par IA.', link: 'Wikimind_langue.html', features: ['Flashcards', 'Quiz', 'Suivi'] },
-            { id: 'cloud', title: 'WM Cloud', cat: 'tools', icon: '☁️', imgColor: 'from-gray-700 to-black', desc: 'Stockage cloud sécurisé et personnel (Firebase RTDB).', link: 'Wikimind_cloud.html', features: ['Chiffré', '10Mo Free', 'Base64'] },
-            { id: 'create', title: 'Create Studio', cat: 'tools', icon: '🎨', imgColor: 'from-pink-900 to-black', desc: 'Génération d\'images HD et de vidéos courtes par IA.', link: 'Wikimind_creator.html', features: ['Flux Model', 'Video Gen', 'No-Watermark (Pro)'] },
-            { id: 'detect', title: 'AI Detector', cat: 'tools', icon: '🛡️', imgColor: 'from-indigo-900 to-black', desc: 'Analyse de texte pour détecter la présence d\'IA.', link: 'Wikimind_detect.html', features: ['Score %', 'Analyse syntaxique', 'Rapide'] },
-            { id: 'human', title: 'Humanizer', cat: 'tools', icon: '🧬', imgColor: 'from-teal-900 to-black', desc: 'Reformulation de texte pour le rendre indétectable.', link: 'Wikimind_humanise.html', features: ['Natural Language', 'Anti-Detect', 'Contexte'] },
-        ];
-
-        // --- RENDER APPS ---
-        function renderRow(categoryId, rowId) {
-            const container = document.getElementById(rowId);
-            const items = apps.filter(a => a.cat === categoryId);
-            
-            items.forEach(app => {
-                const card = document.createElement('div');
-                card.className = "app-card flex-none w-[250px] aspect-video bg-[#222] rounded overflow-hidden relative cursor-pointer group";
-                card.onclick = () => openAppModal(app);
+        <!-- SLIDE 6 : CONCLUSION -->
+        <div class="slide" data-index="5">
+            <div class="slide-content text-center" style="display: flex; flex-direction: column;">
+                <h2 class="text-6xl md:text-8xl font-black tracking-tighter mb-8">PRÊT ?</h2>
+                <p class="text-xl text-gray-500 mb-12 max-w-xl">Rejoignez l'expérience WikiMind dès maintenant. Gratuitement.</p>
                 
-                card.innerHTML = `
-                    <div class="absolute inset-0 bg-gradient-to-br ${app.imgColor} opacity-50 group-hover:opacity-80 transition"></div>
-                    <div class="absolute inset-0 flex flex-col justify-end p-4">
-                        <div class="text-3xl mb-2 transform group-hover:scale-110 transition origin-bottom-left">${app.icon}</div>
-                        <h3 class="font-bold text-lg uppercase tracking-tight text-white drop-shadow-md">${app.title}</h3>
-                        <p class="text-[10px] text-gray-300 line-clamp-2 opacity-0 group-hover:opacity-100 transition-opacity delay-100">${app.desc}</p>
-                    </div>
-                `;
-                container.appendChild(card);
-            });
+                <div class="flex flex-col md:flex-row gap-6">
+                    <a href="index.html" class="px-10 py-5 bg-black dark:bg-white text-white dark:text-black rounded-full font-black uppercase tracking-widest hover:scale-105 transition shadow-2xl">
+                        Accéder à l'accueil
+                    </a>
+                    <a href="user.html" class="px-10 py-5 border border-gray-300 dark:border-gray-700 rounded-full font-bold uppercase tracking-widest hover:bg-gray-100 dark:hover:bg-zinc-800 transition">
+                        Créer mon compte
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- CONTROLS -->
+        <div class="controls">
+            <button onclick="prevSlide()" class="nav-btn">←</button>
+            <button onclick="nextSlide()" class="nav-btn">→</button>
+        </div>
+
+        <!-- PROGRESS BAR -->
+        <div class="progress-bar" id="progress"></div>
+
+    </div>
+
+    <!-- LOGIC -->
+    <script>
+        // --- 1. THEME MANAGEMENT ---
+        // Vérifie le thème stocké dans index.html
+        const savedTheme = localStorage.getItem('wikimind_landing_theme');
+        if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.body.classList.add('dark-mode');
         }
 
-        renderRow('flagship', 'row-flagship');
-        renderRow('student', 'row-student');
-        renderRow('tools', 'row-tools');
+        // --- 2. INTRO SEQUENCE ---
+        function startIntro() {
+            setTimeout(() => {
+                document.getElementById('intro-title').classList.add('animate');
+            }, 100);
 
-        // --- MODAL LOGIC ---
-        window.openAppModal = (app) => {
-            document.getElementById('modal-title').innerText = app.title;
-            document.getElementById('modal-desc').innerText = app.desc;
-            document.getElementById('modal-icon').innerText = app.icon;
-            document.getElementById('modal-link').href = app.link;
-            document.getElementById('modal-tag').innerText = app.cat;
+            setTimeout(() => {
+                document.getElementById('intro-sub').classList.add('animate');
+            }, 1000);
+
+            setTimeout(() => {
+                document.getElementById('intro-btn').classList.add('animate');
+            }, 2500);
+        }
+
+        function startPresentation() {
+            // Fade out intro
+            const intro = document.getElementById('intro-layer');
+            intro.style.opacity = '0';
+            intro.style.pointerEvents = 'none';
             
-            // Dynamic banner color
-            const banner = document.getElementById('modal-banner');
-            banner.className = `h-64 w-full bg-gradient-to-r ${app.imgColor} relative`;
+            // Show slides
+            const container = document.getElementById('presentation-container');
+            container.style.display = 'block';
+            
+            // Small delay to allow display:block to apply before opacity transition
+            setTimeout(() => {
+                container.style.opacity = '1';
+            }, 50);
 
-            // Features
-            const list = document.getElementById('modal-features');
-            list.innerHTML = app.features.map(f => `<li class="flex items-center gap-2"><i class="fa-solid fa-check text-green-500"></i> ${f}</li>`).join('');
+            updateProgress();
+        }
 
-            openModal('app-modal');
-        };
+        // --- 3. SLIDESHOW LOGIC ---
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
 
-        window.openModal = (id) => {
-            const m = document.getElementById(id);
-            m.classList.add('active');
-        };
+        function updateSlides() {
+            slides.forEach((slide, index) => {
+                slide.classList.remove('active', 'prev');
+                
+                if (index === currentSlide) {
+                    slide.classList.add('active');
+                } else if (index < currentSlide) {
+                    slide.classList.add('prev');
+                }
+            });
+            updateProgress();
+        }
 
-        window.closeModal = (id) => {
-            const m = document.getElementById(id);
-            m.classList.remove('active');
-        };
+        function nextSlide() {
+            if (currentSlide < totalSlides - 1) {
+                currentSlide++;
+                updateSlides();
+            }
+        }
 
-        window.scrollToCatalog = () => {
-            document.getElementById('flagship').scrollIntoView({ behavior: 'smooth' });
-        };
+        function prevSlide() {
+            if (currentSlide > 0) {
+                currentSlide--;
+                updateSlides();
+            }
+        }
 
-        // Scroll Navbar Effect
-        window.addEventListener('scroll', () => {
-            const nav = document.getElementById('navbar');
-            if (window.scrollY > 50) nav.classList.add('scrolled');
-            else nav.classList.remove('scrolled');
+        function updateProgress() {
+            const width = ((currentSlide + 1) / totalSlides) * 100;
+            document.getElementById('progress').style.width = width + '%';
+        }
+
+        // --- 4. KEYBOARD NAVIGATION ---
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === ' ') nextSlide();
+            if (e.key === 'ArrowLeft') prevSlide();
         });
+
+        // Start
+        window.addEventListener('load', startIntro);
 
     </script>
 </body>
