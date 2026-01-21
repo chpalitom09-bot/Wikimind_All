@@ -192,7 +192,7 @@
                 </div>
             </div>
 
-            <!-- HOME GRID (Top 6 Apps) -->
+            <!-- HOME GRID (Apps) -->
             <div class="flex flex-wrap justify-center gap-6 w-full mb-12">
                 <!-- Wikimind AI -->
                 <div onclick="openAppDetail('wikimind')" class="app-card p-8 group flex flex-col justify-between animate-fade delay-100 h-80 flex-[1_1_300px] max-w-[400px]">
@@ -267,6 +267,19 @@
                         </div>
                         <h3 class="text-2xl font-bold mb-2">WikiMind Create</h3>
                         <p class="text-sm text-gray-500 font-medium leading-relaxed">Studio visuel Pro. Génération d'images HD, vidéos et animations No-Code.</p>
+                    </div>
+                    <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-widest mt-6 group-hover:gap-4 transition-all duration-300">Voir <span class="text-lg">→</span></div>
+                </div>
+
+                 <!-- WikiMind Finance (NEW) -->
+                 <div onclick="openAppDetail('finance')" class="app-card p-8 group flex flex-col justify-between animate-fade delay-600 h-80 flex-[1_1_300px] max-w-[400px]">
+                    <div>
+                        <div class="flex justify-between items-start">
+                            <div class="icon-box group-hover:bg-black group-hover:text-white dark:group-hover:bg-white dark:group-hover:text-black transition-colors duration-300">💸</div>
+                            <span class="bg-yellow-100 text-yellow-600 text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider">Gestion</span>
+                        </div>
+                        <h3 class="text-2xl font-bold mb-2">WikiMind Finance</h3>
+                        <p class="text-sm text-gray-500 font-medium leading-relaxed">Gestionnaire de budget intelligent avec analyse IA en temps réel. Maîtrisez vos finances.</p>
                     </div>
                     <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-widest mt-6 group-hover:gap-4 transition-all duration-300">Voir <span class="text-lg">→</span></div>
                 </div>
@@ -831,6 +844,24 @@
                     "Moteur de rendu Three.js"
                 ],
                 url: "Wikimind_3D.html"
+            },
+            "finance": {
+                title: "WikiMind Finance",
+                icon: "💸",
+                tag: "Gestion",
+                tagColor: "bg-yellow-100 text-yellow-600",
+                desc: "Prenez le contrôle de votre budget avec une intelligence financière. Suivi des revenus et dépenses en temps réel, analyses prédictives par IA et catégorisation automatique.",
+                features: [
+                    "<strong>Suivi Temps Réel :</strong> Synchronisation instantanée via Firebase Realtime Database.",
+                    "<strong>Conseiller IA :</strong> Analyse de vos habitudes et conseils d'économie via Mistral AI.",
+                    "<strong>Gestion Activités :</strong> Suivez la rentabilité de vos projets (Freelance, Jobs, Ventes)."
+                ],
+                extras: [
+                    "Mode Sombre/Clair",
+                    "Sécurité des données (Rules)",
+                    "Visualisation intuitive"
+                ],
+                url: "Wikimind_finance.html"
             },
             "detector": {
                 title: "WikiMind 6.2 | AI Detector",
