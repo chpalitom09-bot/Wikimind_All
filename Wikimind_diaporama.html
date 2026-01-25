@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-29XYBNJ2CB"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-29XYBNJ2CB');
+    </script>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WikiMind | Diaporama AI (Bêta)</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- Markdown Parser (pour le contenu des slides) -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <style>
+        :root {
+            --bg: #ffffff;
+            --text: #111111;
+            --card-bg: #f9fafb;
+            --border: #e5e7eb;
+            --accent: #000000;
+            --accent-text: #ffffff;
+            --slide-bg: #ffffff;
+            --slide-border: #d1d5db;
+        }
+
+        .dark-mode {
+            --bg: #0f0f0f;
+            --text: #eeeeee;
+            --card-bg: #161616;
+            --border: #252525;
+            --accent: #ffffff;
+            --accent-text: #000000;
+            --slide-bg: #1e1e1e;
+            --slide-border: #333333;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            transition: background-color 0.4s ease, color 0.4s ease;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* --- Components --- */
+        .glass-header {
+            background: rgba(var(--bg), 0.8);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .input-area {
+            width: 100%;
+            background: transparent;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1rem;
+            font-size: 0.9rem;
+            color: var(--text);
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+
+        .input-area:focus {
+            outline: none;
+            border-color: var(--text);
+            box-shadow: 0 0 0 2px rgba(125, 125, 125, 0.1);
+        }
+
+        .btn-primary {
+            background-color: var(--accent);
+            color: var(--accent-text);
+            border: 1px solid var(--accent);
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: transform 0.2s, opacity 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            opacity: 0.9;
+        }
+        
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background-color: transparent;
+            color: var(--text);
+            border: 1px solid var(--border);
+            padding: 10px 20px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .btn-secondary:hover:not(:disabled) {
+            background-color: var(--card-bg);
+            border-color: var(--text);
+        }
+
+        .btn-secondary:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        /* Slide Preview */
+        .slide-container {
+            aspect-ratio: 16/9;
+            background-color: var(--slide-bg);
+            border: 1px solid var(--slide-border);
+            border-radius: 8px;
+            padding: 3rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .slide-content h1 { font-size: 2.5rem; font-weight: 900; margin-bottom: 1rem; line-height: 1.1; }
+        .slide-content h2 { font-size: 1.8rem; font-weight: 800; margin-bottom: 0.8rem; }
+        .slide-content ul { list-style-type: disc; padding-left: 1.5rem; margin-top: 1rem; }
+        .slide-content li { margin-bottom: 0.5rem; font-size: 1.1rem; }
+        .slide-content p { font-size: 1rem; line-height: 1.6; opacity: 0.9; }
+
+        .slide-footer {
+            position: absolute; bottom: 1.5rem; left: 3rem; right: 3rem;
+            display: flex; justify-content: space-between;
+            font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em;
+            opacity: 0.5; border-top: 1px solid var(--border); padding-top: 0.5rem;
+        }
+
+        /* Loader */
+        .loader {
+            border: 2px solid var(--accent-text);
+            border-top: 2px solid transparent;
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            animation: spin 1s linear infinite;
+            display: none;
+        }
+
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* Badge Beta */
+        .beta-badge {
+            background: linear-gradient(135deg, #FF6B6B, #FF8E53);
+            color: white;
+            font-size: 0.6rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 800;
+            vertical-align: super;
+            margin-left: 4px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- SCRIPT FIREBASE -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-auth.js";
+        import { getDatabase, ref, push, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAsV27OD4bARFOSDlZN1MAARSv9q2WBkdo",
+            authDomain: "wikimind-pro.firebaseapp.com",
+            databaseURL: "https://wikimind-pro-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "wikimind-pro",
+            storageBucket: "wikimind-pro.firebasestorage.app",
+            messagingSenderId: "154490257518",
+            appId: "1:154490257518:web:3276b1e64f2db9894be67f"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getDatabase(app);
+
+        // Export pour usage global
+        window.firebaseDb = db;
+        window.push = push;
+        window.ref = ref;
+        window.serverTimestamp = serverTimestamp;
+        window.auth = auth;
+
+        onAuthStateChanged(auth, (user) => {
+            const btn = document.getElementById('auth-btn');
+            const densitySelect = document.getElementById('density-select');
+            const saveBtn = document.getElementById('save-btn');
+            const saveTooltip = document.getElementById('save-tooltip');
+
+            if (user) {
+                // Utilisateur connecté
+                window.currentUser = user;
+                btn.innerHTML = `<div class="w-2 h-2 rounded-full bg-green-500"></div> <span>${user.displayName || 'Mon Espace'}</span>`;
+                
+                // Débloquer les options
+                densitySelect.disabled = false;
+                saveBtn.disabled = false;
+                saveTooltip.style.display = 'none';
+                
+                // Si une densité était forcée, on peut la laisser ou reset
+            } else {
+                // Utilisateur déconnecté
+                window.currentUser = null;
+                btn.innerHTML = `<span>Mon Compte</span>`;
+                
+                // Bloquer les options
+                densitySelect.value = "moderate";
+                densitySelect.disabled = true;
+                
+                // Bloquer sauvegarde
+                saveBtn.disabled = true;
+                saveTooltip.style.display = 'block';
+                saveTooltip.innerText = "Connectez-vous pour sauvegarder";
+            }
+        });
+    </script>
+
+    <!-- NAVBAR -->
+    <header class="fixed top-0 w-full z-50 glass-header transition-colors duration-500">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="flex items-center gap-3 cursor-pointer" onclick="window.location.href='index.html'">
+                <div class="w-10 h-10 bg-black dark:bg-white text-white dark:text-black rounded-xl flex items-center justify-center font-black text-xl hover:rotate-12 transition-transform duration-300">W</div>
+                <div class="leading-none">
+                    <h1 class="text-lg font-black uppercase tracking-tighter italic">WikiMind <span class="beta-badge">BÊTA</span></h1>
+                    <span class="text-[10px] font-bold uppercase tracking-widest text-gray-400">Diaporama Generator</span>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-4">
+                <a href="index.html" class="hidden md:block text-xs font-bold uppercase tracking-widest hover:text-gray-500 transition">Retour Accueil</a>
+                
+                <!-- BOUTON MON COMPTE -->
+                <a href="user.html" id="auth-btn" class="hidden md:flex items-center gap-2 px-4 py-2 rounded-full bg-gray-100 dark:bg-zinc-800 text-xs font-bold uppercase tracking-widest hover:bg-gray-200 dark:hover:bg-zinc-700 transition text-black dark:text-white">
+                    <span>Mon Compte</span>
+                </a>
+
+                <button onclick="toggleTheme()" class="w-10 h-10 rounded-full border border-gray-200 dark:border-gray-700 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-zinc-800 transition text-black dark:text-white">
+                    <svg id="theme-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-grow pt-28 pb-10 px-4 w-full max-w-7xl mx-auto h-full flex flex-col md:flex-row gap-8">
+        
+        <!-- SIDEBAR: CONFIGURATION -->
+        <div class="w-full md:w-1/3 flex flex-col gap-6 h-fit sticky top-28">
+            <div class="mb-2">
+                <h2 class="text-2xl font-black tracking-tight mb-2">Configuration</h2>
+                <p class="text-gray-500 text-xs leading-relaxed">
+                    Créez une présentation structurée en quelques secondes grâce à l'IA.
+                    <br><span class="opacity-60 italic">Mode test: les résultats peuvent varier.</span>
+                </p>
+            </div>
+
+            <!-- Subject -->
+            <div>
+                <label class="block text-xs font-bold uppercase tracking-widest mb-2 text-gray-500">Sujet de la présentation <span class="text-red-500">*</span></label>
+                <input type="text" id="input-subject" class="input-area" placeholder="Ex: L'histoire de l'Empire Romain...">
+            </div>
+
+            <!-- Context (Optional) -->
+            <div>
+                <label class="block text-xs font-bold uppercase tracking-widest mb-2 text-gray-500">Contexte / Texte source (Optionnel)</label>
+                <textarea id="input-context" class="input-area min-h-[100px]" placeholder="Collez un texte ici si vous voulez que l'IA se base dessus..."></textarea>
+            </div>
+
+            <!-- Settings Grid -->
+            <div class="grid grid-cols-2 gap-4">
+                <!-- Slide Count -->
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-widest mb-2 text-gray-500">Nombre de slides</label>
+                    <div class="flex items-center gap-3">
+                        <input type="range" id="input-slides" min="3" max="15" value="5" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700" oninput="document.getElementById('slide-val').innerText = this.value">
+                        <span id="slide-val" class="text-sm font-bold w-6">5</span>
+                    </div>
+                </div>
+
+                <!-- Density -->
+                <div class="relative">
+                    <label class="block text-xs font-bold uppercase tracking-widest mb-2 text-gray-500">Densité du texte</label>
+                    <select id="density-select" class="input-area py-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                        <option value="low">Faible (Mots-clés)</option>
+                        <option value="moderate" selected>Modéré (Standard)</option>
+                        <option value="high">Détaillé (Complet)</option>
+                        <option value="auto">Automatique IA</option>
+                    </select>
+                    <div id="density-lock-msg" class="hidden absolute -top-6 right-0 text-[10px] text-red-500 font-bold bg-red-100 px-2 py-0.5 rounded">Compte requis</div>
+                </div>
+            </div>
+
+            <!-- Instructions -->
+            <div>
+                <label class="block text-xs font-bold uppercase tracking-widest mb-2 text-gray-500">Consignes Spécifiques</label>
+                <input type="text" id="input-instructions" class="input-area" placeholder="Ex: Ton sérieux, focus sur les dates, humour...">
+            </div>
+
+            <!-- Generate Button -->
+            <button id="generate-btn" onclick="generateSlides()" class="btn-primary w-full py-4 mt-2">
+                <div class="loader" id="btn-loader"></div>
+                <span id="btn-text">Générer le Diaporama</span>
+            </button>
+        </div>
+
+        <!-- MAIN VIEW: PREVIEW -->
+        <div class="w-full md:w-2/3 flex flex-col">
+            
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xs font-bold uppercase tracking-widest text-gray-400">Aperçu du résultat</h3>
+                
+                <div class="flex gap-2">
+                    <div class="relative group">
+                        <button id="save-btn" onclick="savePresentation()" disabled class="btn-secondary flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
+                            Sauvegarder
+                        </button>
+                        <div id="save-tooltip" class="absolute hidden group-hover:block top-full mt-2 right-0 w-48 p-2 bg-black text-white text-[10px] rounded text-center z-10">
+                            Connectez-vous pour sauvegarder
+                        </div>
+                    </div>
+                    <button id="fullscreen-btn" onclick="toggleFullscreen()" class="btn-secondary" style="display:none;">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path></svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Slide Display Area -->
+            <div id="preview-area" class="flex-grow flex flex-col gap-4">
+                
+                <!-- Empty State -->
+                <div id="empty-state" class="h-full min-h-[400px] border border-dashed border-gray-300 dark:border-zinc-800 rounded-2xl flex flex-col items-center justify-center text-gray-400 gap-4 bg-gray-50 dark:bg-zinc-900/50">
+                    <div class="text-4xl opacity-20">🎞️</div>
+                    <p class="text-sm font-medium">Configurez et lancez la génération pour voir vos slides.</p>
+                </div>
+
+                <!-- Slide Viewer (Hidden by default) -->
+                <div id="slide-viewer" class="hidden flex-col h-full">
+                    
+                    <!-- The Slide -->
+                    <div id="current-slide" class="slide-container mb-6">
+                        <div class="slide-content text-black dark:text-white" id="slide-content-inner">
+                            <!-- Content injected by JS -->
+                        </div>
+                        <div class="slide-footer text-gray-500">
+                            <span id="footer-title">Titre Présentation</span>
+                            <span id="footer-page">1 / 5</span>
+                            <span>Généré par WikiMind</span>
+                        </div>
+                    </div>
+
+                    <!-- Navigation -->
+                    <div class="flex justify-between items-center bg-card-bg p-4 rounded-xl border border-border">
+                        <button onclick="changeSlide(-1)" class="p-2 hover:bg-gray-200 dark:hover:bg-zinc-700 rounded-full transition">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                        </button>
+                        
+                        <div class="flex flex-col items-center">
+                            <span class="text-sm font-bold uppercase tracking-widest">Slide <span id="current-index">1</span></span>
+                            <span class="text-[10px] text-gray-500 cursor-pointer hover:underline" onclick="editCurrentSlide()">Modifier le contenu</span>
+                        </div>
+
+                        <button onclick="changeSlide(1)" class="p-2 hover:bg-gray-200 dark:hover:bg-zinc-700 rounded-full transition">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </button>
+                    </div>
+
+                    <!-- Speaker Notes -->
+                    <div class="mt-6 p-4 bg-yellow-50 dark:bg-yellow-900/10 border border-yellow-100 dark:border-yellow-900/30 rounded-xl">
+                        <h4 class="text-[10px] font-bold uppercase tracking-widest text-yellow-600 mb-2">Notes du présentateur (IA)</h4>
+                        <p id="speaker-notes" class="text-sm text-gray-600 dark:text-gray-400 italic font-serif">
+                            Les notes générées par l'IA apparaîtront ici pour vous aider à présenter.
+                        </p>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- LOGIC -->
+    <script>
+        // CONFIGURATION MISTRAL (Pour la génération)
+        const MISTRAL_API_KEY = "O2qQ4mSRs2cyQ2osownAGbGq9foyvPXR"; 
+        const API_URL = "https://api.mistral.ai/v1/chat/completions";
+
+        // THEME MANAGEMENT
+        function toggleTheme() {
+            const body = document.body;
+            body.classList.toggle('dark-mode');
+            const isDark = body.classList.contains('dark-mode');
+            localStorage.setItem('wikimind_theme', isDark ? 'dark' : 'light');
+            updateThemeIcon(isDark);
+        }
+
+        function updateThemeIcon(isDark) {
+            const path = document.querySelector('#theme-icon path');
+            if(isDark) {
+                path.setAttribute('d', 'M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z');
+            } else {
+                path.setAttribute('d', 'M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z');
+            }
+        }
+
+        // Init Theme
+        const savedTheme = localStorage.getItem('wikimind_theme');
+        if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.body.classList.add('dark-mode');
+            updateThemeIcon(true);
+        }
+
+        // --- GLOBAL VARIABLES ---
+        let generatedSlides = [];
+        let currentSlideIndex = 0;
+        let presentationTitle = "";
+
+        // --- GENERATION LOGIC ---
+        async function generateSlides() {
+            const subject = document.getElementById('input-subject').value.trim();
+            const context = document.getElementById('input-context').value.trim();
+            const count = document.getElementById('input-slides').value;
+            const density = document.getElementById('density-select').value;
+            const instructions = document.getElementById('input-instructions').value.trim();
+
+            if (!subject) {
+                alert("Veuillez entrer un sujet.");
+                return;
+            }
+
+            // UI Loading
+            const btn = document.getElementById('generate-btn');
+            const loader = document.getElementById('btn-loader');
+            const btnText = document.getElementById('btn-text');
+            
+            btn.disabled = true;
+            loader.style.display = 'block';
+            btnText.innerText = "Génération en cours...";
+
+            // Determine prompt details based on user status (Density)
+            // Note: UI enforces density selection, backend logic relies on what's sent.
+            // If user bypassed UI, the API call still happens, but that's acceptable for a front-end demo.
+
+            const systemPrompt = `Tu es un expert en création de présentations PowerPoint.
+            Ta tâche est de générer une structure de diaporama au format JSON STRICT.
+            
+            Sujet: ${subject}
+            Nombre de slides: ${count}
+            Densité de texte: ${density} (Si 'low': très peu de texte, 'high': beaucoup de détails).
+            Consignes: ${instructions}
+            Contexte supplémentaire: ${context}
+
+            Le JSON doit être un tableau d'objets avec cette structure exacte pour chaque slide :
+            {
+                "title": "Titre du slide",
+                "content": "Contenu au format HTML simple (<ul>, <li>, <p>, <strong>)",
+                "notes": "Notes pour le présentateur"
+            }
+            
+            Réponds UNIQUEMENT avec le JSON. Pas de texte avant ni après.`;
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${MISTRAL_API_KEY}`
+                    },
+                    body: JSON.stringify({
+                        model: "mistral-large-latest",
+                        messages: [
+                            { role: "system", content: systemPrompt },
+                            { role: "user", content: "Génère le JSON maintenant." }
+                        ],
+                        response_format: { type: "json_object" } // Force JSON mode
+                    })
+                });
+
+                if (!response.ok) throw new Error("Erreur API Mistral");
+
+                const data = await response.json();
+                let contentRaw = data.choices[0].message.content;
+                
+                // Parse JSON
+                let parsedData;
+                try {
+                    parsedData = JSON.parse(contentRaw);
+                    // Handle if Mistral wraps it in a root key like "slides"
+                    if (parsedData.slides) parsedData = parsedData.slides;
+                    else if (!Array.isArray(parsedData)) {
+                         // Try to find array in object values
+                         const values = Object.values(parsedData);
+                         const arrayVal = values.find(v => Array.isArray(v));
+                         if(arrayVal) parsedData = arrayVal;
+                    }
+                } catch (e) {
+                    throw new Error("Erreur de formatage JSON reçu de l'IA.");
+                }
+
+                if (!Array.isArray(parsedData)) throw new Error("Format de données invalide.");
+
+                generatedSlides = parsedData;
+                presentationTitle = subject;
+                currentSlideIndex = 0;
+
+                displaySlide(0);
+                
+                // Switch view
+                document.getElementById('empty-state').style.display = 'none';
+                document.getElementById('slide-viewer').style.display = 'flex';
+                document.getElementById('fullscreen-btn').style.display = 'block';
+
+            } catch (error) {
+                console.error(error);
+                alert("Erreur lors de la génération : " + error.message);
+            } finally {
+                btn.disabled = false;
+                loader.style.display = 'none';
+                btnText.innerText = "Générer le Diaporama";
+            }
+        }
+
+        // --- DISPLAY LOGIC ---
+        function displaySlide(index) {
+            if (!generatedSlides || generatedSlides.length === 0) return;
+            if (index < 0) index = 0;
+            if (index >= generatedSlides.length) index = generatedSlides.length - 1;
+
+            currentSlideIndex = index;
+            const slide = generatedSlides[index];
+
+            const contentContainer = document.getElementById('slide-content-inner');
+            const notesContainer = document.getElementById('speaker-notes');
+            const pageFooter = document.getElementById('footer-page');
+            const titleFooter = document.getElementById('footer-title');
+            const indexDisplay = document.getElementById('current-index');
+
+            // Render content
+            contentContainer.innerHTML = `
+                <h1>${slide.title}</h1>
+                <div class="text-lg">${slide.content}</div>
+            `;
+
+            notesContainer.innerText = slide.notes || "Pas de notes.";
+            
+            // Update Footer info
+            titleFooter.innerText = presentationTitle.length > 30 ? presentationTitle.substring(0,30)+"..." : presentationTitle;
+            pageFooter.innerText = `${index + 1} / ${generatedSlides.length}`;
+            indexDisplay.innerText = index + 1;
+        }
+
+        function changeSlide(direction) {
+            displaySlide(currentSlideIndex + direction);
+        }
+
+        function editCurrentSlide() {
+            if (!generatedSlides.length) return;
+            const slide = generatedSlides[currentSlideIndex];
+            
+            const newContent = prompt("Modifier le contenu HTML du slide :", slide.content);
+            if (newContent !== null) {
+                slide.content = newContent;
+                displaySlide(currentSlideIndex);
+            }
+        }
+
+        // --- FULLSCREEN ---
+        function toggleFullscreen() {
+            const elem = document.getElementById('current-slide');
+            if (!document.fullscreenElement) {
+                elem.requestFullscreen().catch(err => {
+                    alert(`Erreur full-screen: ${err.message}`);
+                });
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        // --- FIREBASE SAVING ---
+        async function savePresentation() {
+            if (!window.currentUser) {
+                alert("Vous devez être connecté pour sauvegarder.");
+                return;
+            }
+            
+            const btn = document.getElementById('save-btn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = "Sauvegarde...";
+            btn.disabled = true;
+
+            try {
+                const uid = window.currentUser.uid;
+                const presentationsRef = window.ref(window.firebaseDb, 'users/' + uid + '/presentations');
+                
+                await window.push(presentationsRef, {
+                    title: presentationTitle,
+                    slides: generatedSlides,
+                    createdAt: window.serverTimestamp(),
+                    settings: {
+                        density: document.getElementById('density-select').value,
+                        count: generatedSlides.length
+                    }
+                });
+
+                alert("Présentation sauvegardée avec succès dans votre espace !");
+            } catch (error) {
+                console.error("Save error", error);
+                alert("Erreur lors de la sauvegarde : " + error.message);
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }
+
+    </script>
+</body>
+</html>
