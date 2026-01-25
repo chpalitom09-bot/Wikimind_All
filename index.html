@@ -271,7 +271,7 @@
                     <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-widest mt-6 group-hover:gap-4 transition-all duration-300">Voir <span class="text-lg">→</span></div>
                 </div>
 
-                 <!-- WikiMind Finance (NEW) -->
+                 <!-- WikiMind Finance -->
                  <div onclick="openAppDetail('finance')" class="app-card p-8 group flex flex-col justify-between animate-fade delay-600 h-80 flex-[1_1_300px] max-w-[400px]">
                     <div>
                         <div class="flex justify-between items-start">
@@ -283,6 +283,20 @@
                     </div>
                     <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-widest mt-6 group-hover:gap-4 transition-all duration-300">Voir <span class="text-lg">→</span></div>
                 </div>
+
+                 <!-- WikiMind Diaporama (NOUVEAU) -->
+                 <div onclick="openAppDetail('diaporama')" class="app-card p-8 group flex flex-col justify-between animate-fade delay-600 h-80 flex-[1_1_300px] max-w-[400px]">
+                    <div>
+                        <div class="flex justify-between items-start">
+                            <div class="icon-box group-hover:bg-black group-hover:text-white dark:group-hover:bg-white dark:group-hover:text-black transition-colors duration-300">🎞️</div>
+                            <span class="bg-orange-100 text-orange-600 text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider">Bêta</span>
+                        </div>
+                        <h3 class="text-2xl font-bold mb-2">WikiMind Diaporama</h3>
+                        <p class="text-sm text-gray-500 font-medium leading-relaxed">Générateur de présentations structurées par IA. Créez vos slides en JSON et sauvegardez-les.</p>
+                    </div>
+                    <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-widest mt-6 group-hover:gap-4 transition-all duration-300">Voir <span class="text-lg">→</span></div>
+                </div>
+
             </div>
 
             <!-- BOUTON TOUTES LES APPS -->
@@ -394,7 +408,7 @@
                 </div>
             </div>
 
-            <!-- SECTION : SUIVI DES GAINS WIKIMIND ECOSYSTEM (AJOUTÉE) -->
+            <!-- SECTION : SUIVI DES GAINS WIKIMIND ECOSYSTEM -->
             <div class="mb-24 animate-fade delay-300">
                 <div class="text-center mb-12">
                     <h3 class="text-3xl font-black uppercase tracking-tight mb-4">Revenus de Wikimind</h3>
@@ -770,7 +784,6 @@
                 ],
                 url: "WikiMind_study.html"
             },
-            // MODIFIÉ
             "cloud": {
                 title: "WikiMind Cloud",
                 icon: "☁️",
@@ -861,7 +874,25 @@
                     "Sécurité des données (Rules)",
                     "Visualisation intuitive"
                 ],
-                url: "Wikimind_Finances.html"
+                url: "Wikimind_finance.html"
+            },
+            "diaporama": {
+                title: "WikiMind Diaporama",
+                icon: "🎞️",
+                tag: "Bêta",
+                tagColor: "bg-orange-100 text-orange-600",
+                desc: "Générez des structures de présentation complètes en quelques secondes via l'IA Mistral. Créez, éditez et sauvegardez vos slides dans le cloud.",
+                features: [
+                    "<strong>Architecture Mistral Large :</strong> Génération intelligente de contenu structuré (JSON).",
+                    "<strong>Sauvegarde Cloud :</strong> Synchronisation Firebase pour les utilisateurs connectés.",
+                    "<strong>Personnalisation :</strong> Contrôle de la densité du texte et du nombre de slides."
+                ],
+                extras: [
+                    "Mode Plein Écran",
+                    "Notes Présentateur Auto",
+                    "Export HTML (Bientôt)"
+                ],
+                url: "Wikimind_diaporama.html"
             },
             "detector": {
                 title: "WikiMind 6.2 | AI Detector",
