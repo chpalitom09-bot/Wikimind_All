@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WikiMind Chess</title>
+    
+    <!-- CSS Dependencies -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css" integrity="sha384-q94+BZtLrkL1/ohfjR8c6L+A6qzNH9R2hBLwyoAfu3i/WCvQjzL2RQJ3uNHDISdU" crossorigin="anonymous">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- JS Dependencies (JQuery required for chessboard.js) -->
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js" integrity="sha384-ZvpUoO/+PpLXR1lu4jmpXWu80pZlYUAfxl5NsBMWOEPSjUn/6Z/hRTt8+pR6L4N2" crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js" integrity="sha384-8Vi8VHwn3vjQ9eUHUxex3JSN/NFqUg3QbPyX8kWyb93+8AC/pPWTzj+nHtbC5bxD" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js" integrity="sha512-xRllwz3Fh53Bi4DC2sxWGSAgM0S2+F6I0ahadeN/m3wUS2YgXZYn1G4B/r6r9NII1a4yQGDj3M83Xb4b5s5n5g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #050505; color: white; }
+        .glass { background: #111; border: 1px solid #333; }
+        
+        /* Custom Chessboard Styling */
+        .board-b72b1 { border: 4px solid #333; border-radius: 8px; }
+        .white-1e1d7 { background-color: #e2e8f0; color: #1e293b; }
+        .black-3c85d { background-color: #475569; color: #f8fafc; }
+        
+        /* Highlight move */
+        .highlight1-32417, .highlight2-9c5d2 {
+            box-shadow: inset 0 0 3px 3px yellow;
+        }
+    </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden">
+
+    <!-- HEADER -->
+    <header class="h-16 border-b border-gray-800 flex items-center justify-between px-6 bg-[#0a0a0a]">
+        <div class="flex items-center gap-3 cursor-pointer" onclick="window.location.href='wikimind_games.html'">
+            <div class="text-gray-400 hover:text-white transition">← Retour</div>
+            <h1 class="text-lg font-black uppercase italic tracking-tighter">WikiMind Chess</h1>
+        </div>
+        <div id="game-status" class="px-4 py-1 rounded-full bg-blue-900/30 text-blue-400 text-xs font-bold uppercase tracking-widest border border-blue-800">
+            En attente
+        </div>
+    </header>
+
+    <div class="flex-grow flex flex-col lg:flex-row h-[calc(100vh-64px)]">
+        
+        <!-- SIDEBAR GAUCHE: CONTROLES -->
+        <div class="w-full lg:w-80 border-r border-gray-800 bg-[#0a0a0a] p-6 flex flex-col gap-6 overflow-y-auto">
+            
+            <!-- Mode Selection -->
+            <div id="lobby-panel" class="space-y-4">
+                <h3 class="text-xs font-bold uppercase text-gray-500 tracking-widest">Mode de Jeu</h3>
+                
+                <button onclick="startBotGame()" class="w-full p-4 rounded-xl border border-gray-700 bg-zinc-900 hover:bg-zinc-800 hover:border-white transition group text-left">
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="font-bold">🤖 Vs Mistral AI</span>
+                        <span class="text-xs bg-purple-900 text-purple-300 px-2 py-0.5 rounded">Intelligent</span>
+                    </div>
+                    <p class="text-xs text-gray-500 group-hover:text-gray-400">Affrontez le modèle de langage en mode échecs.</p>
+                </button>
+
+                <div class="w-full h-px bg-gray-800"></div>
+
+                <div class="space-y-2">
+                    <p class="text-xs font-bold text-gray-500 uppercase tracking-widest">Multijoueur</p>
+                    <button onclick="createOnlineGame()" class="w-full py-3 bg-white text-black font-bold rounded-lg uppercase text-xs hover:opacity-90">Créer une partie</button>
+                    <div class="flex gap-2">
+                         <input type="text" id="join-id" placeholder="ID Partie" class="flex-1 bg-black border border-gray-700 rounded-lg px-3 text-sm focus:border-white outline-none">
+                         <button onclick="joinOnlineGame()" class="px-4 bg-gray-800 border border-gray-700 hover:bg-gray-700 rounded-lg text-xs font-bold uppercase">Rejoindre</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Game Info (Hidden until start) -->
+            <div id="info-panel" class="hidden space-y-4 flex-grow">
+                 <div class="bg-zinc-900 p-4 rounded-xl border border-gray-800">
+                    <div class="text-xs text-gray-500 uppercase mb-1">Adversaire</div>
+                    <div id="opponent-name" class="font-bold text-lg">En attente...</div>
+                    <div id="opponent-elo" class="text-sm text-gray-400 font-mono">---</div>
+                </div>
+
+                <div class="flex-grow bg-black border border-gray-800 rounded-xl p-3 font-mono text-xs text-gray-400 overflow-y-auto h-48" id="pgn-display">
+                    1. ...
+                </div>
+            </div>
+
+        </div>
+
+        <!-- CENTRE: BOARD -->
+        <div class="flex-grow bg-[#050505] flex items-center justify-center p-4 relative">
+            <div id="myBoard" style="width: 100%; max-width: 600px"></div>
+            
+            <!-- Result Overlay -->
+            <div id="result-overlay" class="hidden absolute inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center">
+                <div class="bg-zinc-900 border border-zinc-700 p-8 rounded-2xl text-center max-w-sm mx-4">
+                    <h2 id="result-title" class="text-3xl font-black uppercase mb-2">Mat !</h2>
+                    <p id="result-desc" class="text-gray-400 mb-6">Les blancs gagnent par échec et mat.</p>
+                    <button onclick="location.reload()" class="bg-white text-black px-6 py-3 rounded-full font-bold uppercase text-xs tracking-widest hover:scale-105 transition">Nouvelle Partie</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- DROITE: CHAT / ANALYSE (Optionnel pour mobile) -->
+        <div class="hidden xl:block w-80 border-l border-gray-800 bg-[#0a0a0a] p-6">
+            <h3 class="text-xs font-bold uppercase text-gray-500 tracking-widest mb-4">Chat Mistral</h3>
+            <div id="chat-box" class="h-full flex flex-col justify-end">
+                <div id="chat-history" class="space-y-3 overflow-y-auto mb-4 text-sm text-gray-300">
+                    <div class="bg-zinc-900 p-3 rounded-lg rounded-tl-none border border-zinc-800">
+                        Bienvenue sur WikiMind Chess. Choisissez un mode pour commencer.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- LOGIC -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-auth.js";
+        import { getDatabase, ref, set, onValue, update, get } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-database.js";
+
+        // CONFIG FIREBASE
+        const firebaseConfig = {
+            apiKey: "AIzaSyCy5oWMLf1hQmFgAqZDeNPJmfQj71u6Wio",
+            authDomain: "wikimindchess.firebaseapp.com",
+            databaseURL: "https://wikimindchess-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "wikimindchess",
+            storageBucket: "wikimindchess.firebasestorage.app",
+            messagingSenderId: "78126540427",
+            appId: "1:78126540427:web:a49673fd3148988e02d68e"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getDatabase(app);
+
+        // MISTRAL API KEY (Avertissement: visible côté client)
+        const MISTRAL_API_KEY = "O2qQ4mSRs2cyQ2osownAGbGq9foyvPXR";
+
+        // ETAT DU JEU
+        var board = null;
+        var game = new Chess();
+        var currentPlayer = null; // 'w' or 'b'
+        var gameId = null;
+        var gameMode = null; // 'bot' or 'online'
+        var myUid = null;
+
+        // INIT UI
+        onAuthStateChanged(auth, (user) => {
+            if (!user) {
+                // Redirection si pas connecté (optionnel, on peut laisser jouer en invité vs bot)
+                // window.location.href = 'wikimind_games.html';
+                myUid = "guest_" + Math.floor(Math.random()*1000);
+            } else {
+                myUid = user.uid;
+            }
+        });
+
+        function onDragStart (source, piece, position, orientation) {
+            if (game.game_over()) return false;
+            // On ne peut bouger que ses pièces
+            if (gameMode === 'online') {
+                if ((game.turn() === 'w' && piece.search(/^b/) !== -1) ||
+                    (game.turn() === 'b' && piece.search(/^w/) !== -1) ||
+                    (game.turn() !== currentPlayer)) {
+                    return false;
+                }
+            } else if (gameMode === 'bot') {
+                 if ((game.turn() === 'w' && piece.search(/^b/) !== -1) ||
+                    (game.turn() === 'b' && piece.search(/^w/) !== -1)) {
+                    return false;
+                }
+            }
+        }
+
+        function onDrop (source, target) {
+            // Check move legal
+            var move = game.move({
+                from: source,
+                to: target,
+                promotion: 'q' // NOTE: always promote to a queen for example simplicity
+            });
+
+            // Illegal move
+            if (move === null) return 'snapback';
+
+            updateStatus();
+            
+            // LOGIQUE APRES UN COUP VALIDE
+            if (gameMode === 'bot') {
+                // Tour du Bot
+                setTimeout(makeBotMove, 500);
+            } else if (gameMode === 'online') {
+                // Mettre à jour Firebase
+                update(ref(db, 'games/' + gameId), {
+                    fen: game.fen(),
+                    pgn: game.pgn(),
+                    turn: game.turn()
+                });
+            }
+        }
+
+        function onSnapEnd () {
+            board.position(game.fen());
+        }
+
+        function updateStatus () {
+            var status = '';
+            var moveColor = (game.turn() === 'b') ? 'Noirs' : 'Blancs';
+
+            if (game.in_checkmate()) {
+                status = 'Game over, ' + moveColor + ' est en échec et mat.';
+                showResult('Échec et Mat', (game.turn() === 'b' ? 'Les Blancs gagnent' : 'Les Noirs gagnent'));
+                if(gameMode === 'online' && game.turn() !== currentPlayer) {
+                    // J'ai gagné, mise à jour ELO (simplifiée ici)
+                    // updateElo(myUid, true);
+                }
+            } else if (game.in_draw()) {
+                status = 'Game over, match nul';
+                showResult('Nul', 'Position nulle');
+            } else {
+                status = 'Au tour des ' + moveColor;
+                if (game.in_check()) {
+                    status += ', ' + moveColor + ' est en échec';
+                }
+            }
+
+            document.getElementById('game-status').innerText = status;
+            document.getElementById('pgn-display').innerText = game.pgn();
+        }
+
+        var config = {
+            draggable: true,
+            position: 'start',
+            onDragStart: onDragStart,
+            onDrop: onDrop,
+            onSnapEnd: onSnapEnd,
+            pieceTheme: 'https://chessboardjs.com/img/chesspieces/wikipedia/{piece}.png'
+        };
+        board = Chessboard('myBoard', config);
+        $(window).resize(board.resize);
+
+        // --- BOT MISTRAL LOGIC ---
+        window.startBotGame = function() {
+            gameMode = 'bot';
+            game.reset();
+            board.start();
+            currentPlayer = 'w';
+            document.getElementById('lobby-panel').classList.add('hidden');
+            document.getElementById('info-panel').classList.remove('hidden');
+            document.getElementById('opponent-name').innerText = "Mistral AI";
+            document.getElementById('opponent-elo').innerText = "3000 (Est.)";
+            updateStatus();
+        }
+
+        async function makeBotMove() {
+            document.getElementById('game-status').innerText = "Mistral réfléchit...";
+            
+            const fen = game.fen();
+            const legalMoves = game.moves();
+            
+            // Prompt engineered pour Mistral
+            const prompt = `You are a chess engine. Current FEN: "${fen}".
+            Possible moves: ${JSON.stringify(legalMoves)}.
+            Choose the best move from the possible moves.
+            Return ONLY the move in SAN format (e.g. "Nf3" or "e4"). Do not write anything else.`;
+
+            try {
+                const response = await fetch("https://api.mistral.ai/v1/chat/completions", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${MISTRAL_API_KEY}`
+                    },
+                    body: JSON.stringify({
+                        model: "mistral-tiny", // Tiny est plus rapide pour les échecs
+                        messages: [{role: "user", content: prompt}],
+                        temperature: 0.2
+                    })
+                });
+                
+                const data = await response.json();
+                let botMoveSan = data.choices[0].message.content.trim();
+                
+                // Nettoyage basique si l'IA bavarde
+                botMoveSan = botMoveSan.replace('.', '').split(' ')[0];
+
+                console.log("Bot suggests:", botMoveSan);
+
+                // Jouer le coup
+                const move = game.move(botMoveSan);
+                
+                // Fallback si l'IA hallucine un coup illégal
+                if (move === null) {
+                    console.log("IA illegal move, playing random");
+                    const randomMove = legalMoves[Math.floor(Math.random() * legalMoves.length)];
+                    game.move(randomMove);
+                }
+
+                board.position(game.fen());
+                updateStatus();
+
+            } catch (e) {
+                console.error("Mistral Error", e);
+                // Fallback random
+                const randomMove = legalMoves[Math.floor(Math.random() * legalMoves.length)];
+                game.move(randomMove);
+                board.position(game.fen());
+                updateStatus();
+            }
+        }
+
+        // --- ONLINE LOGIC ---
+        window.createOnlineGame = async function() {
+            gameMode = 'online';
+            currentPlayer = 'w';
+            const newGameRef = await set(ref(db, 'games/' + myUid), {
+                white: myUid,
+                black: null,
+                fen: 'start',
+                pgn: '',
+                turn: 'w',
+                status: 'waiting'
+            });
+            
+            gameId = myUid;
+            setupOnlineListener(gameId);
+            
+            document.getElementById('lobby-panel').innerHTML = `
+                <div class="text-center p-4">
+                    <div class="text-sm text-gray-400 mb-2">Partagez cet ID :</div>
+                    <div class="text-2xl font-black bg-zinc-800 p-2 rounded select-all font-mono">${gameId}</div>
+                    <div class="mt-4 text-xs animate-pulse text-blue-400">En attente d'un adversaire...</div>
+                </div>
+            `;
+        }
+
+        window.joinOnlineGame = async function() {
+            const targetId = document.getElementById('join-id').value;
+            if(!targetId) return;
+
+            gameMode = 'online';
+            currentPlayer = 'b';
+            gameId = targetId;
+
+            // Rejoindre
+            await update(ref(db, 'games/' + gameId), {
+                black: myUid,
+                status: 'active'
+            });
+
+            board.orientation('black');
+            setupOnlineListener(gameId);
+            
+            document.getElementById('lobby-panel').classList.add('hidden');
+            document.getElementById('info-panel').classList.remove('hidden');
+            document.getElementById('opponent-name').innerText = "Adversaire"; // Idéalement fetch le nom via UID
+        }
+
+        function setupOnlineListener(id) {
+            const gameRef = ref(db, 'games/' + id);
+            
+            onValue(gameRef, (snapshot) => {
+                const data = snapshot.val();
+                if (!data) return;
+
+                // Mise à jour si l'adversaire a rejoint
+                if (data.status === 'active' && document.getElementById('opponent-name').innerText === "En attente...") {
+                    document.getElementById('lobby-panel').classList.add('hidden');
+                    document.getElementById('info-panel').classList.remove('hidden');
+                    document.getElementById('opponent-name').innerText = "Joueur connecté";
+                }
+
+                // Sync board (seulement si ce n'est pas moi qui viens de jouer pour éviter glitch visuel)
+                if (data.fen !== 'start' && data.fen !== game.fen()) {
+                    game.load(data.fen);
+                    board.position(data.fen);
+                    updateStatus();
+                }
+            });
+        }
+
+        function showResult(title, desc) {
+            document.getElementById('result-overlay').classList.remove('hidden');
+            document.getElementById('result-title').innerText = title;
+            document.getElementById('result-desc').innerText = desc;
+        }
+
+    </script>
+</body>
+</html>
