@@ -207,6 +207,19 @@
                     <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-widest mt-6 group-hover:gap-4 transition-all duration-300">Voir <span class="text-lg">→</span></div>
                 </div>
 
+                <!-- WikiMind Cours (NOUVEAU) -->
+                <div onclick="openAppDetail('cours')" class="app-card p-8 group flex flex-col justify-between animate-fade delay-200 h-80 flex-[1_1_300px] max-w-[400px]">
+                    <div>
+                        <div class="flex justify-between items-start">
+                            <div class="icon-box group-hover:bg-black group-hover:text-white dark:group-hover:bg-white dark:group-hover:text-black transition-colors duration-300">📝</div>
+                            <span class="bg-teal-100 text-teal-600 text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider">Workspace</span>
+                        </div>
+                        <h3 class="text-2xl font-bold mb-2">WikiMind Cours</h3>
+                        <p class="text-sm text-gray-500 font-medium leading-relaxed">Prise de notes intelligente avec éditeur riche, dictée vocale et restructuration par IA.</p>
+                    </div>
+                    <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-widest mt-6 group-hover:gap-4 transition-all duration-300">Voir <span class="text-lg">→</span></div>
+                </div>
+
                 <!-- WikiMind BAC -->
                 <div onclick="openAppDetail('bac')" class="app-card p-8 group flex flex-col justify-between animate-fade delay-200 h-80 flex-[1_1_300px] max-w-[400px]">
                     <div>
@@ -284,7 +297,7 @@
                     <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-widest mt-6 group-hover:gap-4 transition-all duration-300">Voir <span class="text-lg">→</span></div>
                 </div>
 
-                 <!-- WikiMind Diaporama (NOUVEAU) -->
+                 <!-- WikiMind Diaporama -->
                  <div onclick="openAppDetail('diaporama')" class="app-card p-8 group flex flex-col justify-between animate-fade delay-600 h-80 flex-[1_1_300px] max-w-[400px]">
                     <div>
                         <div class="flex justify-between items-start">
@@ -295,6 +308,32 @@
                         <p class="text-sm text-gray-500 font-medium leading-relaxed">Générateur de présentations structurées par IA. Créez vos slides en JSON et sauvegardez-les.</p>
                     </div>
                     <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-widest mt-6 group-hover:gap-4 transition-all duration-300">Voir <span class="text-lg">→</span></div>
+                </div>
+
+                <!-- WikiMind Tableur (PLACEHOLDER) -->
+                 <div onclick="openAppDetail('tableur')" class="app-card p-8 group flex flex-col justify-between animate-fade delay-600 h-80 flex-[1_1_300px] max-w-[400px] opacity-75 grayscale hover:grayscale-0 transition-all">
+                    <div>
+                        <div class="flex justify-between items-start">
+                            <div class="icon-box group-hover:bg-black group-hover:text-white dark:group-hover:bg-white dark:group-hover:text-black transition-colors duration-300">📊</div>
+                            <span class="bg-gray-200 text-gray-500 text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider">Bientôt</span>
+                        </div>
+                        <h3 class="text-2xl font-bold mb-2 text-gray-400">WikiMind Tableur</h3>
+                        <p class="text-sm text-gray-400 font-medium leading-relaxed">Un tableur puissant intégré à l'écosystème. Analysez vos données avec l'aide de l'IA.</p>
+                    </div>
+                    <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-widest mt-6 text-gray-300 group-hover:text-black dark:group-hover:text-white transition-all duration-300">En développement...</div>
+                </div>
+
+                <!-- WikiMind Games (PLACEHOLDER) -->
+                 <div onclick="openAppDetail('games')" class="app-card p-8 group flex flex-col justify-between animate-fade delay-600 h-80 flex-[1_1_300px] max-w-[400px] opacity-75 grayscale hover:grayscale-0 transition-all">
+                    <div>
+                        <div class="flex justify-between items-start">
+                            <div class="icon-box group-hover:bg-black group-hover:text-white dark:group-hover:bg-white dark:group-hover:text-black transition-colors duration-300">🎮</div>
+                            <span class="bg-gray-200 text-gray-500 text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider">Bientôt</span>
+                        </div>
+                        <h3 class="text-2xl font-bold mb-2 text-gray-400">WikiMind Games</h3>
+                        <p class="text-sm text-gray-400 font-medium leading-relaxed">Apprendre en s'amusant. Une collection de jeux éducatifs pour tester vos connaissances.</p>
+                    </div>
+                    <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-widest mt-6 text-gray-300 group-hover:text-black dark:group-hover:text-white transition-all duration-300">En développement...</div>
                 </div>
 
             </div>
@@ -748,6 +787,24 @@
                 ],
                 url: "Wikimind_AI.html"
             },
+            "cours": {
+                title: "WikiMind Cours",
+                icon: "📝",
+                tag: "Workspace",
+                tagColor: "bg-teal-100 text-teal-600",
+                desc: "Prise de notes intelligente avec éditeur de texte riche, dictée vocale et restructuration par IA. L'alternative moderne à Word pour vos cours.",
+                features: [
+                    "<strong>Éditeur Riche :</strong> Mise en forme complète (Gras, Italique, Titres).",
+                    "<strong>Dictée Vocale :</strong> Transcription en temps réel via Web Speech API.",
+                    "<strong>Restructuration IA :</strong> Nettoyage et organisation automatique des notes."
+                ],
+                extras: [
+                    "Sauvegarde Cloud (Firebase)",
+                    "Export HTML",
+                    "Mode sombre immersif"
+                ],
+                url: "Wikimind_cours.html"
+            },
             "bac": {
                 title: "WikiMind BAC",
                 icon: "🎓",
@@ -930,6 +987,42 @@
                     "Aucune limite de mots"
                 ],
                 url: "Wikimind_humanise.html"
+            },
+            "tableur": {
+                title: "WikiMind Tableur",
+                icon: "📊",
+                tag: "Bientôt",
+                tagColor: "bg-gray-200 text-gray-500",
+                desc: "Un tableur puissant intégré à l'écosystème. Analysez vos données avec l'aide de l'IA et générez des graphiques instantanément.",
+                features: [
+                    "<strong>Formules IA :</strong> Demandez ce que vous voulez calculer en langage naturel.",
+                    "<strong>Graphiques Auto :</strong> Visualisation immédiate des tendances.",
+                    "<strong>Import/Export :</strong> Compatible CSV et Excel."
+                ],
+                extras: [
+                    "En développement",
+                    "Sortie prévue 2026",
+                    "Intégration Cloud"
+                ],
+                url: "#"
+            },
+            "games": {
+                title: "WikiMind Games",
+                icon: "🎮",
+                tag: "Bientôt",
+                tagColor: "bg-gray-200 text-gray-500",
+                desc: "Apprendre en s'amusant. Une collection de jeux éducatifs pour tester vos connaissances générales ou préparer des examens.",
+                features: [
+                    "<strong>Quiz Générés par IA :</strong> Questions infinies sur tous les sujets.",
+                    "<strong>Mode Duel :</strong> Affrontez vos amis en temps réel.",
+                    "<strong>Progression :</strong> Gagnez des badges et montez de niveau."
+                ],
+                extras: [
+                    "En développement",
+                    "Sortie prévue 2026",
+                    "Multi-joueur"
+                ],
+                url: "#"
             }
         };
 
@@ -975,7 +1068,15 @@
             tagEl.innerText = app.tag;
 
             // Button
-            document.getElementById('detail-btn').href = app.url;
+            if (app.url === "#") {
+                document.getElementById('detail-btn').href = "#";
+                document.getElementById('detail-btn').classList.add('opacity-50', 'cursor-not-allowed');
+                document.getElementById('detail-btn').innerText = "Indisponible";
+            } else {
+                document.getElementById('detail-btn').href = app.url;
+                document.getElementById('detail-btn').classList.remove('opacity-50', 'cursor-not-allowed');
+                document.getElementById('detail-btn').innerHTML = `Ouvrir l'application <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>`;
+            }
 
             // Features List
             const featList = document.getElementById('detail-features');
@@ -999,8 +1100,13 @@
 
             Object.keys(appsData).forEach(key => {
                 const app = appsData[key];
+                const isComingSoon = app.url === "#";
                 const card = document.createElement('div');
-                card.className = "app-card p-8 group flex flex-col justify-between h-80 flex-[1_1_300px] max-w-[400px]";
+                
+                // Add grayscale/opacity for coming soon items
+                const extraClasses = isComingSoon ? "opacity-75 grayscale hover:grayscale-0" : "";
+                
+                card.className = `app-card p-8 group flex flex-col justify-between h-80 flex-[1_1_300px] max-w-[400px] ${extraClasses}`;
                 card.onclick = () => openAppDetail(key);
                 
                 card.innerHTML = `
@@ -1011,11 +1117,11 @@
                             </div>
                             <span class="${app.tagColor} text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider">${app.tag}</span>
                         </div>
-                        <h3 class="text-2xl font-bold mb-2">${app.title}</h3>
-                        <p class="text-sm text-gray-500 font-medium leading-relaxed line-clamp-3">${app.desc}</p>
+                        <h3 class="text-2xl font-bold mb-2 ${isComingSoon ? 'text-gray-400' : ''}">${app.title}</h3>
+                        <p class="text-sm ${isComingSoon ? 'text-gray-400' : 'text-gray-500'} font-medium leading-relaxed line-clamp-3">${app.desc}</p>
                     </div>
-                    <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-widest mt-6 group-hover:gap-4 transition-all duration-300">
-                        Découvrir <span class="text-lg">→</span>
+                    <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-widest mt-6 ${isComingSoon ? 'text-gray-300' : ''} group-hover:gap-4 transition-all duration-300">
+                        ${isComingSoon ? 'En développement...' : 'Découvrir <span class="text-lg">→</span>'}
                     </div>
                 `;
                 grid.appendChild(card);
