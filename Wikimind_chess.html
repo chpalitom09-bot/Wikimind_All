@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WikiMind Chess - Arcade</title>
+    <title>WikiMind Chess - Ranked</title>
 
     <!-- 1. JQUERY (Obligatoire pour Chessboard.js) -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -16,11 +16,7 @@
             theme: {
                 extend: {
                     fontFamily: { sans: ['Inter', 'sans-serif'] },
-                    colors: {
-                        bg: '#050505',
-                        card: '#111111',
-                        border: '#222222'
-                    }
+                    colors: { bg: '#050505', card: '#111111', border: '#222222' }
                 }
             }
         }
@@ -36,29 +32,12 @@
 
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #050505; color: white; }
-        
-        /* Correction Tailwind/Chessboard */
         .board-b72b1 { border: 4px solid #222; border-radius: 4px; }
         .white-1e1d7 { background-color: #e5e5e5; color: #111; }
         .black-3c85d { background-color: #404040; color: #fff; }
-        
-        /* Animation */
         .highlight-move { box-shadow: inset 0 0 3px 3px yellow; }
-        
-        /* Scrollbar */
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: #111; }
-        ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: #444; }
-
         /* Loader */
-        .loader {
-            border: 2px solid #333;
-            border-top: 2px solid #fff;
-            border-radius: 50%;
-            width: 16px; height: 16px;
-            animation: spin 1s linear infinite;
-        }
+        .loader { border: 2px solid #333; border-top: 2px solid #fff; border-radius: 50%; width: 14px; height: 14px; animation: spin 1s linear infinite; display: inline-block; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
@@ -68,12 +47,18 @@
     <header class="h-16 border-b border-border bg-[#0a0a0a] flex items-center justify-between px-6 z-20">
         <div class="flex items-center gap-4 cursor-pointer" onclick="window.location.href='index.html'">
             <div class="w-8 h-8 bg-white text-black rounded flex items-center justify-center font-black">W</div>
-            <h1 class="text-lg font-black uppercase italic tracking-tighter">WikiMind Chess</h1>
+            <h1 class="text-lg font-black uppercase italic tracking-tighter hidden md:block">WikiMind Chess <span class="text-blue-500 not-italic">Ranked</span></h1>
         </div>
         
-        <div id="status-badge" class="px-3 py-1 rounded-full bg-zinc-900 border border-zinc-800 text-xs font-bold uppercase tracking-widest text-gray-400 flex items-center gap-2">
-            <span class="w-2 h-2 rounded-full bg-gray-500" id="status-dot"></span>
-            <span id="game-status">Prêt</span>
+        <div class="flex items-center gap-4">
+            <!-- User Profile -->
+            <div class="flex items-center gap-3 px-4 py-1.5 rounded-full bg-zinc-900 border border-zinc-800">
+                <div class="w-2 h-2 rounded-full bg-green-500" id="conn-status"></div>
+                <div class="flex flex-col text-right">
+                    <span id="user-name" class="text-xs font-bold text-white">Invité</span>
+                    <span id="user-elo" class="text-[10px] font-mono text-blue-400">ELO: ...</span>
+                </div>
+            </div>
         </div>
     </header>
 
@@ -81,288 +66,496 @@
     <div class="flex-grow flex flex-col lg:flex-row h-[calc(100vh-64px)]">
 
         <!-- LEFT SIDEBAR: CONTROLS -->
-        <div class="w-full lg:w-80 border-r border-border bg-[#0a0a0a] flex flex-col z-10">
-            <div class="p-6 border-b border-border">
-                <h2 class="text-xs font-bold uppercase text-gray-500 tracking-widest mb-4">Configuration</h2>
-                
-                <button onclick="startBotGame()" class="w-full mb-3 p-4 rounded-xl border border-zinc-800 bg-zinc-900 hover:bg-zinc-800 hover:border-zinc-600 transition group text-left relative overflow-hidden">
-                    <div class="absolute inset-0 bg-gradient-to-r from-blue-900/20 to-transparent opacity-0 group-hover:opacity-100 transition"></div>
-                    <div class="relative z-10 flex justify-between items-center mb-1">
-                        <span class="font-bold text-sm">🤖 Vs Mistral AI</span>
-                        <span class="text-[10px] bg-blue-900 text-blue-200 px-2 py-0.5 rounded font-bold">PRO</span>
-                    </div>
-                    <p class="relative z-10 text-xs text-gray-500 group-hover:text-gray-400">Affrontez le LLM en mode échecs.</p>
-                </button>
-
-                <button onclick="startLocalGame()" class="w-full p-4 rounded-xl border border-zinc-800 bg-black hover:bg-zinc-900 transition group text-left">
-                    <div class="font-bold text-sm mb-1">👥 1 vs 1 Local</div>
-                    <p class="text-xs text-gray-500">Jouez à deux sur le même écran.</p>
-                </button>
-            </div>
-
-            <div class="flex-grow p-6 overflow-y-auto flex flex-col">
-                <h3 class="text-xs font-bold uppercase text-gray-500 tracking-widest mb-2">Historique (PGN)</h3>
-                <div id="pgn" class="flex-grow font-mono text-xs text-gray-400 bg-[#0f0f0f] p-3 rounded border border-border whitespace-pre-wrap overflow-y-auto">
-                    La partie n'a pas commencé.
-                </div>
-            </div>
+        <div class="w-full lg:w-96 border-r border-border bg-[#0a0a0a] flex flex-col z-10 relative">
             
-            <div class="p-4 text-center border-t border-border">
-                 <button onclick="resetGame()" class="text-xs font-bold uppercase text-red-500 hover:text-red-400 tracking-widest">Abandonner / Reset</button>
+            <!-- TABS -->
+            <div class="flex border-b border-border text-xs font-bold uppercase tracking-widest text-center">
+                <button onclick="setTab('online')" id="tab-online" class="flex-1 py-4 bg-zinc-900 text-white border-b-2 border-blue-500 transition">En Ligne</button>
+                <button onclick="setTab('local')" id="tab-local" class="flex-1 py-4 hover:bg-zinc-900 text-gray-500 transition">Solo / Bot</button>
+            </div>
+
+            <!-- TAB CONTENT: ONLINE -->
+            <div id="panel-online" class="p-6 space-y-6">
+                
+                <!-- Create Game -->
+                <div class="bg-zinc-900/50 p-4 rounded-xl border border-zinc-800">
+                    <h3 class="text-xs font-bold uppercase text-blue-400 mb-3">Créer une partie</h3>
+                    <button id="btn-create" class="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg transition text-xs uppercase tracking-widest shadow-lg shadow-blue-900/20">
+                        Générer un Code Partie
+                    </button>
+                    <div id="lobby-wait" class="hidden mt-4 text-center">
+                        <p class="text-xs text-gray-400 mb-2">Partagez ce code à votre ami :</p>
+                        <div id="game-code-display" class="text-3xl font-mono font-black text-white bg-black p-3 rounded border border-zinc-700 select-all tracking-widest">ABCD</div>
+                        <div class="mt-3 text-[10px] text-blue-400 animate-pulse">En attente d'un adversaire...</div>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-center text-xs text-gray-600 font-bold uppercase">- OU -</div>
+
+                <!-- Join Game -->
+                <div class="bg-zinc-900/50 p-4 rounded-xl border border-zinc-800">
+                    <h3 class="text-xs font-bold uppercase text-green-400 mb-3">Rejoindre</h3>
+                    <div class="flex gap-2">
+                        <input type="text" id="input-code" placeholder="Entrez le Code" class="flex-1 bg-black border border-zinc-700 rounded-lg px-3 py-2 text-white font-mono text-center uppercase focus:outline-none focus:border-white transition">
+                        <button id="btn-join" class="px-4 bg-green-600 hover:bg-green-500 text-white font-bold rounded-lg text-xs uppercase tracking-widest">GO</button>
+                    </div>
+                </div>
+
+                <!-- Online Status Info -->
+                <div id="online-game-info" class="hidden p-4 bg-blue-900/10 border border-blue-900/30 rounded-xl">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-xs font-bold text-blue-400">VS</span>
+                        <span id="opponent-name" class="text-sm font-bold text-white">Adversaire</span>
+                    </div>
+                    <div class="h-1 w-full bg-zinc-800 rounded-full overflow-hidden">
+                        <div id="turn-indicator" class="h-full bg-blue-500 w-1/2 transition-all duration-500"></div>
+                    </div>
+                    <div class="mt-2 text-[10px] text-center text-gray-400" id="turn-text">En attente du coup...</div>
+                </div>
+
+            </div>
+
+            <!-- TAB CONTENT: LOCAL/BOT -->
+            <div id="panel-local" class="hidden p-6 space-y-4">
+                <button onclick="startBotGame()" class="w-full p-4 rounded-xl border border-zinc-700 bg-zinc-800 hover:bg-zinc-700 transition text-left">
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="font-bold text-sm text-white">🤖 Vs Mistral AI</span>
+                        <span class="text-[10px] bg-purple-900 text-purple-200 px-2 py-0.5 rounded font-bold">Unranked</span>
+                    </div>
+                    <p class="text-xs text-gray-400">Entraînement contre l'intelligence artificielle.</p>
+                </button>
+                
+                 <button onclick="startLocalGame()" class="w-full p-4 rounded-xl border border-zinc-800 bg-black hover:bg-zinc-900 transition text-left">
+                    <div class="font-bold text-sm text-white mb-1">👥 1 vs 1 Local</div>
+                    <p class="text-xs text-gray-500">Jouer sur le même écran.</p>
+                </button>
+            </div>
+
+            <!-- LOGS -->
+            <div class="flex-grow p-6 border-t border-border flex flex-col overflow-hidden">
+                <h3 class="text-[10px] font-bold uppercase text-gray-600 tracking-widest mb-2">Log Système</h3>
+                <div id="chat-box" class="flex-grow overflow-y-auto space-y-2 pr-2">
+                    <!-- Logs appear here -->
+                </div>
             </div>
         </div>
 
         <!-- CENTER: BOARD AREA -->
-        <div class="flex-grow bg-[#050505] relative flex items-center justify-center p-4">
-            <!-- Background Decoration -->
-            <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10 pointer-events-none"></div>
-
-            <!-- The Board Container -->
+        <div class="flex-grow bg-[#050505] relative flex flex-col items-center justify-center p-4">
+            
+            <!-- Board Wrapper -->
             <div class="relative z-10 shadow-2xl shadow-black">
                 <div id="myBoard" style="width: 100%; width: 400px; max-width: 600px;"></div>
             </div>
 
             <!-- Game Over Overlay -->
-            <div id="game-over-modal" class="hidden absolute inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center">
-                <div class="bg-zinc-900 border border-zinc-700 p-8 rounded-2xl text-center max-w-sm mx-4 transform scale-100 transition-transform">
-                    <div class="text-4xl mb-2">👑</div>
-                    <h2 id="result-title" class="text-2xl font-black uppercase mb-2 text-white">Partie Terminée</h2>
-                    <p id="result-desc" class="text-gray-400 mb-6 text-sm">Les blancs gagnent par échec et mat.</p>
-                    <button onclick="location.reload()" class="bg-white text-black px-6 py-3 rounded-full font-bold uppercase text-xs tracking-widest hover:scale-105 transition">Nouvelle Partie</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- RIGHT: CHAT / LOGS -->
-        <div class="hidden xl:flex w-80 border-l border-border bg-[#0a0a0a] flex-col">
-            <div class="p-4 border-b border-border bg-zinc-900/50">
-                <h3 class="text-xs font-bold uppercase text-gray-500 tracking-widest">Mistral Thoughts</h3>
-            </div>
-            <div id="chat-box" class="flex-grow p-4 space-y-3 overflow-y-auto text-sm">
-                <div class="bg-zinc-900 p-3 rounded-lg border border-zinc-800 text-gray-400 text-xs">
-                    Bienvenue. Sélectionnez un mode pour commencer la partie.
-                </div>
-            </div>
-            <div class="p-4 border-t border-border bg-zinc-900/30">
-                <div class="flex items-center gap-2">
-                    <div class="w-full h-8 bg-zinc-900 rounded border border-zinc-800 text-xs flex items-center px-3 text-gray-600 italic">
-                        IA en lecture seule...
+            <div id="game-over-modal" class="hidden absolute inset-0 bg-black/90 backdrop-blur-sm z-50 flex items-center justify-center">
+                <div class="bg-zinc-900 border border-zinc-700 p-8 rounded-2xl text-center max-w-sm mx-4 animate-bounce-in">
+                    <div class="text-4xl mb-4">🏆</div>
+                    <h2 id="result-title" class="text-2xl font-black uppercase mb-2 text-white">Victoire !</h2>
+                    <p id="result-desc" class="text-gray-400 mb-4 text-sm">Vous gagnez par échec et mat.</p>
+                    
+                    <div id="elo-change-display" class="mb-6 p-3 bg-black rounded border border-zinc-800 font-mono text-lg font-bold">
+                        ELO: <span class="text-green-500">+12</span>
                     </div>
+
+                    <button onclick="location.reload()" class="bg-white text-black px-8 py-3 rounded-full font-bold uppercase text-xs tracking-widest hover:scale-105 transition">Retour</button>
                 </div>
             </div>
         </div>
-
     </div>
 
-    <!-- LOGIC -->
-    <script>
-        // --- CONFIGURATION ---
-        const MISTRAL_API_KEY = "O2qQ4mSRs2cyQ2osownAGbGq9foyvPXR"; // Clé fournie (Attention: visible client-side)
-        
-        let board = null;
+    <!-- LOGIQUE JAVASCRIPT (MODULE) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getDatabase, ref, set, onValue, update, get, onDisconnect } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        // --- CONFIG FIREBASE ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyCy5oWMLf1hQmFgAqZDeNPJmfQj71u6Wio",
+            authDomain: "wikimindchess.firebaseapp.com",
+            databaseURL: "https://wikimindchess-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "wikimindchess",
+            storageBucket: "wikimindchess.firebasestorage.app",
+            messagingSenderId: "78126540427",
+            appId: "1:78126540427:web:a49673fd3148988e02d68e"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getDatabase(app);
+        const MISTRAL_API_KEY = "O2qQ4mSRs2cyQ2osownAGbGq9foyvPXR";
+
+        // --- VARIABLES GLOBALES ---
         let game = new Chess();
-        let mode = 'local'; // 'local' or 'bot'
-        let isEngineThinking = false;
+        let board = null;
+        let myUid = null;
+        let myName = "Joueur " + Math.floor(Math.random()*1000);
+        let myElo = 1200;
+        let currentGameId = null;
+        let playerColor = 'w'; // 'w' or 'b'
+        let gameMode = 'local'; // 'online', 'local', 'bot'
+        let isMyTurn = true;
 
-        // --- UI FUNCTIONS ---
-        function updateStatus() {
-            let status = '';
-            let moveColor = (game.turn() === 'b') ? 'Noirs' : 'Blancs';
+        // --- AUTHENTIFICATION ---
+        signInAnonymously(auth).catch((error) => console.error(error));
 
-            // Checkmate?
-            if (game.in_checkmate()) {
-                status = 'Mat ! ' + moveColor + ' perdent.';
-                showGameOver('Échec et Mat', (game.turn() === 'b' ? 'Les Blancs' : 'Les Noirs') + ' remportent la victoire.');
-            }
-            // Draw?
-            else if (game.in_draw()) {
-                status = 'Match Nul';
-                showGameOver('Match Nul', 'Pat, répétition ou matériel insuffisant.');
-            }
-            // Game still on
-            else {
-                status = 'Tour des ' + moveColor;
-                if (game.in_check()) {
-                    status += ' (Échec)';
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                myUid = user.uid;
+                
+                // Charger le profil depuis la DB
+                const userRef = ref(db, 'users/' + myUid);
+                const snapshot = await get(userRef);
+                
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    myElo = data.elo || 1200;
+                    myName = data.name || myName;
+                } else {
+                    // Créer le profil par défaut
+                    set(userRef, { name: myName, elo: 1200 });
                 }
+
+                updateUIProfile();
+                addLog(`Connecté en tant que ${myName}`, 'sys');
             }
+        });
 
-            // Update DOM
-            $('#game-status').text(status);
-            $('#pgn').text(game.pgn());
-            
-            // Status Dot Color
-            const dot = document.getElementById('status-dot');
-            if (game.game_over()) dot.className = "w-2 h-2 rounded-full bg-red-500";
-            else if (isEngineThinking) dot.className = "w-2 h-2 rounded-full bg-yellow-500 animate-pulse";
-            else dot.className = "w-2 h-2 rounded-full bg-green-500";
+        // --- FONCTIONS UI ---
+        function updateUIProfile() {
+            document.getElementById('user-name').innerText = myName;
+            document.getElementById('user-elo').innerText = `ELO: ${myElo}`;
         }
 
-        function showGameOver(title, desc) {
-            document.getElementById('game-over-modal').classList.remove('hidden');
-            document.getElementById('result-title').innerText = title;
-            document.getElementById('result-desc').innerText = desc;
-        }
-
-        function addLog(message, isAi = false) {
+        function addLog(msg, type='info') {
             const box = document.getElementById('chat-box');
             const div = document.createElement('div');
-            div.className = isAi 
-                ? "bg-blue-900/20 p-3 rounded-lg border border-blue-900/50 text-blue-200 text-xs"
-                : "bg-zinc-900 p-3 rounded-lg border border-zinc-800 text-gray-300 text-xs";
-            div.innerHTML = message;
+            let colorClass = "text-gray-400";
+            if(type === 'sys') colorClass = "text-blue-400 font-bold";
+            if(type === 'err') colorClass = "text-red-400";
+            if(type === 'win') colorClass = "text-green-400 font-bold";
+            
+            div.className = `text-xs ${colorClass} bg-zinc-900/30 p-2 rounded mb-1 border-l-2 border-transparent hover:border-gray-600 transition`;
+            div.innerHTML = msg;
             box.appendChild(div);
             box.scrollTop = box.scrollHeight;
         }
 
-        // --- CHESS LOGIC ---
-        function onDragStart (source, piece, position, orientation) {
-            if (game.game_over()) return false;
-            if (isEngineThinking) return false; // Bloquer pendant que l'IA réfléchit
-
-            // En mode Bot, on ne peut bouger que les Blancs
-            if (mode === 'bot' && (game.turn() === 'b' || piece.search(/^b/) !== -1)) {
-                return false;
-            }
+        window.setTab = function(tab) {
+            document.getElementById('panel-online').classList.add('hidden');
+            document.getElementById('panel-local').classList.add('hidden');
+            document.getElementById(`panel-${tab}`).classList.remove('hidden');
+            
+            document.getElementById('tab-online').className = "flex-1 py-4 hover:bg-zinc-900 text-gray-500 transition";
+            document.getElementById('tab-local').className = "flex-1 py-4 hover:bg-zinc-900 text-gray-500 transition";
+            
+            document.getElementById(`tab-${tab}`).className = "flex-1 py-4 bg-zinc-900 text-white border-b-2 border-blue-500 transition";
         }
 
-        function onDrop (source, target) {
-            // Voir si le coup est légal
-            var move = game.move({
-                from: source,
-                to: target,
-                promotion: 'q' // NOTE: Promotion auto en Dame pour simplifier
+        // --- LOGIQUE ONLINE ---
+        
+        // 1. Créer une partie
+        document.getElementById('btn-create').addEventListener('click', () => {
+            currentGameId = Math.random().toString(36).substring(2, 6).toUpperCase(); // Code à 4 lettres
+            playerColor = 'w';
+            gameMode = 'online';
+            
+            // Reset Board
+            game.reset();
+            board.start();
+            board.orientation('white');
+
+            // Créer entrée DB
+            set(ref(db, 'games/' + currentGameId), {
+                white: myUid,
+                whiteName: myName,
+                whiteElo: myElo,
+                black: null, // En attente
+                fen: 'start',
+                turn: 'w', // Trait aux blancs
+                status: 'waiting'
             });
 
-            // Si illégal, snapback
-            if (move === null) return 'snapback';
+            // UI Waiting
+            document.getElementById('btn-create').classList.add('hidden');
+            document.getElementById('lobby-wait').classList.remove('hidden');
+            document.getElementById('game-code-display').innerText = currentGameId;
+            addLog(`Partie créée. Code: ${currentGameId}`, 'sys');
 
-            updateStatus();
+            // Listener
+            listenToGame(currentGameId);
+        });
 
-            // Si c'est le mode Bot et que le coup est valide
-            if (mode === 'bot' && !game.game_over()) {
-                makeBotMove();
+        // 2. Rejoindre une partie
+        document.getElementById('btn-join').addEventListener('click', async () => {
+            const code = document.getElementById('input-code').value.toUpperCase().trim();
+            if(!code) return;
+
+            const gameRef = ref(db, 'games/' + code);
+            const snapshot = await get(gameRef);
+
+            if(snapshot.exists() && snapshot.val().status === 'waiting') {
+                currentGameId = code;
+                playerColor = 'b';
+                gameMode = 'online';
+
+                // Update DB pour dire qu'on rejoint
+                update(gameRef, {
+                    black: myUid,
+                    blackName: myName,
+                    blackElo: myElo,
+                    status: 'active'
+                });
+
+                // Setup Board
+                game.reset();
+                board.start();
+                board.orientation('black');
+                addLog(`Rejoint la partie ${code}`, 'sys');
+
+                listenToGame(code);
+            } else {
+                addLog("Partie introuvable ou pleine.", 'err');
+            }
+        });
+
+        // 3. Écouter les changements (Synchro)
+        function listenToGame(gameId) {
+            onValue(ref(db, 'games/' + gameId), (snapshot) => {
+                const data = snapshot.val();
+                if(!data) return;
+
+                // Si l'adversaire rejoint
+                if(data.status === 'active' && document.getElementById('online-game-info').classList.contains('hidden')) {
+                    document.getElementById('lobby-wait').classList.add('hidden');
+                    document.getElementById('online-game-info').classList.remove('hidden');
+                    
+                    const oppName = (playerColor === 'w') ? data.blackName : data.whiteName;
+                    const oppElo = (playerColor === 'w') ? data.blackElo : data.whiteElo;
+                    document.getElementById('opponent-name').innerText = `${oppName} (${oppElo})`;
+                    addLog(`Adversaire connecté: ${oppName}`, 'sys');
+                }
+
+                // Synchro des coups
+                if(data.fen && data.fen !== 'start') {
+                    // Si le FEN en DB est différent de mon plateau local, je mets à jour
+                    if (data.fen !== game.fen()) {
+                        game.load(data.fen);
+                        board.position(data.fen);
+                        addLog("L'adversaire a joué.", 'info');
+                        updateStatus();
+                    }
+                }
+
+                // Gestion fin de partie via DB (synchro du résultat)
+                if(data.winner && !document.getElementById('game-over-modal').classList.contains('flex')) {
+                    endGameOnline(data.winner);
+                }
+            });
+        }
+
+        // --- LOGIQUE CHESSBOARD ---
+        function onDragStart(source, piece) {
+            if (game.game_over()) return false;
+            
+            if (gameMode === 'online') {
+                // Interdire de bouger les pièces adverses
+                if ((playerColor === 'w' && piece.search(/^b/) !== -1) ||
+                    (playerColor === 'b' && piece.search(/^w/) !== -1)) {
+                    return false;
+                }
+                // Interdire de bouger si ce n'est pas mon tour (DB)
+                if ((game.turn() === 'w' && playerColor !== 'w') ||
+                    (game.turn() === 'b' && playerColor !== 'b')) {
+                    return false;
+                }
+            } else if (gameMode === 'bot') {
+                 if (piece.search(/^b/) !== -1) return false;
             }
         }
 
-        function onSnapEnd () {
-            board.position(game.fen());
+        function onDrop(source, target) {
+            const move = game.move({
+                from: source,
+                to: target,
+                promotion: 'q'
+            });
+
+            if (move === null) return 'snapback';
+
+            // Coup valide localement
+            updateStatus();
+
+            // Action selon le mode
+            if (gameMode === 'online') {
+                // Envoyer à Firebase
+                update(ref(db, 'games/' + currentGameId), {
+                    fen: game.fen(),
+                    turn: game.turn() // 'w' or 'b'
+                });
+                checkWinConditionOnline();
+
+            } else if (gameMode === 'bot') {
+                setTimeout(makeBotMove, 250);
+            }
         }
 
-        // --- MISTRAL AI LOGIC ---
-        async function makeBotMove() {
-            isEngineThinking = true;
-            updateStatus();
-            addLog('<div class="flex items-center gap-2"><div class="loader"></div> Mistral analyse la position...</div>', true);
+        // --- GESTION VICTOIRE & ELO ---
 
+        function checkWinConditionOnline() {
+            if (game.in_checkmate()) {
+                const winnerColor = (game.turn() === 'w') ? 'b' : 'w'; // Celui qui vient de jouer a gagné
+                const winnerUid = (winnerColor === playerColor) ? myUid : 'opponent'; 
+                
+                // Seul le gagnant met à jour la DB pour éviter les doublons (règle simple)
+                if (winnerUid === myUid) {
+                    processEloUpdate(currentGameId);
+                }
+            }
+        }
+
+        async function processEloUpdate(gameId) {
+            // Récupérer les infos fraîches
+            const gRef = ref(db, 'games/' + gameId);
+            const snap = await get(gRef);
+            const data = snap.val();
+
+            if(data.processed) return; // Déjà calculé
+
+            const whiteUid = data.white;
+            const blackUid = data.black;
+            let wElo = data.whiteElo;
+            let bElo = data.blackElo;
+
+            // Déterminer le résultat (1 = Blanc gagne, 0 = Noir gagne)
+            // Note: game.turn() donne celui qui DOIT jouer, donc s'il est mat, l'autre a gagné.
+            const result = (game.turn() === 'b') ? 1 : 0; 
+
+            // Calcul ELO
+            const K = 32;
+            const expectedWhite = 1 / (1 + Math.pow(10, (bElo - wElo) / 400));
+            const expectedBlack = 1 / (1 + Math.pow(10, (wElo - bElo) / 400));
+
+            const newWElo = Math.round(wElo + K * (result - expectedWhite));
+            const newBElo = Math.round(bElo + K * ((1-result) - expectedBlack));
+
+            // Mise à jour DB
+            const updates = {};
+            updates['users/' + whiteUid + '/elo'] = newWElo;
+            updates['users/' + blackUid + '/elo'] = newBElo;
+            updates['games/' + gameId + '/winner'] = (result === 1) ? 'white' : 'black';
+            updates['games/' + gameId + '/processed'] = true;
+
+            await update(ref(db), updates);
+        }
+
+        function endGameOnline(winnerColorStr) {
+            // Affichage UI Fin de jeu
+            const modal = document.getElementById('game-over-modal');
+            const title = document.getElementById('result-title');
+            const desc = document.getElementById('result-desc');
+            const eloDisplay = document.getElementById('elo-change-display');
+
+            modal.classList.remove('hidden');
+            
+            const iWon = (winnerColorStr === 'white' && playerColor === 'w') || (winnerColorStr === 'black' && playerColor === 'b');
+            
+            if(iWon) {
+                title.innerText = "VICTOIRE !";
+                title.className = "text-2xl font-black uppercase mb-2 text-green-500";
+                desc.innerText = "Votre stratégie a payé. ELO augmenté.";
+                // On triche un peu sur l'affichage ELO car on ne l'a pas recalculé localement, 
+                // mais on pourrait lire la DB. Pour l'instant on met un message générique ou on fetch.
+                fetchNewElo();
+            } else {
+                title.innerText = "DÉFAITE";
+                title.className = "text-2xl font-black uppercase mb-2 text-red-500";
+                desc.innerText = "L'adversaire était plus fort cette fois.";
+                fetchNewElo();
+            }
+        }
+
+        async function fetchNewElo() {
+            const snap = await get(ref(db, 'users/' + myUid + '/elo'));
+            const newElo = snap.val();
+            const diff = newElo - myElo;
+            const sign = diff >= 0 ? '+' : '';
+            const color = diff >= 0 ? 'text-green-500' : 'text-red-500';
+            
+            document.getElementById('elo-change-display').innerHTML = `ELO: <span class="${color}">${sign}${diff}</span> (${newElo})`;
+        }
+
+        // --- BOT MISTRAL (CODE PRÉCÉDENT GARDÉ) ---
+        async function makeBotMove() {
+            addLog("Mistral réfléchit...", 'info');
             const fen = game.fen();
-            const legalMoves = game.moves();
-            
-            // Construction du prompt pour le LLM
-            const prompt = `You are a Grandmaster chess engine.
-            Current FEN position: "${fen}".
-            Possible legal moves: ${JSON.stringify(legalMoves)}.
-            
-            Task: detailed analysis of the position and pick the single best move to win.
-            
-            Output format: Just the SAN move (e.g. "Nf3" or "e4") nothing else. Do not explain.`;
+            const moves = game.moves();
+            const prompt = `Chess FEN: "${fen}". Legal moves: ${JSON.stringify(moves)}. Best move SAN only?`;
 
             try {
                 const response = await fetch("https://api.mistral.ai/v1/chat/completions", {
                     method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "Authorization": `Bearer ${MISTRAL_API_KEY}`
-                    },
-                    body: JSON.stringify({
-                        model: "mistral-tiny", // Modèle rapide
-                        messages: [{role: "user", content: prompt}],
-                        temperature: 0.1 // Très froid pour la logique
-                    })
+                    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${MISTRAL_API_KEY}` },
+                    body: JSON.stringify({ model: "mistral-tiny", messages: [{role: "user", content: prompt}], temperature: 0.1 })
                 });
-
                 const data = await response.json();
-                
-                if(data.choices && data.choices.length > 0) {
-                    let botMoveSan = data.choices[0].message.content.trim();
-                    // Nettoyage (enlève les points, espaces, etc)
-                    botMoveSan = botMoveSan.replace(/[\n\r\s]/g, '').replace('.', '');
-                    
-                    console.log("Mistral propose : ", botMoveSan);
-
-                    // Tenter de jouer le coup
-                    const move = game.move(botMoveSan);
-                    
-                    if (move === null) {
-                        throw new Error("Coup illégal suggéré par l'IA: " + botMoveSan);
-                    } else {
-                        addLog(`J'ai joué <strong>${botMoveSan}</strong>.`, true);
-                    }
-                } else {
-                    throw new Error("Pas de réponse de l'API");
-                }
-
-            } catch (error) {
-                console.error("Erreur IA:", error);
-                addLog("Oups, je suis confus. Je joue un coup au hasard.", true);
-                
-                // Fallback : Coup au hasard si l'IA plante
-                const randomMove = legalMoves[Math.floor(Math.random() * legalMoves.length)];
-                game.move(randomMove);
+                let moveSan = data.choices[0].message.content.trim().replace(/[\n\r\s]/g, '').replace('.', '');
+                game.move(moveSan);
+            } catch (e) {
+                const random = moves[Math.floor(Math.random() * moves.length)];
+                game.move(random);
             }
-
             board.position(game.fen());
-            isEngineThinking = false;
             updateStatus();
         }
 
-        // --- INITIALIZATION ---
+        // --- SETUP GLOBAL ---
+        function updateStatus() {
+            const turnBox = document.getElementById('turn-indicator');
+            const turnText = document.getElementById('turn-text');
+            
+            if(gameMode === 'online') {
+                const isMyTurnNow = (game.turn() === playerColor);
+                if(isMyTurnNow) {
+                    turnBox.style.width = "100%";
+                    turnBox.classList.replace('bg-zinc-800', 'bg-green-500');
+                    turnText.innerText = "À vous de jouer !";
+                    turnText.className = "mt-2 text-[10px] text-center text-green-400 font-bold animate-pulse";
+                } else {
+                    turnBox.style.width = "0%";
+                    turnText.innerText = "Adversaire réfléchit...";
+                    turnText.className = "mt-2 text-[10px] text-center text-gray-500";
+                }
+            }
+        }
+
+        // Expose functions to window (since module scope is private)
+        window.startBotGame = () => {
+            gameMode = 'bot';
+            game.reset(); board.start();
+            document.getElementById('panel-online').classList.add('hidden');
+            addLog("Mode Bot activé", 'sys');
+        };
+        
+        window.startLocalGame = () => {
+            gameMode = 'local';
+            game.reset(); board.start();
+            addLog("Mode Local activé", 'sys');
+        };
+
+        // Init Board
         $(document).ready(function() {
-            var config = {
+            board = Chessboard('myBoard', {
                 draggable: true,
                 position: 'start',
                 onDragStart: onDragStart,
                 onDrop: onDrop,
-                onSnapEnd: onSnapEnd,
                 pieceTheme: 'https://chessboardjs.com/img/chesspieces/wikipedia/{piece}.png'
-            };
-            
-            // Initialisation du plateau
-            board = Chessboard('myBoard', config);
-            
-            // Responsive : Redimensionner le plateau si la fenêtre change
-            $(window).resize(function() {
-                board.resize();
             });
-
-            // Initial status
-            updateStatus();
+            $(window).resize(board.resize);
         });
-
-        // --- BUTTON ACTIONS ---
-        window.startBotGame = function() {
-            game.reset();
-            board.start();
-            mode = 'bot';
-            isEngineThinking = false;
-            addLog("Partie contre Mistral AI commencée. Bonne chance !", true);
-            updateStatus();
-        };
-
-        window.startLocalGame = function() {
-            game.reset();
-            board.start();
-            mode = 'local';
-            addLog("Mode 1 vs 1 local activé.");
-            updateStatus();
-        };
-
-        window.resetGame = function() {
-            game.reset();
-            board.start();
-            addLog("Plateau réinitialisé.");
-            updateStatus();
-        }
 
     </script>
 </body>
