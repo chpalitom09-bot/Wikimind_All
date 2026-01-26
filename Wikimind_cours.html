@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-29XYBNJ2CB"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-29XYBNJ2CB');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WikiMind Cours - Prise de notes intelligente</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- Marked Library for Markdown (used by AI output) -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <style>
+        :root {
+            --bg: #ffffff;
+            --text: #111111;
+            --card-bg: #f9fafb;
+            --border: #e5e7eb;
+            --accent: #000000;
+            --accent-text: #ffffff;
+            --page-bg: #ffffff;
+        }
+
+        .dark-mode {
+            --bg: #0f0f0f;
+            --text: #eeeeee;
+            --card-bg: #161616;
+            --border: #252525;
+            --accent: #ffffff;
+            --accent-text: #000000;
+            --page-bg: #1a1a1a;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            transition: background-color 0.4s ease, color 0.4s ease;
+            overflow: hidden; /* App-like feel */
+        }
+
+        /* --- Editor Specifics --- */
+        .editor-page {
+            background-color: var(--page-bg);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            min-height: 80vh;
+            outline: none;
+            transition: background-color 0.4s ease;
+        }
+        
+        .editor-page[contenteditable]:empty:before {
+            content: "Commencez à écrire ou activez le micro...";
+            color: #9ca3af;
+            font-style: italic;
+        }
+
+        /* Toolbar Buttons */
+        .tool-btn {
+            display: flex; align-items: center; justify-content: center;
+            width: 32px; height: 32px;
+            border-radius: 8px;
+            color: var(--text);
+            transition: all 0.2s;
+        }
+        .tool-btn:hover { background-color: rgba(128,128,128, 0.1); }
+        .tool-btn.active { background-color: var(--accent); color: var(--accent-text); }
+
+        /* Recording Pulse */
+        @keyframes pulse-red {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+        .recording-pulse {
+            animation: pulse-red 1.5s infinite;
+            background-color: #ef4444 !important;
+            color: white !important;
+            border-color: #ef4444 !important;
+        }
+
+        /* Grain Background */
+        .bg-grain {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E");
+            pointer-events: none; z-index: 0;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
+        .dark-mode ::-webkit-scrollbar-thumb { background: #374151; }
+    </style>
+</head>
+<body class="flex flex-col h-screen relative">
+    <div class="bg-grain"></div>
+
+    <!-- NAVBAR -->
+    <header class="h-16 border-b border-gray-200 dark:border-gray-800 backdrop-blur-md z-50 flex-none bg-white/80 dark:bg-black/80">
+        <div class="max-w-7xl mx-auto px-4 h-full flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <a href="index.html" class="w-8 h-8 bg-gray-100 dark:bg-zinc-800 rounded-lg flex items-center justify-center hover:bg-gray-200 transition">
+                    <svg class="w-4 h-4 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                </a>
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 bg-black dark:bg-white text-white dark:text-black rounded-lg flex items-center justify-center font-black text-sm">W</div>
+                    <div>
+                        <h1 class="text-sm font-black uppercase tracking-tighter">WikiMind Cours</h1>
+                        <p class="text-[10px] text-gray-500 font-medium">Notebook Intelligent</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <!-- Status Indicator -->
+                <div id="save-status" class="hidden md:flex items-center gap-2 px-3 py-1 rounded-full bg-gray-100 dark:bg-zinc-900 text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                    <div class="w-1.5 h-1.5 rounded-full bg-green-500"></div>
+                    Prêt
+                </div>
+                
+                <button onclick="toggleTheme()" class="w-8 h-8 rounded-full border border-gray-200 dark:border-gray-700 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-zinc-800 transition">
+                    <svg id="theme-icon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- TOOLBAR -->
+    <div class="h-12 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-[#111] flex items-center z-40 px-4 overflow-x-auto gap-4 flex-none">
+        <!-- Text Style -->
+        <div class="flex items-center gap-1 border-r border-gray-200 dark:border-gray-800 pr-4">
+            <button onclick="execCmd('bold')" class="tool-btn font-bold" title="Gras">B</button>
+            <button onclick="execCmd('italic')" class="tool-btn italic" title="Italique">I</button>
+            <button onclick="execCmd('underline')" class="tool-btn underline" title="Souligné">U</button>
+        </div>
+
+        <!-- Headings -->
+        <div class="flex items-center gap-1 border-r border-gray-200 dark:border-gray-800 pr-4">
+            <select onchange="execCmd('formatBlock', this.value); this.value='';" class="bg-transparent text-xs font-bold uppercase tracking-wider outline-none p-1 rounded hover:bg-gray-100 dark:hover:bg-zinc-800 cursor-pointer">
+                <option value="" disabled selected>Style</option>
+                <option value="H1">Titre 1</option>
+                <option value="H2">Titre 2</option>
+                <option value="H3">Titre 3</option>
+                <option value="P">Paragraphe</option>
+            </select>
+        </div>
+
+        <!-- Alignment -->
+        <div class="flex items-center gap-1 border-r border-gray-200 dark:border-gray-800 pr-4">
+            <button onclick="execCmd('justifyLeft')" class="tool-btn"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h10M4 18h16"></path></svg></button>
+            <button onclick="execCmd('justifyCenter')" class="tool-btn"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg></button>
+        </div>
+
+        <!-- AI Tools -->
+        <div class="flex items-center gap-3 ml-auto">
+            <!-- Voice Dictation -->
+            <button id="mic-btn" onclick="toggleDictation()" class="flex items-center gap-2 px-3 py-1.5 rounded-full border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-zinc-800 transition group">
+                <svg class="w-4 h-4 text-gray-500 group-hover:text-black dark:group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
+                <span class="text-xs font-bold uppercase tracking-widest hidden md:inline">Dictée</span>
+            </button>
+
+            <!-- AI Restructure -->
+            <button onclick="restructureNotes()" class="btn-primary flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest text-white bg-black dark:bg-white dark:text-black hover:opacity-90 transition shadow-lg">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                <span class="hidden md:inline">Restructurer (IA)</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- MAIN EDITOR AREA -->
+    <main class="flex-grow flex relative overflow-hidden bg-gray-100 dark:bg-[#0a0a0a]">
+        
+        <!-- Editor Wrapper -->
+        <div class="flex-1 overflow-y-auto p-4 md:p-8 flex justify-center">
+            <div 
+                id="editor" 
+                contenteditable="true" 
+                class="editor-page w-full max-w-[850px] bg-white dark:bg-[#161616] rounded-xl p-8 md:p-12 text-lg leading-relaxed border border-gray-200 dark:border-gray-800"
+            >
+                <h1>Cours de Philosophie - 26 Janvier</h1>
+                <p>La conscience est-elle une illusion ?</p>
+                <p><br></p>
+                <p>Introduction : Descartes dit "Je pense donc je suis". Mais Freud parle de l'inconscient.</p>
+            </div>
+        </div>
+
+        <!-- AI Sidebar (Hidden by default, slides in) -->
+        <div id="ai-sidebar" class="absolute top-0 right-0 h-full w-[400px] bg-white dark:bg-[#111] border-l border-gray-200 dark:border-gray-800 transform translate-x-full transition-transform duration-300 shadow-2xl z-30 flex flex-col">
+            <div class="p-4 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center bg-gray-50 dark:bg-zinc-900">
+                <h3 class="font-black uppercase tracking-tight flex items-center gap-2">
+                    <span class="text-xl">✨</span> Assistant WikiMind
+                </h3>
+                <button onclick="closeSidebar()" class="text-gray-400 hover:text-black dark:hover:text-white">✕</button>
+            </div>
+            
+            <div class="flex-grow overflow-y-auto p-6 space-y-4">
+                <div id="ai-loading" class="hidden flex flex-col items-center justify-center py-10 space-y-4">
+                    <div class="w-8 h-8 border-4 border-gray-200 border-t-black rounded-full animate-spin dark:border-zinc-800 dark:border-t-white"></div>
+                    <p class="text-xs font-bold uppercase tracking-widest text-gray-500 animate-pulse">Analyse du cours en cours...</p>
+                </div>
+                
+                <div id="ai-content" class="prose dark:prose-invert prose-sm">
+                    <!-- AI Output will go here -->
+                </div>
+            </div>
+
+            <div class="p-4 border-t border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-zinc-900">
+                <button onclick="applyAiSuggestion()" class="w-full py-3 rounded-xl bg-black dark:bg-white text-white dark:text-black font-bold text-xs uppercase tracking-widest hover:opacity-90 transition">
+                    Remplacer le contenu
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- JS LOGIC -->
+    <script>
+        // --- THEME MANAGEMENT ---
+        function toggleTheme() {
+            const body = document.body;
+            body.classList.toggle('dark-mode');
+            const isDark = body.classList.contains('dark-mode');
+            localStorage.setItem('wikimind_theme', isDark ? 'dark' : 'light');
+            updateThemeIcon(isDark);
+        }
+
+        function updateThemeIcon(isDark) {
+            const path = document.querySelector('#theme-icon path');
+            if(isDark) {
+                path.setAttribute('d', 'M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z');
+            } else {
+                path.setAttribute('d', 'M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z');
+            }
+        }
+
+        // Init Theme
+        const savedTheme = localStorage.getItem('wikimind_theme');
+        if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.body.classList.add('dark-mode');
+            updateThemeIcon(true);
+        }
+
+        // --- EDITOR COMMANDS ---
+        function execCmd(command, value = null) {
+            document.execCommand(command, false, value);
+            document.getElementById('editor').focus();
+        }
+
+        // --- SPEECH TO TEXT (WEB SPEECH API) ---
+        let recognition;
+        let isRecording = false;
+
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRecognition();
+            recognition.lang = 'fr-FR';
+            recognition.continuous = true;
+            recognition.interimResults = true;
+
+            recognition.onresult = function(event) {
+                let interimTranscript = '';
+                let finalTranscript = '';
+
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    if (event.results[i].isFinal) {
+                        finalTranscript += event.results[i][0].transcript + '. ';
+                    } else {
+                        interimTranscript += event.results[i][0].transcript;
+                    }
+                }
+
+                if (finalTranscript) {
+                    document.execCommand('insertText', false, finalTranscript);
+                }
+            };
+
+            recognition.onerror = function(event) {
+                console.error("Erreur reconnaissance vocale:", event.error);
+                stopDictation();
+            };
+
+            recognition.onend = function() {
+                if (isRecording) {
+                    recognition.start(); // Restart if intended to keep going
+                } else {
+                    stopDictation();
+                }
+            };
+        } else {
+            alert("Votre navigateur ne supporte pas la reconnaissance vocale.");
+            document.getElementById('mic-btn').style.display = 'none';
+        }
+
+        function toggleDictation() {
+            if (isRecording) {
+                stopDictation();
+            } else {
+                startDictation();
+            }
+        }
+
+        function startDictation() {
+            if (!recognition) return;
+            isRecording = true;
+            recognition.start();
+            
+            const btn = document.getElementById('mic-btn');
+            btn.classList.add('recording-pulse', 'border-red-500');
+            btn.innerHTML = `
+                <span class="w-2 h-2 bg-white rounded-full animate-pulse"></span>
+                <span class="text-xs font-bold uppercase tracking-widest">En écoute...</span>
+            `;
+            
+            // Visual feedback in status
+            document.getElementById('save-status').innerHTML = `<div class="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></div> Enregistrement`;
+        }
+
+        function stopDictation() {
+            isRecording = false;
+            if (recognition) recognition.stop();
+            
+            const btn = document.getElementById('mic-btn');
+            btn.classList.remove('recording-pulse', 'border-red-500');
+            btn.innerHTML = `
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
+                <span class="text-xs font-bold uppercase tracking-widest hidden md:inline">Dictée</span>
+            `;
+            
+            document.getElementById('save-status').innerHTML = `<div class="w-1.5 h-1.5 rounded-full bg-green-500"></div> Prêt`;
+        }
+
+        // --- AI LOGIC (MOCKUP / PREPARED FOR API) ---
+        const sidebar = document.getElementById('ai-sidebar');
+        const aiContent = document.getElementById('ai-content');
+        const aiLoading = document.getElementById('ai-loading');
+        const editor = document.getElementById('editor');
+
+        function restructureNotes() {
+            // 1. Ouvrir Sidebar
+            sidebar.classList.remove('translate-x-full');
+            
+            // 2. Get Text
+            const rawText = editor.innerText;
+            if(rawText.length < 10) {
+                aiContent.innerHTML = "<p class='text-red-500'>Veuillez écrire plus de contenu avant de demander une restructuration.</p>";
+                return;
+            }
+
+            // 3. UI Loading State
+            aiContent.innerHTML = '';
+            aiContent.style.display = 'none';
+            aiLoading.style.display = 'flex';
+
+            // 4. SIMULATION APPEL IA
+            // Note: Pour une vraie implémentation, remplacez ce setTimeout par un fetch vers l'API Gemini ou Mistral
+            // Utiliser la clé fournie: AIzaSyAsV27OD4bARFOSDlZN1MAARSv9q2WBkdo
+            
+            setTimeout(() => {
+                // Simulation d'une réponse structurée
+                const structuredResponse = `
+### Résumé Structuré
+
+**1. Introduction**
+Le cours aborde la question de la conscience et de l'illusion.
+- Citation clé : Descartes ("Je pense donc je suis").
+- Contre-point : Freud et l'inconscient.
+
+**2. Points Clés**
+- La certitude du sujet pensant.
+- Les limites de la conscience (lapsus, rêves).
+
+**3. Conclusion Provisoire**
+La conscience est une réalité immédiate mais peut être trompeuse sur ses causes profondes.
+                `;
+
+                // Render Markdown
+                aiLoading.style.display = 'none';
+                aiContent.style.display = 'block';
+                aiContent.innerHTML = marked.parse(structuredResponse);
+
+            }, 2000); 
+
+            /* 
+            --- CODE POUR API RÉELLE (GEMINI EXEMPLE) ---
+            const API_KEY = "AIzaSyAsV27OD4bARFOSDlZN1MAARSv9q2WBkdo";
+            const prompt = "Restructure ce cours de manière claire avec Titres, Puces et Gras : " + rawText;
+            
+            fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${API_KEY}`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+            })
+            .then(response => response.json())
+            .then(data => {
+                const text = data.candidates[0].content.parts[0].text;
+                aiLoading.style.display = 'none';
+                aiContent.style.display = 'block';
+                aiContent.innerHTML = marked.parse(text);
+            });
+            */
+        }
+
+        function closeSidebar() {
+            sidebar.classList.add('translate-x-full');
+        }
+
+        function applyAiSuggestion() {
+            if(aiContent.innerHTML === '') return;
+            
+            // Insert structured content into editor
+            editor.innerHTML = aiContent.innerHTML;
+            closeSidebar();
+            
+            // Flash effect
+            editor.style.transition = 'background-color 0.2s';
+            editor.style.backgroundColor = 'rgba(0, 255, 0, 0.1)';
+            setTimeout(() => {
+                editor.style.backgroundColor = '';
+            }, 300);
+        }
+
+        // Auto-save simulation
+        editor.addEventListener('input', () => {
+            const status = document.getElementById('save-status');
+            status.innerHTML = `<div class="w-1.5 h-1.5 rounded-full bg-yellow-500 animate-pulse"></div> Sauvegarde...`;
+            clearTimeout(window.saveTimeout);
+            window.saveTimeout = setTimeout(() => {
+                 status.innerHTML = `<div class="w-1.5 h-1.5 rounded-full bg-green-500"></div> Enregistré`;
+                 // Ici, code pour sauvegarder dans localStorage ou Firebase
+                 localStorage.setItem('wikimind_cours_draft', editor.innerHTML);
+            }, 1000);
+        });
+
+        // Load Draft
+        window.addEventListener('load', () => {
+            const draft = localStorage.getItem('wikimind_cours_draft');
+            if(draft) {
+                editor.innerHTML = draft;
+            }
+        });
+
+    </script>
+</body>
+</html>
