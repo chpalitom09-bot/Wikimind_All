@@ -310,6 +310,19 @@
                     <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-widest mt-6 group-hover:gap-4 transition-all duration-300">Voir <span class="text-lg">→</span></div>
                 </div>
 
+                <!-- WikiMind Games (MIS A JOUR) -->
+                 <div onclick="openAppDetail('games')" class="app-card p-8 group flex flex-col justify-between animate-fade delay-600 h-80 flex-[1_1_300px] max-w-[400px]">
+                    <div>
+                        <div class="flex justify-between items-start">
+                            <div class="icon-box group-hover:bg-black group-hover:text-white dark:group-hover:bg-white dark:group-hover:text-black transition-colors duration-300">🎮</div>
+                            <span class="bg-indigo-100 text-indigo-600 text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider">Arcade</span>
+                        </div>
+                        <h3 class="text-2xl font-bold mb-2">WikiMind Games</h3>
+                        <p class="text-sm text-gray-500 font-medium leading-relaxed">Le hub ludique. Affrontez l'IA Mistral aux échecs ou défiez vos amis en ligne.</p>
+                    </div>
+                    <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-widest mt-6 group-hover:gap-4 transition-all duration-300">Jouer <span class="text-lg">→</span></div>
+                </div>
+
                 <!-- WikiMind Tableur (PLACEHOLDER) -->
                  <div onclick="openAppDetail('tableur')" class="app-card p-8 group flex flex-col justify-between animate-fade delay-600 h-80 flex-[1_1_300px] max-w-[400px] opacity-75 grayscale hover:grayscale-0 transition-all">
                     <div>
@@ -319,19 +332,6 @@
                         </div>
                         <h3 class="text-2xl font-bold mb-2 text-gray-400">WikiMind Tableur</h3>
                         <p class="text-sm text-gray-400 font-medium leading-relaxed">Un tableur puissant intégré à l'écosystème. Analysez vos données avec l'aide de l'IA.</p>
-                    </div>
-                    <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-widest mt-6 text-gray-300 group-hover:text-black dark:group-hover:text-white transition-all duration-300">En développement...</div>
-                </div>
-
-                <!-- WikiMind Games (PLACEHOLDER) -->
-                 <div onclick="openAppDetail('games')" class="app-card p-8 group flex flex-col justify-between animate-fade delay-600 h-80 flex-[1_1_300px] max-w-[400px] opacity-75 grayscale hover:grayscale-0 transition-all">
-                    <div>
-                        <div class="flex justify-between items-start">
-                            <div class="icon-box group-hover:bg-black group-hover:text-white dark:group-hover:bg-white dark:group-hover:text-black transition-colors duration-300">🎮</div>
-                            <span class="bg-gray-200 text-gray-500 text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider">Bientôt</span>
-                        </div>
-                        <h3 class="text-2xl font-bold mb-2 text-gray-400">WikiMind Games</h3>
-                        <p class="text-sm text-gray-400 font-medium leading-relaxed">Apprendre en s'amusant. Une collection de jeux éducatifs pour tester vos connaissances.</p>
                     </div>
                     <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-widest mt-6 text-gray-300 group-hover:text-black dark:group-hover:text-white transition-all duration-300">En développement...</div>
                 </div>
@@ -988,6 +988,24 @@
                 ],
                 url: "Wikimind_humanise.html"
             },
+            "games": {
+                title: "WikiMind Games",
+                icon: "🎮",
+                tag: "Arcade",
+                tagColor: "bg-indigo-100 text-indigo-600",
+                desc: "Le hub ludique de WikiMind. Affrontez l'IA Mistral aux échecs, jouez en ligne et grimpez dans le classement ELO.",
+                features: [
+                    "<strong>WikiMind Chess :</strong> Jeu d'échecs complet avec moteur IA et multijoueur.",
+                    "<strong>Classement ELO :</strong> Système de progression et leaderboard en temps réel.",
+                    "<strong>Comptes Joueurs :</strong> Profils persistants via Firebase."
+                ],
+                extras: [
+                    "Mode Multijoueur",
+                    "Moteur Mistral AI",
+                    "Interface Moderne"
+                ],
+                url: "Wikimind_games.html"
+            },
             "tableur": {
                 title: "WikiMind Tableur",
                 icon: "📊",
@@ -1003,24 +1021,6 @@
                     "En développement",
                     "Sortie prévue 2026",
                     "Intégration Cloud"
-                ],
-                url: "#"
-            },
-            "games": {
-                title: "WikiMind Games",
-                icon: "🎮",
-                tag: "Bientôt",
-                tagColor: "bg-gray-200 text-gray-500",
-                desc: "Apprendre en s'amusant. Une collection de jeux éducatifs pour tester vos connaissances générales ou préparer des examens.",
-                features: [
-                    "<strong>Quiz Générés par IA :</strong> Questions infinies sur tous les sujets.",
-                    "<strong>Mode Duel :</strong> Affrontez vos amis en temps réel.",
-                    "<strong>Progression :</strong> Gagnez des badges et montez de niveau."
-                ],
-                extras: [
-                    "En développement",
-                    "Sortie prévue 2026",
-                    "Multi-joueur"
                 ],
                 url: "#"
             }
