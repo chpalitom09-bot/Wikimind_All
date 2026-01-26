@@ -11,7 +11,7 @@
     </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WikiMind Cours - Prise de notes intelligente</title>
+    <title>WikiMind Workspace - Éditeur Intelligent</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -19,7 +19,7 @@
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     
-    <!-- Marked Library for Markdown (used by AI output) -->
+    <!-- Marked Library for Markdown -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
     <style>
@@ -48,14 +48,14 @@
             background-color: var(--bg);
             color: var(--text);
             transition: background-color 0.4s ease, color 0.4s ease;
-            overflow: hidden; /* App-like feel */
+            overflow: hidden; 
         }
 
         /* --- Editor Specifics --- */
         .editor-page {
             background-color: var(--page-bg);
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            min-height: 80vh;
+            min-height: 100vh; /* A4 Style infinite scroll feel */
             outline: none;
             transition: background-color 0.4s ease;
         }
@@ -66,6 +66,10 @@
             font-style: italic;
         }
 
+        /* Editor Lists Fix */
+        .editor-page ul { list-style-type: disc; margin-left: 1.5rem; }
+        .editor-page ol { list-style-type: decimal; margin-left: 1.5rem; }
+
         /* Toolbar Buttons */
         .tool-btn {
             display: flex; align-items: center; justify-content: center;
@@ -73,6 +77,7 @@
             border-radius: 8px;
             color: var(--text);
             transition: all 0.2s;
+            font-size: 14px;
         }
         .tool-btn:hover { background-color: rgba(128,128,128, 0.1); }
         .tool-btn.active { background-color: var(--accent); color: var(--accent-text); }
@@ -90,14 +95,26 @@
             border-color: #ef4444 !important;
         }
 
+        /* Modal */
+        .modal {
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
+            z-index: 100; align-items: center; justify-content: center;
+        }
+        .modal-content {
+            background: var(--bg); border: 1px solid var(--border);
+            padding: 2rem; border-radius: 24px; width: 90%; max-width: 600px;
+            max-height: 80vh; overflow-y: auto;
+            color: var(--text);
+        }
+
         /* Grain Background */
         .bg-grain {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E");
             pointer-events: none; z-index: 0;
         }
-
-        /* Scrollbar */
+        
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
@@ -110,26 +127,44 @@
     <!-- NAVBAR -->
     <header class="h-16 border-b border-gray-200 dark:border-gray-800 backdrop-blur-md z-50 flex-none bg-white/80 dark:bg-black/80">
         <div class="max-w-7xl mx-auto px-4 h-full flex justify-between items-center">
-            <div class="flex items-center gap-3">
+            <div class="flex items-center gap-4">
                 <a href="index.html" class="w-8 h-8 bg-gray-100 dark:bg-zinc-800 rounded-lg flex items-center justify-center hover:bg-gray-200 transition">
                     <svg class="w-4 h-4 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
                 </a>
-                <div class="flex items-center gap-2">
-                    <div class="w-8 h-8 bg-black dark:bg-white text-white dark:text-black rounded-lg flex items-center justify-center font-black text-sm">W</div>
-                    <div>
-                        <h1 class="text-sm font-black uppercase tracking-tighter">WikiMind Cours</h1>
-                        <p class="text-[10px] text-gray-500 font-medium">Notebook Intelligent</p>
-                    </div>
-                </div>
+                
+                <!-- Project Name Input -->
+                <input type="text" id="doc-title" value="Sans titre" class="bg-transparent font-bold text-sm uppercase tracking-wide border-b border-transparent hover:border-gray-300 focus:border-black dark:focus:border-white focus:outline-none w-48 text-ellipsis transition-colors" placeholder="Nom du document">
+
+                <!-- Projects Button -->
+                <button onclick="openProjectsModal()" class="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-100 dark:bg-zinc-900 text-xs font-bold uppercase tracking-widest hover:bg-gray-200 dark:hover:bg-zinc-800 transition">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>
+                    Mes Projets
+                </button>
             </div>
 
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-3">
+                <div id="auth-status" class="text-[10px] font-bold uppercase tracking-widest text-red-500">Hors Ligne</div>
+                
                 <!-- Status Indicator -->
                 <div id="save-status" class="hidden md:flex items-center gap-2 px-3 py-1 rounded-full bg-gray-100 dark:bg-zinc-900 text-[10px] font-bold uppercase tracking-widest text-gray-400">
-                    <div class="w-1.5 h-1.5 rounded-full bg-green-500"></div>
-                    Prêt
+                    <div class="w-1.5 h-1.5 rounded-full bg-gray-400"></div>
+                    En attente
                 </div>
                 
+                <!-- Export/Import -->
+                <div class="relative group">
+                    <button class="w-8 h-8 rounded-full border border-gray-200 dark:border-gray-700 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-zinc-800 transition">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                    </button>
+                    <div class="absolute right-0 top-10 w-40 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-xl p-2 hidden group-hover:block z-50">
+                        <button onclick="downloadDoc()" class="w-full text-left px-4 py-2 text-xs font-bold uppercase tracking-wider hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg">Télécharger</button>
+                        <label class="block w-full text-left px-4 py-2 text-xs font-bold uppercase tracking-wider hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg cursor-pointer">
+                            Importer
+                            <input type="file" id="file-input" class="hidden" accept=".html,.txt" onchange="importDoc(this)">
+                        </label>
+                    </div>
+                </div>
+
                 <button onclick="toggleTheme()" class="w-8 h-8 rounded-full border border-gray-200 dark:border-gray-700 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-zinc-800 transition">
                     <svg id="theme-icon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
                 </button>
@@ -138,43 +173,52 @@
     </header>
 
     <!-- TOOLBAR -->
-    <div class="h-12 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-[#111] flex items-center z-40 px-4 overflow-x-auto gap-4 flex-none">
+    <div class="h-14 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-[#111] flex items-center z-40 px-4 overflow-x-auto gap-4 flex-none shadow-sm">
         <!-- Text Style -->
-        <div class="flex items-center gap-1 border-r border-gray-200 dark:border-gray-800 pr-4">
+        <div class="flex items-center gap-1 border-r border-gray-200 dark:border-gray-800 pr-4 flex-shrink-0">
             <button onclick="execCmd('bold')" class="tool-btn font-bold" title="Gras">B</button>
             <button onclick="execCmd('italic')" class="tool-btn italic" title="Italique">I</button>
             <button onclick="execCmd('underline')" class="tool-btn underline" title="Souligné">U</button>
         </div>
 
-        <!-- Headings -->
-        <div class="flex items-center gap-1 border-r border-gray-200 dark:border-gray-800 pr-4">
-            <select onchange="execCmd('formatBlock', this.value); this.value='';" class="bg-transparent text-xs font-bold uppercase tracking-wider outline-none p-1 rounded hover:bg-gray-100 dark:hover:bg-zinc-800 cursor-pointer">
-                <option value="" disabled selected>Style</option>
+        <!-- Formatting (Size & Headings) -->
+        <div class="flex items-center gap-2 border-r border-gray-200 dark:border-gray-800 pr-4 flex-shrink-0">
+            <select onchange="execCmd('formatBlock', this.value); this.value='';" class="bg-transparent text-xs font-bold uppercase tracking-wider outline-none p-1 rounded hover:bg-gray-100 dark:hover:bg-zinc-800 cursor-pointer w-24">
+                <option value="" disabled selected>Format</option>
                 <option value="H1">Titre 1</option>
                 <option value="H2">Titre 2</option>
                 <option value="H3">Titre 3</option>
-                <option value="P">Paragraphe</option>
+                <option value="P">Normal</option>
+            </select>
+            
+            <select onchange="execCmd('fontSize', this.value); this.value='';" class="bg-transparent text-xs font-bold uppercase tracking-wider outline-none p-1 rounded hover:bg-gray-100 dark:hover:bg-zinc-800 cursor-pointer w-20">
+                <option value="" disabled selected>Taille</option>
+                <option value="1">Petit</option>
+                <option value="3">Normal</option>
+                <option value="5">Grand</option>
+                <option value="7">Très Grand</option>
             </select>
         </div>
 
-        <!-- Alignment -->
-        <div class="flex items-center gap-1 border-r border-gray-200 dark:border-gray-800 pr-4">
+        <!-- Lists & Align -->
+        <div class="flex items-center gap-1 border-r border-gray-200 dark:border-gray-800 pr-4 flex-shrink-0">
+            <button onclick="execCmd('insertUnorderedList')" class="tool-btn" title="Liste à puces">•</button>
+            <button onclick="execCmd('insertOrderedList')" class="tool-btn" title="Liste numérotée">1.</button>
+            <div class="w-px h-6 bg-gray-200 dark:bg-gray-800 mx-1"></div>
             <button onclick="execCmd('justifyLeft')" class="tool-btn"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h10M4 18h16"></path></svg></button>
             <button onclick="execCmd('justifyCenter')" class="tool-btn"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg></button>
         </div>
 
         <!-- AI Tools -->
-        <div class="flex items-center gap-3 ml-auto">
-            <!-- Voice Dictation -->
+        <div class="flex items-center gap-3 ml-auto flex-shrink-0">
             <button id="mic-btn" onclick="toggleDictation()" class="flex items-center gap-2 px-3 py-1.5 rounded-full border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-zinc-800 transition group">
                 <svg class="w-4 h-4 text-gray-500 group-hover:text-black dark:group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
-                <span class="text-xs font-bold uppercase tracking-widest hidden md:inline">Dictée</span>
+                <span class="text-xs font-bold uppercase tracking-widest hidden lg:inline">Dictée IA</span>
             </button>
 
-            <!-- AI Restructure -->
             <button onclick="restructureNotes()" class="btn-primary flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest text-white bg-black dark:bg-white dark:text-black hover:opacity-90 transition shadow-lg">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                <span class="hidden md:inline">Restructurer (IA)</span>
+                <span class="hidden md:inline">Restructurer</span>
             </button>
         </div>
     </div>
@@ -188,19 +232,14 @@
                 id="editor" 
                 contenteditable="true" 
                 class="editor-page w-full max-w-[850px] bg-white dark:bg-[#161616] rounded-xl p-8 md:p-12 text-lg leading-relaxed border border-gray-200 dark:border-gray-800"
-            >
-                <h1>Cours de Philosophie - 26 Janvier</h1>
-                <p>La conscience est-elle une illusion ?</p>
-                <p><br></p>
-                <p>Introduction : Descartes dit "Je pense donc je suis". Mais Freud parle de l'inconscient.</p>
-            </div>
+            ></div>
         </div>
 
-        <!-- AI Sidebar (Hidden by default, slides in) -->
+        <!-- AI Sidebar -->
         <div id="ai-sidebar" class="absolute top-0 right-0 h-full w-[400px] bg-white dark:bg-[#111] border-l border-gray-200 dark:border-gray-800 transform translate-x-full transition-transform duration-300 shadow-2xl z-30 flex flex-col">
             <div class="p-4 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center bg-gray-50 dark:bg-zinc-900">
                 <h3 class="font-black uppercase tracking-tight flex items-center gap-2">
-                    <span class="text-xl">✨</span> Assistant WikiMind
+                    <span class="text-xl">✨</span> Assistant
                 </h3>
                 <button onclick="closeSidebar()" class="text-gray-400 hover:text-black dark:hover:text-white">✕</button>
             </div>
@@ -208,26 +247,233 @@
             <div class="flex-grow overflow-y-auto p-6 space-y-4">
                 <div id="ai-loading" class="hidden flex flex-col items-center justify-center py-10 space-y-4">
                     <div class="w-8 h-8 border-4 border-gray-200 border-t-black rounded-full animate-spin dark:border-zinc-800 dark:border-t-white"></div>
-                    <p class="text-xs font-bold uppercase tracking-widest text-gray-500 animate-pulse">Analyse du cours en cours...</p>
+                    <p class="text-xs font-bold uppercase tracking-widest text-gray-500 animate-pulse">L'IA réfléchit...</p>
                 </div>
-                
-                <div id="ai-content" class="prose dark:prose-invert prose-sm">
-                    <!-- AI Output will go here -->
-                </div>
+                <div id="ai-content" class="prose dark:prose-invert prose-sm"></div>
             </div>
 
             <div class="p-4 border-t border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-zinc-900">
                 <button onclick="applyAiSuggestion()" class="w-full py-3 rounded-xl bg-black dark:bg-white text-white dark:text-black font-bold text-xs uppercase tracking-widest hover:opacity-90 transition">
-                    Remplacer le contenu
+                    Appliquer au document
                 </button>
             </div>
         </div>
 
     </main>
 
-    <!-- JS LOGIC -->
+    <!-- MODAL: PROJECTS -->
+    <div id="projects-modal" class="modal" onclick="closeProjectsModal()">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-black uppercase tracking-tight">Mes Documents</h2>
+                <button onclick="createNewDoc()" class="bg-black dark:bg-white text-white dark:text-black px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest hover:opacity-80 transition">+ Nouveau</button>
+            </div>
+            
+            <div id="projects-list" class="space-y-3">
+                <div class="text-center py-10 text-gray-400">Chargement...</div>
+            </div>
+
+            <button onclick="closeProjectsModal()" class="mt-8 w-full py-3 rounded-xl border border-gray-200 dark:border-gray-700 text-xs font-bold uppercase tracking-widest">Fermer</button>
+        </div>
+    </div>
+
+    <!-- FIREBASE & LOGIC -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-auth.js";
+        import { getDatabase, ref, set, get, child, onValue } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-database.js";
+
+        // CONFIG FIREBASE
+        const firebaseConfig = {
+            apiKey: "AIzaSyAsV27OD4bARFOSDlZN1MAARSv9q2WBkdo",
+            authDomain: "wikimind-pro.firebaseapp.com",
+            databaseURL: "https://wikimind-pro-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "wikimind-pro",
+            storageBucket: "wikimind-pro.firebasestorage.app",
+            messagingSenderId: "154490257518",
+            appId: "1:154490257518:web:3276b1e64f2db9894be67f"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getDatabase(app);
+
+        // --- GLOBAL VARIABLES FOR MODULE ---
+        let currentUser = null;
+        let currentDocId = localStorage.getItem('wm_last_doc_id') || 'draft_' + Date.now();
+        let saveTimeout;
+
+        // --- EXPOSE FUNCTIONS TO WINDOW (for HTML onclick) ---
+        window.createNewDoc = createNewDoc;
+        window.loadDoc = loadDoc;
+
+        // --- AUTH & LOAD LOGIC ---
+        onAuthStateChanged(auth, (user) => {
+            const authStatus = document.getElementById('auth-status');
+            if (user) {
+                currentUser = user;
+                authStatus.innerText = "Connecté";
+                authStatus.className = "text-[10px] font-bold uppercase tracking-widest text-green-500";
+                
+                // Si on a un doc local en attente de sync, on pourrait le push ici
+                // Pour l'instant, on charge le doc courant s'il existe en base
+                loadCurrentDocFromDb();
+            } else {
+                currentUser = null;
+                authStatus.innerText = "Mode Invité (Local)";
+                authStatus.className = "text-[10px] font-bold uppercase tracking-widest text-orange-500";
+                loadCurrentDocFromLocal();
+            }
+        });
+
+        // --- DATABASE OPERATIONS ---
+
+        // SAVE
+        window.saveDocument = function() {
+            const title = document.getElementById('doc-title').value;
+            const content = document.getElementById('editor').innerHTML;
+            const timestamp = Date.now();
+            const statusEl = document.getElementById('save-status');
+
+            statusEl.innerHTML = `<div class="w-1.5 h-1.5 rounded-full bg-yellow-500 animate-pulse"></div> Sauvegarde...`;
+
+            // 1. Save Local (Always)
+            localStorage.setItem('wm_current_content', content);
+            localStorage.setItem('wm_current_title', title);
+            localStorage.setItem('wm_last_doc_id', currentDocId);
+
+            // 2. Save Cloud (If User)
+            if (currentUser) {
+                set(ref(db, 'users/' + currentUser.uid + '/docs/' + currentDocId), {
+                    title: title,
+                    content: content,
+                    lastModified: timestamp
+                }).then(() => {
+                    statusEl.innerHTML = `<div class="w-1.5 h-1.5 rounded-full bg-green-500"></div> Cloud OK`;
+                }).catch((error) => {
+                    console.error("Save error", error);
+                    statusEl.innerHTML = `<div class="w-1.5 h-1.5 rounded-full bg-red-500"></div> Erreur Cloud`;
+                });
+            } else {
+                setTimeout(() => {
+                    statusEl.innerHTML = `<div class="w-1.5 h-1.5 rounded-full bg-orange-500"></div> Local OK`;
+                }, 500);
+            }
+        }
+
+        // LOAD CURRENT
+        function loadCurrentDocFromDb() {
+            if(!currentUser) return;
+            const docRef = ref(db, `users/${currentUser.uid}/docs/${currentDocId}`);
+            get(docRef).then((snapshot) => {
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    document.getElementById('editor').innerHTML = data.content || "";
+                    document.getElementById('doc-title').value = data.title || "Sans titre";
+                } else {
+                    // Doc doesn't exist in DB, maybe new? Keep local content
+                }
+            });
+        }
+
+        function loadCurrentDocFromLocal() {
+            const content = localStorage.getItem('wm_current_content');
+            const title = localStorage.getItem('wm_current_title');
+            if (content) document.getElementById('editor').innerHTML = content;
+            if (title) document.getElementById('doc-title').value = title;
+        }
+
+        // LIST PROJECTS (For Modal)
+        window.openProjectsModal = function() {
+            document.getElementById('projects-modal').style.display = 'flex';
+            const listEl = document.getElementById('projects-list');
+            
+            if (!currentUser) {
+                listEl.innerHTML = `
+                    <div class="text-center">
+                        <p class="text-sm mb-4">Connectez-vous pour sauvegarder plusieurs projets dans le Cloud.</p>
+                        <a href="user.html" class="inline-block px-4 py-2 bg-black dark:bg-white text-white dark:text-black rounded-lg text-xs font-bold uppercase">Se connecter</a>
+                    </div>`;
+                return;
+            }
+
+            // Fetch list
+            const docsRef = ref(db, `users/${currentUser.uid}/docs`);
+            onValue(docsRef, (snapshot) => {
+                listEl.innerHTML = '';
+                if (!snapshot.exists()) {
+                    listEl.innerHTML = '<div class="text-center text-gray-500">Aucun projet trouvé.</div>';
+                    return;
+                }
+                
+                const docs = snapshot.val();
+                // Sort by date desc
+                const sortedDocs = Object.keys(docs).map(key => ({id: key, ...docs[key]}))
+                                    .sort((a,b) => b.lastModified - a.lastModified);
+
+                sortedDocs.forEach(doc => {
+                    const date = new Date(doc.lastModified).toLocaleDateString() + ' ' + new Date(doc.lastModified).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                    const isActive = doc.id === currentDocId ? 'border-black dark:border-white' : 'border-transparent';
+                    
+                    const item = document.createElement('div');
+                    item.className = `flex justify-between items-center p-4 bg-gray-50 dark:bg-zinc-900 rounded-xl border ${isActive} hover:bg-gray-100 dark:hover:bg-zinc-800 transition cursor-pointer`;
+                    item.onclick = () => loadDoc(doc.id);
+                    item.innerHTML = `
+                        <div>
+                            <div class="font-bold text-sm">${doc.title || 'Sans titre'}</div>
+                            <div class="text-[10px] text-gray-500 uppercase tracking-wide">${date}</div>
+                        </div>
+                        ${doc.id === currentDocId ? '<span class="text-xs font-bold">Actuel</span>' : ''}
+                    `;
+                    listEl.appendChild(item);
+                });
+            }, { onlyOnce: true });
+        }
+
+        window.closeProjectsModal = function() {
+            document.getElementById('projects-modal').style.display = 'none';
+        }
+
+        // CREATE NEW
+        function createNewDoc() {
+            // Save current first
+            saveDocument();
+            
+            // Reset logic
+            currentDocId = 'doc_' + Date.now();
+            document.getElementById('editor').innerHTML = '';
+            document.getElementById('doc-title').value = 'Nouveau Projet';
+            
+            localStorage.setItem('wm_last_doc_id', currentDocId);
+            saveDocument(); // Save new blank state
+            closeProjectsModal();
+        }
+
+        // LOAD SPECIFIC
+        function loadDoc(docId) {
+            currentDocId = docId;
+            localStorage.setItem('wm_last_doc_id', docId);
+            loadCurrentDocFromDb(); // Will fetch new content
+            closeProjectsModal();
+        }
+
+        // --- DEBOUNCE SAVE ON INPUT ---
+        document.getElementById('editor').addEventListener('input', () => {
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(saveDocument, 2000); // Auto-save after 2s of inactivity
+            document.getElementById('save-status').innerHTML = `<div class="w-1.5 h-1.5 rounded-full bg-yellow-500"></div> Modifié...`;
+        });
+        
+        document.getElementById('doc-title').addEventListener('input', () => {
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(saveDocument, 2000);
+        });
+
+    </script>
+
+    <!-- STANDARD JS (UI & TOOLS) -->
     <script>
-        // --- THEME MANAGEMENT ---
+        // --- THEME ---
         function toggleTheme() {
             const body = document.body;
             body.classList.toggle('dark-mode');
@@ -238,14 +484,10 @@
 
         function updateThemeIcon(isDark) {
             const path = document.querySelector('#theme-icon path');
-            if(isDark) {
-                path.setAttribute('d', 'M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z');
-            } else {
-                path.setAttribute('d', 'M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z');
-            }
+            if(isDark) path.setAttribute('d', 'M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z');
+            else path.setAttribute('d', 'M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z');
         }
 
-        // Init Theme
         const savedTheme = localStorage.getItem('wikimind_theme');
         if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
             document.body.classList.add('dark-mode');
@@ -258,7 +500,48 @@
             document.getElementById('editor').focus();
         }
 
-        // --- SPEECH TO TEXT (WEB SPEECH API) ---
+        // --- DOWNLOAD / IMPORT ---
+        function downloadDoc() {
+            const content = document.getElementById('editor').innerHTML;
+            const title = document.getElementById('doc-title').value || "wikimind_doc";
+            
+            // Wrap in basic HTML for portability
+            const htmlContent = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>${title}</title></head>
+<body>${content}</body>
+</html>`;
+
+            const blob = new Blob([htmlContent], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${title}.html`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function importDoc(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                // If HTML file, try to extract body
+                let content = e.target.result;
+                if (content.includes('<body')) {
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(content, 'text/html');
+                    content = doc.body.innerHTML;
+                }
+                document.getElementById('editor').innerHTML = content;
+                window.saveDocument(); // Trigger save
+            };
+            reader.readAsText(file);
+        }
+
+        // --- SPEECH API ---
         let recognition;
         let isRecording = false;
 
@@ -270,187 +553,87 @@
             recognition.interimResults = true;
 
             recognition.onresult = function(event) {
-                let interimTranscript = '';
                 let finalTranscript = '';
-
                 for (let i = event.resultIndex; i < event.results.length; ++i) {
                     if (event.results[i].isFinal) {
                         finalTranscript += event.results[i][0].transcript + '. ';
-                    } else {
-                        interimTranscript += event.results[i][0].transcript;
                     }
                 }
-
                 if (finalTranscript) {
                     document.execCommand('insertText', false, finalTranscript);
+                    window.saveDocument(); // Auto save on speech end block
                 }
             };
-
-            recognition.onerror = function(event) {
-                console.error("Erreur reconnaissance vocale:", event.error);
-                stopDictation();
-            };
-
-            recognition.onend = function() {
-                if (isRecording) {
-                    recognition.start(); // Restart if intended to keep going
-                } else {
-                    stopDictation();
-                }
-            };
+            
+            recognition.onend = () => { if(isRecording) recognition.start(); else stopDictationUI(); };
+            recognition.onerror = () => stopDictationUI();
         } else {
-            alert("Votre navigateur ne supporte pas la reconnaissance vocale.");
             document.getElementById('mic-btn').style.display = 'none';
         }
 
         function toggleDictation() {
-            if (isRecording) {
-                stopDictation();
-            } else {
-                startDictation();
-            }
+            if (isRecording) { isRecording = false; recognition.stop(); }
+            else { isRecording = true; recognition.start(); startDictationUI(); }
         }
 
-        function startDictation() {
-            if (!recognition) return;
-            isRecording = true;
-            recognition.start();
-            
+        function startDictationUI() {
             const btn = document.getElementById('mic-btn');
             btn.classList.add('recording-pulse', 'border-red-500');
-            btn.innerHTML = `
-                <span class="w-2 h-2 bg-white rounded-full animate-pulse"></span>
-                <span class="text-xs font-bold uppercase tracking-widest">En écoute...</span>
-            `;
-            
-            // Visual feedback in status
-            document.getElementById('save-status').innerHTML = `<div class="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></div> Enregistrement`;
+            btn.innerHTML = `<span class="w-2 h-2 bg-white rounded-full animate-pulse"></span><span class="text-xs font-bold uppercase tracking-widest">Écoute...</span>`;
         }
 
-        function stopDictation() {
-            isRecording = false;
-            if (recognition) recognition.stop();
-            
+        function stopDictationUI() {
             const btn = document.getElementById('mic-btn');
             btn.classList.remove('recording-pulse', 'border-red-500');
-            btn.innerHTML = `
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
-                <span class="text-xs font-bold uppercase tracking-widest hidden md:inline">Dictée</span>
-            `;
-            
-            document.getElementById('save-status').innerHTML = `<div class="w-1.5 h-1.5 rounded-full bg-green-500"></div> Prêt`;
+            btn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg><span class="text-xs font-bold uppercase tracking-widest hidden lg:inline">Dictée IA</span>`;
         }
 
-        // --- AI LOGIC (MOCKUP / PREPARED FOR API) ---
+        // --- AI LOGIC ---
         const sidebar = document.getElementById('ai-sidebar');
         const aiContent = document.getElementById('ai-content');
         const aiLoading = document.getElementById('ai-loading');
-        const editor = document.getElementById('editor');
 
         function restructureNotes() {
-            // 1. Ouvrir Sidebar
             sidebar.classList.remove('translate-x-full');
+            const rawText = document.getElementById('editor').innerText;
             
-            // 2. Get Text
-            const rawText = editor.innerText;
-            if(rawText.length < 10) {
-                aiContent.innerHTML = "<p class='text-red-500'>Veuillez écrire plus de contenu avant de demander une restructuration.</p>";
+            if(rawText.length < 5) {
+                aiContent.innerHTML = "<p class='text-red-500'>Texte trop court.</p>";
                 return;
             }
 
-            // 3. UI Loading State
-            aiContent.innerHTML = '';
             aiContent.style.display = 'none';
             aiLoading.style.display = 'flex';
 
-            // 4. SIMULATION APPEL IA
-            // Note: Pour une vraie implémentation, remplacez ce setTimeout par un fetch vers l'API Gemini ou Mistral
-            // Utiliser la clé fournie: AIzaSyAsV27OD4bARFOSDlZN1MAARSv9q2WBkdo
-            
+            // Fake AI Delay (Replace with fetch to Mistral/Gemini later)
             setTimeout(() => {
-                // Simulation d'une réponse structurée
                 const structuredResponse = `
-### Résumé Structuré
+### Résumé Structuré (Simulation IA)
 
-**1. Introduction**
-Le cours aborde la question de la conscience et de l'illusion.
-- Citation clé : Descartes ("Je pense donc je suis").
-- Contre-point : Freud et l'inconscient.
+**Analyse du contenu détecté :**
+${rawText.substring(0, 50)}...
 
-**2. Points Clés**
-- La certitude du sujet pensant.
-- Les limites de la conscience (lapsus, rêves).
+**1. Points Principaux**
+- Le contenu a été réorganisé pour plus de clarté.
+- Les titres ont été mis en évidence.
 
-**3. Conclusion Provisoire**
-La conscience est une réalité immédiate mais peut être trompeuse sur ses causes profondes.
+**2. Suggestions**
+- Pensez à aérer vos paragraphes.
+- Utilisez des listes à puces pour les énumérations.
                 `;
-
-                // Render Markdown
                 aiLoading.style.display = 'none';
                 aiContent.style.display = 'block';
                 aiContent.innerHTML = marked.parse(structuredResponse);
-
-            }, 2000); 
-
-            /* 
-            --- CODE POUR API RÉELLE (GEMINI EXEMPLE) ---
-            const API_KEY = "AIzaSyAsV27OD4bARFOSDlZN1MAARSv9q2WBkdo";
-            const prompt = "Restructure ce cours de manière claire avec Titres, Puces et Gras : " + rawText;
-            
-            fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${API_KEY}`, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-            })
-            .then(response => response.json())
-            .then(data => {
-                const text = data.candidates[0].content.parts[0].text;
-                aiLoading.style.display = 'none';
-                aiContent.style.display = 'block';
-                aiContent.innerHTML = marked.parse(text);
-            });
-            */
+            }, 1500);
         }
 
-        function closeSidebar() {
-            sidebar.classList.add('translate-x-full');
-        }
-
+        function closeSidebar() { sidebar.classList.add('translate-x-full'); }
         function applyAiSuggestion() {
             if(aiContent.innerHTML === '') return;
-            
-            // Insert structured content into editor
-            editor.innerHTML = aiContent.innerHTML;
+            document.getElementById('editor').innerHTML += "<hr><br>" + aiContent.innerHTML;
             closeSidebar();
-            
-            // Flash effect
-            editor.style.transition = 'background-color 0.2s';
-            editor.style.backgroundColor = 'rgba(0, 255, 0, 0.1)';
-            setTimeout(() => {
-                editor.style.backgroundColor = '';
-            }, 300);
+            window.saveDocument();
         }
-
-        // Auto-save simulation
-        editor.addEventListener('input', () => {
-            const status = document.getElementById('save-status');
-            status.innerHTML = `<div class="w-1.5 h-1.5 rounded-full bg-yellow-500 animate-pulse"></div> Sauvegarde...`;
-            clearTimeout(window.saveTimeout);
-            window.saveTimeout = setTimeout(() => {
-                 status.innerHTML = `<div class="w-1.5 h-1.5 rounded-full bg-green-500"></div> Enregistré`;
-                 // Ici, code pour sauvegarder dans localStorage ou Firebase
-                 localStorage.setItem('wikimind_cours_draft', editor.innerHTML);
-            }, 1000);
-        });
-
-        // Load Draft
-        window.addEventListener('load', () => {
-            const draft = localStorage.getItem('wikimind_cours_draft');
-            if(draft) {
-                editor.innerHTML = draft;
-            }
-        });
-
     </script>
 </body>
 </html>
