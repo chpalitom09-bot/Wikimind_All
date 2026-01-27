@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="fr" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>WikiMind Guess - Explore & Pin</title>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: { bg: '#0f172a', card: '#1e293b', accent: '#3b82f6' }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+
+    <style>
+        body { font-family: 'Outfit', sans-serif; background-color: #0f172a; color: white; overflow: hidden; }
+        
+        /* Conteneur Street View */
+        #pano { height: 100vh; width: 100vw; position: absolute; top: 0; left: 0; z-index: 0; filter: brightness(0.9); }
+        
+        /* Carte de guessing flottante */
+        #guess-map-container {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            width: 320px;
+            height: 240px;
+            z-index: 20;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 3px solid rgba(255,255,255,0.8);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            transition: all 0.3s ease;
+            opacity: 0.9;
+        }
+        #guess-map-container:hover {
+            width: 450px;
+            height: 350px;
+            opacity: 1;
+        }
+        #guess-map { width: 100%; height: 100%; background: #ddd; }
+
+        /* UI Elements */
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            transition: transform 0.1s;
+        }
+        .btn-primary:active { transform: scale(0.95); }
+    </style>
+</head>
+<body>
+
+    <!-- LOADING OVERLAY -->
+    <div id="loading-screen" class="fixed inset-0 z-50 bg-[#0f172a] flex flex-col items-center justify-center">
+        <div class="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500 mb-4">WikiMind Guess</div>
+        <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500"></div>
+        <p class="mt-4 text-gray-400 text-sm">Chargement Google Maps & Firebase...</p>
+    </div>
+
+    <!-- HEADER HUD -->
+    <header class="fixed top-0 left-0 w-full h-16 z-30 flex items-center justify-between px-6 pointer-events-none">
+        <div class="pointer-events-auto bg-black/60 backdrop-blur rounded-full px-4 py-2 flex items-center gap-3 border border-white/10">
+            <div class="w-3 h-3 rounded-full bg-red-500 animate-pulse" id="conn-status"></div>
+            <span class="font-bold text-sm tracking-wider">WIKIMIND GUESS</span>
+        </div>
+        
+        <div class="pointer-events-auto bg-black/60 backdrop-blur rounded-full px-4 py-2 flex items-center gap-4 border border-white/10">
+            <div id="score-display" class="font-mono font-bold text-yellow-400">0 pts</div>
+            <div id="round-display" class="text-xs text-gray-400 uppercase font-bold">Round 1/1</div>
+        </div>
+    </header>
+
+    <!-- MENU PRINCIPAL -->
+    <div id="main-menu" class="fixed inset-0 z-40 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+        <div class="glass-panel p-8 rounded-2xl max-w-md w-full text-center shadow-2xl border-t border-blue-500/50">
+            <h1 class="text-5xl font-black mb-2 italic">🌍 GUESS</h1>
+            <p class="text-gray-400 mb-8 text-sm">Où êtes-vous dans le monde ?</p>
+
+            <!-- Mode Tabs -->
+            <div class="flex gap-2 mb-6 bg-black/40 p-1 rounded-lg">
+                <button onclick="setMode('solo')" id="tab-solo" class="flex-1 py-2 rounded font-bold text-xs uppercase bg-blue-600 text-white shadow">Solo</button>
+                <button onclick="setMode('online')" id="tab-online" class="flex-1 py-2 rounded font-bold text-xs uppercase text-gray-400 hover:bg-white/5 transition">En Ligne</button>
+            </div>
+
+            <!-- Panel Solo -->
+            <div id="panel-solo" class="space-y-3">
+                <button onclick="startGame('solo')" class="btn-primary w-full py-4 rounded-xl font-bold text-lg shadow-lg shadow-blue-900/50 uppercase tracking-widest">
+                    Jouer Solo
+                </button>
+            </div>
+
+            <!-- Panel Online -->
+            <div id="panel-online" class="hidden space-y-4">
+                <button id="btn-create" class="w-full py-3 bg-green-600 hover:bg-green-500 text-white font-bold rounded-xl uppercase tracking-widest shadow-lg">
+                    Créer Partie
+                </button>
+                
+                <div class="flex gap-2">
+                    <input type="text" id="input-code" placeholder="CODE" class="flex-1 bg-black/50 border border-white/20 rounded-xl px-4 text-center font-mono text-white focus:border-blue-500 outline-none uppercase">
+                    <button id="btn-join" class="w-24 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-xl uppercase text-sm">Join</button>
+                </div>
+
+                <div id="lobby-ui" class="hidden mt-4 bg-white/5 p-4 rounded-xl border border-dashed border-white/20">
+                    <div class="text-xs text-gray-400 uppercase mb-1">Code Partie</div>
+                    <div id="display-code" class="text-3xl font-mono font-black text-blue-400 select-all cursor-pointer">----</div>
+                    <div class="mt-2 text-[10px] text-yellow-300 animate-pulse">En attente d'un joueur...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JEU (STREET VIEW + MAP) -->
+    <div id="game-ui" class="hidden">
+        <!-- Le Panorama Street View -->
+        <div id="pano"></div>
+
+        <!-- La Carte pour deviner -->
+        <div id="guess-map-container">
+            <div id="guess-map"></div>
+            <button id="btn-guess" class="absolute bottom-4 left-1/2 -translate-x-1/2 w-3/4 py-2 bg-green-600 text-white font-bold rounded-full shadow-lg hover:bg-green-500 transition disabled:opacity-50 disabled:cursor-not-allowed">
+                VALIDER GUESS
+            </button>
+        </div>
+    </div>
+
+    <!-- RESULTAT MODAL -->
+    <div id="result-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md p-4">
+        <div class="glass-panel p-6 rounded-2xl max-w-lg w-full text-center relative">
+            <div class="text-4xl mb-2">🏁</div>
+            <h2 class="text-3xl font-black text-white mb-1 uppercase" id="result-title">Résultat</h2>
+            <div class="text-5xl font-mono font-bold text-green-400 mb-4" id="result-distance">0 km</div>
+            
+            <div class="flex justify-around mb-6 text-sm text-gray-400 bg-black/30 p-3 rounded-lg">
+                <div>
+                    <div class="font-bold text-white" id="p1-score">---</div>
+                    <div class="text-[10px] uppercase">Moi</div>
+                </div>
+                <div id="p2-score-container" class="hidden">
+                    <div class="font-bold text-white" id="p2-score">---</div>
+                    <div class="text-[10px] uppercase">Adversaire</div>
+                </div>
+            </div>
+
+            <button onclick="location.reload()" class="w-full bg-white text-black font-bold py-3 rounded-xl uppercase text-xs tracking-widest hover:bg-gray-200">Menu Principal</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getDatabase, ref, set, onValue, update, get } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        // --- CONFIGURATION ---
+        // TODO: REMPLACEZ PAR VOTRE CLÉ API GOOGLE MAPS !
+        const GOOGLE_MAPS_API_KEY = "VOTRE_CLE_GOOGLE_MAPS_ICI"; 
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyC_P0rfBDbRugnh5xKEJG5IE6P6kub6vV8",
+            authDomain: "wikimind-guesser.firebaseapp.com",
+            databaseURL: "https://wikimind-guesser-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "wikimind-guesser",
+            storageBucket: "wikimind-guesser.firebasestorage.app",
+            messagingSenderId: "977613671463",
+            appId: "1:977613671463:web:f7203e96b97cea3b5a5202"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getDatabase(app);
+
+        // --- VARIABLES JEU ---
+        let map, panorama, guessMarker, targetMarker, linePoly;
+        let currentTarget = null;
+        let gameId = null;
+        let myUid = null;
+        let gameMode = 'solo';
+        let isHost = false;
+        let hasGuessed = false;
+
+        // Lieux cool pré-définis pour éviter l'océan
+        const LOCATIONS = [
+            { lat: 48.8584, lng: 2.2945 }, // Tour Eiffel
+            { lat: 40.7580, lng: -73.9855 }, // Times Square
+            { lat: 35.6595, lng: 139.7004 }, // Shibuya Crossing
+            { lat: -33.8568, lng: 151.2153 }, // Opera Sydney
+            { lat: 51.5007, lng: -0.1246 }, // Big Ben
+            { lat: 25.1972, lng: 55.2744 }, // Burj Khalifa
+            { lat: 41.8902, lng: 12.4922 }, // Colisée
+            { lat: -22.9519, lng: -43.2105 } // Christ Rédempteur
+        ];
+
+        // --- AUTH ---
+        signInAnonymously(auth);
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                myUid = user.uid;
+                document.getElementById('conn-status').classList.replace('bg-red-500', 'bg-green-500');
+                document.getElementById('conn-status').classList.remove('animate-pulse');
+                loadGoogleMaps(); // Charger Maps après l'auth
+            }
+        });
+
+        // --- CHARGEMENT GOOGLE MAPS ---
+        function loadGoogleMaps() {
+            if (window.google && window.google.maps) {
+                initApp();
+                return;
+            }
+            const script = document.createElement("script");
+            script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&callback=initApp`;
+            script.async = true;
+            script.defer = true;
+            document.head.appendChild(script);
+        }
+
+        window.initApp = () => {
+            document.getElementById('loading-screen').classList.add('hidden');
+            console.log("Maps Loaded");
+        };
+
+        // --- MOTEUR DE JEU ---
+
+        window.startGame = (mode, locationData = null) => {
+            gameMode = mode;
+            document.getElementById('main-menu').classList.add('hidden');
+            document.getElementById('game-ui').classList.remove('hidden');
+
+            // 1. Définir le lieu cible
+            if (locationData) {
+                currentTarget = locationData;
+            } else {
+                currentTarget = LOCATIONS[Math.floor(Math.random() * LOCATIONS.length)];
+            }
+
+            // 2. Initialiser Street View
+            panorama = new google.maps.StreetViewPanorama(
+                document.getElementById("pano"),
+                {
+                    position: currentTarget,
+                    pov: { heading: 34, pitch: 10 },
+                    zoom: 1,
+                    addressControl: false,
+                    showRoadLabels: false,
+                    disableDefaultUI: true,
+                    clickToGo: true
+                }
+            );
+
+            // 3. Initialiser la Map de Guess
+            map = new google.maps.Map(document.getElementById("guess-map"), {
+                center: { lat: 0, lng: 0 },
+                zoom: 1,
+                streetViewControl: false,
+                mapTypeControl: false
+            });
+
+            // 4. Click Listener pour le Guess
+            map.addListener("click", (e) => {
+                if (hasGuessed) return;
+                placeGuessMarker(e.latLng);
+            });
+
+            // 5. Bouton Valider
+            document.getElementById('btn-guess').onclick = submitGuess;
+        };
+
+        function placeGuessMarker(latLng) {
+            if (guessMarker) guessMarker.setMap(null);
+            guessMarker = new google.maps.Marker({
+                position: latLng,
+                map: map,
+                icon: 'http://maps.google.com/mapfiles/ms/icons/red-dot.png'
+            });
+        }
+
+        function submitGuess() {
+            if (!guessMarker || hasGuessed) return;
+            hasGuessed = true;
+            document.getElementById('btn-guess').innerText = "EN ATTENTE...";
+            document.getElementById('btn-guess').disabled = true;
+
+            const guessPos = guessMarker.getPosition();
+            const distance = haversineDistance(
+                guessPos.lat(), guessPos.lng(),
+                currentTarget.lat, currentTarget.lng
+            );
+
+            // Affichage Visuel du résultat sur la petite carte
+            showResultOnMap(guessPos, currentTarget);
+
+            if (gameMode === 'solo') {
+                setTimeout(() => showEndScreen(distance, null), 1500);
+            } else {
+                // Envoyer le score à Firebase
+                const updates = {};
+                updates[`games_geo/${gameId}/guesses/${myUid}`] = {
+                    distance: distance,
+                    lat: guessPos.lat(),
+                    lng: guessPos.lng()
+                };
+                update(ref(db), updates);
+            }
+        }
+
+        function showResultOnMap(guessPos, targetPos) {
+            // Afficher le vrai emplacement
+            targetMarker = new google.maps.Marker({
+                position: targetPos,
+                map: map,
+                icon: 'http://maps.google.com/mapfiles/ms/icons/green-dot.png'
+            });
+
+            // Tracer la ligne
+            linePoly = new google.maps.Polyline({
+                path: [guessPos, targetPos],
+                geodesic: true,
+                strokeColor: "#FF0000",
+                strokeOpacity: 1.0,
+                strokeWeight: 2,
+                map: map,
+            });
+
+            // Zoomer pour voir les deux points
+            const bounds = new google.maps.LatLngBounds();
+            bounds.extend(guessPos);
+            bounds.extend(targetPos);
+            map.fitBounds(bounds);
+        }
+
+        function showEndScreen(myDist, oppDist) {
+            document.getElementById('result-modal').classList.remove('hidden');
+            
+            // Formater la distance
+            const formatDist = (d) => d < 1 ? Math.round(d * 1000) + " m" : Math.round(d) + " km";
+            
+            document.getElementById('result-distance').innerText = formatDist(myDist);
+            document.getElementById('p1-score').innerText = formatDist(myDist);
+
+            if (oppDist !== null) {
+                document.getElementById('p2-score-container').classList.remove('hidden');
+                document.getElementById('p2-score').innerText = formatDist(oppDist);
+
+                if (myDist < oppDist) {
+                    document.getElementById('result-title').innerText = "VICTOIRE !";
+                    document.getElementById('result-title').className = "text-3xl font-black text-green-500 mb-1 uppercase";
+                } else {
+                    document.getElementById('result-title').innerText = "DÉFAITE...";
+                    document.getElementById('result-title').className = "text-3xl font-black text-red-500 mb-1 uppercase";
+                }
+            }
+        }
+
+        // --- LOGIQUE MULTIJOUEUR ---
+
+        // Créer
+        document.getElementById('btn-create').addEventListener('click', () => {
+            gameId = Math.random().toString(36).substring(2, 6).toUpperCase();
+            isHost = true;
+            const randomLoc = LOCATIONS[Math.floor(Math.random() * LOCATIONS.length)];
+
+            set(ref(db, 'games_geo/' + gameId), {
+                host: myUid,
+                status: 'waiting',
+                target: randomLoc
+            });
+
+            document.getElementById('btn-create').classList.add('hidden');
+            document.getElementById('lobby-ui').classList.remove('hidden');
+            document.getElementById('display-code').innerText = gameId;
+
+            listenGame(gameId);
+        });
+
+        // Rejoindre
+        document.getElementById('btn-join').addEventListener('click', async () => {
+            const code = document.getElementById('input-code').value.toUpperCase().trim();
+            if(!code) return;
+
+            const gRef = ref(db, 'games_geo/' + code);
+            const snap = await get(gRef);
+
+            if(snap.exists() && snap.val().status === 'waiting') {
+                gameId = code;
+                isHost = false;
+                
+                update(gRef, { guest: myUid, status: 'playing' });
+                
+                // Démarrer avec la target du host
+                startGame('online', snap.val().target);
+                listenGame(code);
+            }
+        });
+
+        function listenGame(id) {
+            onValue(ref(db, 'games_geo/' + id), (snap) => {
+                const data = snap.val();
+                if(!data) return;
+
+                // Host détecte que le jeu commence
+                if(isHost && data.status === 'playing' && document.getElementById('game-ui').classList.contains('hidden')) {
+                    startGame('online', data.target);
+                }
+
+                // Vérifier si tout le monde a deviné
+                if(data.guesses && data.guesses[data.host] && data.guesses[data.guest]) {
+                    const myG = data.guesses[myUid];
+                    const oppUid = isHost ? data.guest : data.host;
+                    const oppG = data.guesses[oppUid];
+
+                    if(myG && oppG) {
+                        // Petit délai pour voir l'anim
+                        setTimeout(() => {
+                            showEndScreen(myG.distance, oppG.distance);
+                        }, 1000);
+                    }
+                }
+            });
+        }
+
+        // --- UTILITAIRES ---
+        function haversineDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371; // Rayon Terre km
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            return R * c;
+        }
+
+        window.setMode = (mode) => {
+            document.getElementById('panel-solo').classList.toggle('hidden', mode !== 'solo');
+            document.getElementById('panel-online').classList.toggle('hidden', mode !== 'online');
+            
+            if(mode === 'online') {
+                document.getElementById('tab-online').className = "flex-1 py-2 rounded font-bold text-xs uppercase bg-purple-600 text-white shadow transition-all";
+                document.getElementById('tab-solo').className = "flex-1 py-2 rounded font-bold text-xs uppercase text-gray-400 hover:bg-white/5 transition";
+            } else {
+                document.getElementById('tab-solo').className = "flex-1 py-2 rounded font-bold text-xs uppercase bg-blue-600 text-white shadow transition-all";
+                document.getElementById('tab-online').className = "flex-1 py-2 rounded font-bold text-xs uppercase text-gray-400 hover:bg-white/5 transition";
+            }
+        };
+    </script>
+</body>
+</html>
