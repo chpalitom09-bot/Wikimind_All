@@ -23,11 +23,10 @@
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #050505; color: white; overscroll-behavior: none; }
         
-        /* GRILLE PUISSANCE 4 */
         .p4-board {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
-            gap: 8px;
+            gap: 6px;
             padding: 10px;
             background: rgba(30, 30, 40, 0.95);
             border-radius: 16px;
@@ -37,7 +36,6 @@
             z-index: 10;
         }
 
-        /* CELLULES */
         .cell {
             aspect-ratio: 1/1;
             background-color: #0a0a0a;
@@ -48,16 +46,11 @@
             overflow: hidden;
         }
         
-        /* INTERACTION */
-        .p4-board.your-turn .cell:hover { background-color: #1a1a1a; }
-        .col-hover { background-color: rgba(255, 255, 255, 0.05) !important; }
-
-        /* JETONS */
         .chip {
             width: 100%; height: 100%;
             border-radius: 50%;
             position: absolute; top: 0; left: 0;
-            transform: translateY(-500%); /* Départ du haut */
+            transform: translateY(-600%);
             animation: drop 0.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
             box-shadow: inset 0 -4px 4px rgba(0,0,0,0.3), 0 4px 8px rgba(0,0,0,0.4);
         }
@@ -66,13 +59,6 @@
         .chip.yellow { background: radial-gradient(circle at 30% 30%, #f1c40f, #f39c12); }
 
         @keyframes drop { to { transform: translateY(0); } }
-
-        /* INDICATEUR DE VICTOIRE */
-        .winning-cell::after {
-            content: ''; position: absolute; inset: 0;
-            border: 4px solid white; border-radius: 50%;
-            animation: pulse 1s infinite;
-        }
     </style>
 </head>
 <body class="flex flex-col h-screen overflow-hidden">
@@ -93,48 +79,45 @@
         </div>
     </header>
 
-    <!-- LAYOUT PRINCIPAL -->
+    <!-- MAIN -->
     <div class="flex-grow flex flex-col lg:flex-row h-full overflow-hidden relative">
 
-        <!-- ZONE DE JEU -->
+        <!-- GAME AREA -->
         <div class="flex-grow bg-[#050505] relative flex flex-col items-center justify-center p-4 order-1 lg:order-2">
             
-            <!-- HUD ADVERSAIRE -->
+            <!-- OPPONENT HUD -->
             <div class="w-full max-w-[500px] flex justify-between items-end mb-4 px-2">
                 <div class="flex items-center gap-3">
-                    <div id="p2-avatar" class="w-10 h-10 rounded-full bg-zinc-800 border-2 border-zinc-700 flex items-center justify-center text-xl transition-colors">🟡</div>
+                    <div id="p2-avatar" class="w-10 h-10 rounded-full bg-zinc-800 border-2 border-zinc-700 flex items-center justify-center text-xl transition-colors opacity-50">🟡</div>
                     <div>
                         <div id="opponent-name-hud" class="text-sm font-bold text-gray-400">Adversaire</div>
                         <div id="opponent-status" class="text-[10px] text-gray-600 uppercase">En attente</div>
                     </div>
                 </div>
-            </div>
-
-            <!-- PLATEAU -->
-            <div id="board-container" class="w-full max-w-[500px] aspect-[7/6] relative">
-                <!-- Grille générée en JS -->
-                <div id="game-board" class="p4-board w-full h-full"></div>
-                
-                <!-- Overlay "Tour" -->
-                <div id="turn-overlay" class="absolute top-4 left-1/2 -translate-x-1/2 bg-black/80 backdrop-blur px-4 py-2 rounded-full border border-zinc-700 z-20 text-xs font-bold uppercase tracking-widest pointer-events-none transition-opacity duration-300 opacity-0">
-                    C'est à vous !
+                <div id="game-status-badge" class="px-3 py-1 bg-zinc-800 rounded text-[10px] font-bold uppercase text-gray-500">
+                    En attente
                 </div>
             </div>
 
-            <!-- HUD JOUEUR -->
+            <!-- BOARD -->
+            <div id="board-container" class="w-full max-w-[450px] aspect-[7/6] relative">
+                <div id="game-board" class="p4-board w-full h-full"></div>
+            </div>
+
+            <!-- PLAYER HUD -->
             <div class="w-full max-w-[500px] flex justify-between items-start mt-4 px-2">
                 <div class="flex items-center gap-3">
-                    <div id="p1-avatar" class="w-10 h-10 rounded-full bg-zinc-800 border-2 border-zinc-700 flex items-center justify-center text-xl transition-colors">🔴</div>
+                    <div id="p1-avatar" class="w-10 h-10 rounded-full bg-zinc-800 border-2 border-zinc-700 flex items-center justify-center text-xl transition-colors opacity-50">🔴</div>
                     <div>
                         <div id="my-name-hud" class="text-sm font-bold text-white">Moi</div>
-                        <div class="text-[10px] text-gray-400 font-mono">ADVERSAIRE IA ou ONLINE</div>
+                        <div class="text-[10px] text-gray-400 font-mono" id="my-role-display">SPECTATEUR</div>
                     </div>
                 </div>
                 <button onclick="resetGame()" id="btn-restart" class="hidden px-4 py-2 bg-zinc-800 rounded-lg text-xs font-bold hover:bg-zinc-700 transition">REJOUER</button>
             </div>
         </div>
 
-        <!-- SIDEBAR CONTROLES -->
+        <!-- CONTROLS -->
         <div class="w-full lg:w-96 border-t lg:border-t-0 lg:border-r border-border bg-[#0a0a0a] flex flex-col z-10 order-2 lg:order-1 h-[35vh] lg:h-auto shrink-0">
             <div class="flex border-b border-border text-xs font-bold uppercase tracking-widest text-center shrink-0">
                 <button onclick="switchTab('online')" id="tab-online" class="flex-1 py-3 bg-zinc-900 text-white border-b-2 border-red-500">En Ligne</button>
@@ -143,39 +126,44 @@
 
             <div class="flex-grow overflow-y-auto p-4 relative">
                 
-                <!-- ONLINE PANEL -->
+                <!-- ONLINE -->
                 <div id="panel-online" class="space-y-4">
-                    <div class="bg-red-900/10 p-4 rounded-xl border border-red-900/30">
-                        <h3 class="text-xs font-bold uppercase text-red-400 mb-2">1. Créer une partie</h3>
-                        <button id="btn-create" class="w-full py-3 bg-red-600 text-white font-bold rounded-lg text-xs uppercase tracking-widest shadow-lg active:scale-95 transition">
-                            Générer Code
-                        </button>
-                        <div id="lobby-wait" class="hidden mt-3 text-center">
-                            <div id="display-code" class="text-2xl font-mono font-black text-white bg-black p-2 rounded select-all border border-red-500/50">----</div>
-                            <div class="mt-2 text-[10px] text-red-300 animate-pulse">En attente d'un joueur...</div>
+                    <div id="online-controls">
+                        <div class="bg-red-900/10 p-4 rounded-xl border border-red-900/30 mb-4">
+                            <h3 class="text-xs font-bold uppercase text-red-400 mb-2">Créer une partie</h3>
+                            <button id="btn-create" class="w-full py-3 bg-red-600 text-white font-bold rounded-lg text-xs uppercase tracking-widest shadow-lg active:scale-95 transition">
+                                Générer Code
+                            </button>
+                            <div id="lobby-wait" class="hidden mt-3 text-center">
+                                <div id="display-code" class="text-2xl font-mono font-black text-white bg-black p-2 rounded select-all border border-red-500/50">----</div>
+                                <div class="mt-2 text-[10px] text-red-300 animate-pulse">En attente d'un joueur...</div>
+                            </div>
+                        </div>
+
+                        <div class="text-center text-[10px] font-bold text-gray-600 mb-4">- OU -</div>
+
+                        <div class="bg-zinc-900/50 p-4 rounded-xl border border-zinc-800">
+                            <h3 class="text-xs font-bold uppercase text-yellow-400 mb-2">Rejoindre</h3>
+                            <div class="flex gap-2">
+                                <input type="text" id="input-code" placeholder="CODE" class="flex-1 bg-black border border-zinc-700 rounded-lg px-3 text-center uppercase font-mono text-white focus:border-yellow-500 outline-none">
+                                <button id="btn-join" class="px-4 bg-yellow-600 text-white font-bold rounded-lg text-xs uppercase active:scale-95 transition">GO</button>
+                            </div>
                         </div>
                     </div>
-
-                    <div class="text-center text-[10px] font-bold text-gray-600">- OU -</div>
-
-                    <div class="bg-zinc-900/50 p-4 rounded-xl border border-zinc-800">
-                        <h3 class="text-xs font-bold uppercase text-yellow-400 mb-2">2. Rejoindre</h3>
-                        <div class="flex gap-2">
-                            <input type="text" id="input-code" placeholder="CODE ICI" class="flex-1 bg-black border border-zinc-700 rounded-lg px-3 text-center uppercase font-mono text-white focus:border-yellow-500 outline-none">
-                            <button id="btn-join" class="px-4 bg-yellow-600 text-white font-bold rounded-lg text-xs uppercase active:scale-95 transition">GO</button>
-                        </div>
+                    
+                    <div id="online-active-ui" class="hidden bg-green-900/10 p-4 rounded-xl border border-green-900/30 text-center">
+                        <div class="text-green-500 font-bold text-sm uppercase">Partie en cours</div>
+                        <div class="text-[10px] text-gray-400 mt-1">Ne quittez pas la page</div>
                     </div>
                 </div>
 
-                <!-- LOCAL PANEL -->
+                <!-- LOCAL -->
                 <div id="panel-local" class="hidden space-y-4">
                     <button onclick="startBotGame()" class="w-full p-4 rounded-xl bg-zinc-800 border border-zinc-700 text-left active:scale-95 transition hover:border-white">
                         <div class="font-bold text-sm text-white">🤖 Vs WikiMind AI</div>
-                        <div class="text-xs text-gray-400">IA entraînante (Niveau Moyen)</div>
                     </button>
                     <button onclick="startLocalGame()" class="w-full p-4 rounded-xl bg-black border border-zinc-800 text-left active:scale-95 transition hover:border-white">
                         <div class="font-bold text-sm text-white">👥 1 vs 1 Local</div>
-                        <div class="text-xs text-gray-400">Jouez à deux sur cet écran</div>
                     </button>
                 </div>
 
@@ -187,13 +175,12 @@
         </div>
     </div>
 
-    <!-- MODAL RESULTAT -->
+    <!-- MODAL FIN -->
     <div id="game-over-modal" class="hidden fixed inset-0 bg-black/90 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-zinc-900 border border-zinc-700 p-6 rounded-2xl text-center max-w-sm w-full transform transition-all scale-100">
+        <div class="bg-zinc-900 border border-zinc-700 p-6 rounded-2xl text-center max-w-sm w-full">
             <div class="text-4xl mb-2" id="result-emoji">🏆</div>
-            <h2 id="result-title" class="text-2xl font-black uppercase text-white mb-2">VICTOIRE</h2>
-            <p id="result-desc" class="text-sm text-gray-400 mb-6">Bien joué !</p>
-            <button onclick="location.reload()" class="w-full bg-white text-black font-bold py-3 rounded-xl uppercase text-xs tracking-widest hover:bg-gray-200">Nouvelle Partie</button>
+            <h2 id="result-title" class="text-2xl font-black uppercase text-white mb-2">FIN</h2>
+            <button onclick="location.reload()" class="w-full bg-white text-black font-bold py-3 rounded-xl uppercase text-xs tracking-widest hover:bg-gray-200">Menu Principal</button>
         </div>
     </div>
 
@@ -202,7 +189,7 @@
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-auth.js";
         import { getDatabase, ref, set, onValue, update, get } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-database.js";
 
-        // FIREBASE CONFIG
+        // CONFIGURATION
         const firebaseConfig = {
             apiKey: "AIzaSyCy5oWMLf1hQmFgAqZDeNPJmfQj71u6Wio",
             authDomain: "wikimindchess.firebaseapp.com",
@@ -217,19 +204,17 @@
         const auth = getAuth(app);
         const db = getDatabase(app);
 
-        // VARS
+        // ETAT DU JEU
         const ROWS = 6;
         const COLS = 7;
-        let board = []; 
+        let board = [];
         let currentPlayer = 1; // 1 = Red, 2 = Yellow
         let gameActive = false;
-        let gameMode = 'local'; // local, bot, online
-        let playerColor = 1; // Used in online/bot (1 or 2)
-        
-        // Online Vars
-        let myUid = null;
-        let myName = "Guest_" + Math.floor(Math.random()*1000);
+        let gameMode = 'online'; // local, bot, online
+        let myPlayerColor = 0; // 0 = Spectator, 1 = Red, 2 = Yellow
         let gameId = null;
+        let myUid = null;
+        let myName = "Guest";
 
         // AUTH
         signInAnonymously(auth);
@@ -238,7 +223,6 @@
                 myUid = user.uid;
                 document.getElementById('conn-status').classList.replace('bg-red-500', 'bg-green-500');
                 
-                // Fetch Name
                 const uRef = ref(db, 'users/' + myUid);
                 const snap = await get(uRef);
                 if(snap.exists()) {
@@ -251,57 +235,48 @@
             }
         });
 
-        // --- GAME LOGIC ---
+        // --- MOTEUR DE JEU ---
 
-        function initBoardUI() {
+        function initBoard() {
             const container = document.getElementById('game-board');
             container.innerHTML = '';
-            board = Array(ROWS).fill().map(() => Array(COLS).fill(0)); // 0=Empty, 1=Red, 2=Yellow
+            board = Array(ROWS).fill().map(() => Array(COLS).fill(0));
 
             for (let r = 0; r < ROWS; r++) {
                 for (let c = 0; c < COLS; c++) {
                     const cell = document.createElement('div');
                     cell.className = 'cell';
                     cell.dataset.c = c;
-                    cell.dataset.r = r;
-                    // Hover effect logic
-                    cell.addEventListener('mouseenter', () => highlightCol(c, true));
-                    cell.addEventListener('mouseleave', () => highlightCol(c, false));
-                    cell.addEventListener('click', () => handleColumnClick(c));
+                    cell.onclick = () => handleColumnClick(c);
                     container.appendChild(cell);
                 }
             }
-            updateTurnUI();
-        }
-
-        function highlightCol(colIndex, active) {
-            if (!gameActive) return;
-            // Only highlight if it's my turn
-            if (gameMode === 'online' && currentPlayer !== playerColor) return;
-            if (gameMode === 'bot' && currentPlayer !== 1) return;
-
-            const cells = document.querySelectorAll(`.cell[data-c="${colIndex}"]`);
-            cells.forEach(cell => {
-                if(active) cell.classList.add('bg-white/10');
-                else cell.classList.remove('bg-white/10');
-            });
+            updateUI();
         }
 
         function handleColumnClick(col) {
-            if (!gameActive) return;
-            
-            // Validation du tour
-            if (gameMode === 'online' && currentPlayer !== playerColor) {
-                log("Pas votre tour !");
+            if (!gameActive) {
+                if(gameMode === 'online' && !gameId) log("Créez ou rejoignez une partie.");
+                else if(gameMode === 'online') log("En attente de l'adversaire...");
                 return;
             }
+
+            // Vérification stricte du tour en ligne
+            if (gameMode === 'online') {
+                if (myPlayerColor !== currentPlayer) {
+                    log("Ce n'est pas votre tour !");
+                    return;
+                }
+            }
+
+            // Vérification tour bot
             if (gameMode === 'bot' && currentPlayer !== 1) return;
 
             makeMove(col);
         }
 
         function makeMove(col) {
-            // Find lowest empty row
+            // Trouver la première case vide en partant du bas
             let row = -1;
             for (let r = ROWS - 1; r >= 0; r--) {
                 if (board[r][col] === 0) {
@@ -310,234 +285,118 @@
                 }
             }
 
-            if (row === -1) return; // Column full
+            if (row === -1) return; // Colonne pleine
 
-            // Update State
+            // 1. Mise à jour locale (Optimiste)
             board[row][col] = currentPlayer;
-            
-            // UI Animation
             animateDrop(row, col, currentPlayer);
 
-            // Win Check
+            // 2. Vérification Victoire
             if (checkWin(row, col, currentPlayer)) {
-                gameActive = false;
-                highlightWin(row, col, currentPlayer);
-                
-                if (gameMode === 'online') {
-                    update(ref(db, 'games_p4/' + gameId), {
-                        board: JSON.stringify(board),
-                        winner: currentPlayer === 1 ? 'red' : 'yellow',
-                        status: 'finished'
-                    });
-                } else {
-                    setTimeout(() => showEndScreen(currentPlayer === 1 ? "Rouges Gagnent !" : "Jaunes Gagnent !", "🏆"), 1000);
-                }
+                handleGameOver(currentPlayer);
                 return;
             }
 
-            // Draw Check
-            if (board.every(row => row.every(cell => cell !== 0))) {
-                gameActive = false;
-                if(gameMode === 'online') update(ref(db, 'games_p4/' + gameId), { status: 'draw' });
-                showEndScreen("Match Nul", "🤝");
-                return;
-            }
-
-            // Next Turn
+            // 3. Changement de joueur
             const nextPlayer = currentPlayer === 1 ? 2 : 1;
             currentPlayer = nextPlayer;
-            updateTurnUI();
+            updateUI();
 
-            // Sync Online
+            // 4. Synchronisation
             if (gameMode === 'online') {
                 update(ref(db, 'games_p4/' + gameId), {
                     board: JSON.stringify(board),
                     turn: nextPlayer
                 });
-            }
-
-            // Trigger Bot
-            if (gameMode === 'bot' && currentPlayer === 2 && gameActive) {
-                setTimeout(playBotMove, 600);
+            } else if (gameMode === 'bot' && nextPlayer === 2) {
+                setTimeout(playBot, 700);
             }
         }
 
         function animateDrop(row, col, player) {
             const index = row * COLS + col;
-            const cell = document.getElementById('game-board').children[index];
+            const container = document.getElementById('game-board');
+            // Vérifier si un jeton existe déjà (pour éviter les doublons lors de la sync)
+            if(container.children[index].querySelector('.chip')) return;
+
             const chip = document.createElement('div');
             chip.className = `chip ${player === 1 ? 'red' : 'yellow'}`;
-            cell.appendChild(chip);
+            container.children[index].appendChild(chip);
         }
 
-        function updateTurnUI() {
-            const p1Avatar = document.getElementById('p1-avatar');
-            const p2Avatar = document.getElementById('p2-avatar');
-            const boardEl = document.getElementById('game-board');
-            const overlay = document.getElementById('turn-overlay');
+        function updateUI() {
+            const p1 = document.getElementById('p1-avatar');
+            const p2 = document.getElementById('p2-avatar');
+            const badge = document.getElementById('game-status-badge');
 
-            p1Avatar.style.borderColor = currentPlayer === 1 ? '#ef4444' : '#3f3f46';
-            p1Avatar.style.transform = currentPlayer === 1 ? 'scale(1.1)' : 'scale(1)';
+            // Opacité pour montrer qui joue
+            p1.style.opacity = currentPlayer === 1 ? '1' : '0.3';
+            p1.style.transform = currentPlayer === 1 ? 'scale(1.1)' : 'scale(1)';
             
-            p2Avatar.style.borderColor = currentPlayer === 2 ? '#eab308' : '#3f3f46';
-            p2Avatar.style.transform = currentPlayer === 2 ? 'scale(1.1)' : 'scale(1)';
+            p2.style.opacity = currentPlayer === 2 ? '1' : '0.3';
+            p2.style.transform = currentPlayer === 2 ? 'scale(1.1)' : 'scale(1)';
 
-            boardEl.className = `p4-board w-full h-full ${gameActive ? 'your-turn' : ''}`;
-
-            if(gameMode === 'online') {
-                if(currentPlayer === playerColor) {
-                    overlay.innerText = "À TOI !";
-                    overlay.classList.remove('opacity-0');
-                    setTimeout(() => overlay.classList.add('opacity-0'), 1500);
+            if (gameMode === 'online') {
+                if (!gameActive) {
+                    badge.innerText = "En attente...";
+                    badge.className = "px-3 py-1 bg-zinc-800 rounded text-[10px] font-bold uppercase text-gray-500";
+                } else if (currentPlayer === myPlayerColor) {
+                    badge.innerText = "À TOI DE JOUER";
+                    badge.className = "px-3 py-1 bg-green-600 rounded text-[10px] font-bold uppercase text-white animate-pulse";
+                } else {
+                    badge.innerText = "TOUR ADVERSAIRE";
+                    badge.className = "px-3 py-1 bg-red-900 rounded text-[10px] font-bold uppercase text-red-200";
                 }
-            } else if (gameMode === 'bot') {
-                 if(currentPlayer === 1) {
-                    overlay.innerText = "À TOI !";
-                    overlay.classList.remove('opacity-0');
-                    setTimeout(() => overlay.classList.add('opacity-0'), 1500);
-                 }
+            } else {
+                badge.innerText = currentPlayer === 1 ? "TOUR ROUGE" : "TOUR JAUNE";
+                badge.className = "px-3 py-1 bg-zinc-700 rounded text-[10px] font-bold uppercase text-white";
             }
         }
 
-        // --- WIN DETECTION ---
-        function checkWin(r, c, player) {
-            // Directions: [dr, dc]
-            const directions = [
-                [0, 1],  // Horizontal
-                [1, 0],  // Vertical
-                [1, 1],  // Diag Down-Right
-                [1, -1]  // Diag Down-Left
-            ];
-
-            for (let [dr, dc] of directions) {
-                let count = 1;
-                // Check positive direction
-                for (let i = 1; i < 4; i++) {
-                    const nr = r + dr * i, nc = c + dc * i;
-                    if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS || board[nr][nc] !== player) break;
-                    count++;
-                }
-                // Check negative direction
-                for (let i = 1; i < 4; i++) {
-                    const nr = r - dr * i, nc = c - dc * i;
-                    if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS || board[nr][nc] !== player) break;
-                    count++;
-                }
-                if (count >= 4) return true;
-            }
-            return false;
-        }
-
-        function highlightWin(r, c, player) {
-            // (Simplification visuelle pour la démo : on ne surligne pas exactement les 4 jetons gagnants 
-            // car cela demande de repasser l'algo, mais on fait clignoter le plateau)
-            document.getElementById('game-board').style.borderColor = player === 1 ? '#ef4444' : '#eab308';
-        }
-
-        // --- BOT (Simple Heuristic) ---
-        function playBotMove() {
+        // --- BOT ---
+        function playBot() {
             if(!gameActive) return;
+            // IA très simple : aléatoire valide
+            let validCols = [];
+            for(let c=0; c<COLS; c++) if(board[0][c] === 0) validCols.push(c);
             
-            // 1. Can Bot win?
-            for(let c=0; c<COLS; c++) {
-                if(canPlay(c)) {
-                    let r = getRow(c);
-                    board[r][c] = 2;
-                    if(checkWin(r, c, 2)) {
-                        board[r][c] = 0; // Reset virtual move
-                        makeMove(c);
-                        return;
-                    }
-                    board[r][c] = 0;
-                }
-            }
-
-            // 2. Must Block Player?
-            for(let c=0; c<COLS; c++) {
-                if(canPlay(c)) {
-                    let r = getRow(c);
-                    board[r][c] = 1; // Pretend player plays here
-                    if(checkWin(r, c, 1)) {
-                        board[r][c] = 0;
-                        makeMove(c); // Block it!
-                        return;
-                    }
-                    board[r][c] = 0;
-                }
-            }
-
-            // 3. Random valid move (prefer center)
-            const preference = [3, 2, 4, 1, 5, 0, 6];
-            for(let col of preference) {
-                if(canPlay(col)) {
-                    makeMove(col);
-                    return;
-                }
+            if(validCols.length > 0) {
+                const randomCol = validCols[Math.floor(Math.random() * validCols.length)];
+                makeMove(randomCol);
             }
         }
-        
-        function canPlay(c) { return board[0][c] === 0; }
-        function getRow(c) {
-            for(let r=ROWS-1; r>=0; r--) if(board[r][c] === 0) return r;
-            return -1;
-        }
 
-        // --- GAME MODES ---
+        // --- LOGIQUE MULTIJOUEUR ---
 
-        window.startLocalGame = () => {
-            gameMode = 'local';
-            gameActive = true;
-            currentPlayer = 1;
-            playerColor = 1; // Not relevant in local
-            document.getElementById('opponent-name-hud').innerText = "Joueur 2";
-            document.getElementById('opponent-status').innerText = "Humain";
-            initBoardUI();
-            document.getElementById('btn-restart').classList.remove('hidden');
-            log("Mode Local Démarré");
-        };
-
-        window.startBotGame = () => {
-            gameMode = 'bot';
-            gameActive = true;
-            currentPlayer = 1;
-            playerColor = 1;
-            document.getElementById('opponent-name-hud').innerText = "WikiMind AI";
-            document.getElementById('opponent-status').innerText = "Niveau: Moyen";
-            initBoardUI();
-            document.getElementById('btn-restart').classList.remove('hidden');
-            log("Mode IA Démarré");
-        };
-
-        window.resetGame = () => {
-            if(gameMode === 'local') window.startLocalGame();
-            if(gameMode === 'bot') window.startBotGame();
-        }
-
-        // --- ONLINE LOGIC ---
-
+        // CRÉER
         document.getElementById('btn-create').addEventListener('click', () => {
             gameId = Math.random().toString(36).substring(2, 6).toUpperCase();
             gameMode = 'online';
-            playerColor = 1; // Creator is Red
-            
-            initBoardUI();
-            gameActive = false; // Wait for opponent
+            myPlayerColor = 1; // Créateur = Rouge
+            currentPlayer = 1;
+            gameActive = false; // Bloqué tant que personne ne rejoint
 
+            initBoard();
+            document.getElementById('my-role-display').innerText = "JOUEUR 1 (ROUGE)";
+
+            // Création DB
             set(ref(db, 'games_p4/' + gameId), {
-                playerRed: myName,
+                host: myName,
                 board: JSON.stringify(board),
                 turn: 1,
                 status: 'waiting'
             });
 
+            // UI
             document.getElementById('btn-create').classList.add('hidden');
             document.getElementById('lobby-wait').classList.remove('hidden');
             document.getElementById('display-code').innerText = gameId;
-            log(`Salle créée: ${gameId}`);
-            
+            log(`Salle créée : ${gameId}`);
+
             listenGame(gameId);
         });
 
+        // REJOINDRE
         document.getElementById('btn-join').addEventListener('click', async () => {
             const code = document.getElementById('input-code').value.toUpperCase().trim();
             if(!code) return;
@@ -548,94 +407,163 @@
             if(snap.exists() && snap.val().status === 'waiting') {
                 gameId = code;
                 gameMode = 'online';
-                playerColor = 2; // Joiner is Yellow
-
+                myPlayerColor = 2; // Rejoignant = Jaune
+                
+                // Important : On met le jeu en actif dans la DB pour débloquer le créateur
                 update(gRef, {
-                    playerYellow: myName,
+                    guest: myName,
                     status: 'active'
                 });
 
-                document.getElementById('opponent-name-hud').innerText = snap.val().playerRed;
-                document.getElementById('opponent-status').innerText = "Connecté";
+                initBoard();
                 
-                initBoardUI();
+                // Charger le plateau existant si besoin (rare au début)
+                if(snap.val().board) board = JSON.parse(snap.val().board);
+                
+                document.getElementById('my-role-display').innerText = "JOUEUR 2 (JAUNE)";
+                document.getElementById('opponent-name-hud').innerText = snap.val().host;
+                
+                // Masquer controls
+                document.getElementById('online-controls').classList.add('hidden');
+                document.getElementById('online-active-ui').classList.remove('hidden');
+
                 gameActive = true;
-                listenGame(code);
                 log("Partie rejointe !");
+                listenGame(code);
             } else {
-                log("Code invalide ou complet.");
+                log("Code invalide ou partie pleine.");
             }
         });
 
+        // ÉCOUTER
         function listenGame(id) {
-            onValue(ref(db, 'games_p4/' + id), (snap) => {
+            const gRef = ref(db, 'games_p4/' + id);
+            
+            onValue(gRef, (snap) => {
                 const data = snap.val();
                 if(!data) return;
 
-                // Game Start for creator
-                if(data.status === 'active' && !gameActive && playerColor === 1) {
+                // 1. Détection début de partie (pour le créateur)
+                if(data.status === 'active' && !gameActive && myPlayerColor === 1) {
                     gameActive = true;
                     document.getElementById('lobby-wait').classList.add('hidden');
-                    document.getElementById('opponent-name-hud').innerText = data.playerYellow;
-                    document.getElementById('opponent-status').innerText = "Connecté";
-                    log("Adversaire a rejoint !");
+                    document.getElementById('opponent-name-hud').innerText = data.guest || "Adversaire";
+                    document.getElementById('online-active-ui').classList.remove('hidden');
+                    document.getElementById('online-controls').classList.add('hidden');
+                    log("Adversaire connecté ! À vous.");
+                    updateUI();
                 }
 
-                // Sync Move
+                // 2. Synchronisation du Tour
+                if(data.turn) {
+                    currentPlayer = data.turn;
+                    updateUI();
+                }
+
+                // 3. Synchronisation du Plateau (Uniquement si différent)
                 if(data.board) {
                     const serverBoard = JSON.parse(data.board);
-                    // Check diff to animate
+                    let hasChanged = false;
+
                     for(let r=0; r<ROWS; r++){
                         for(let c=0; c<COLS; c++){
+                            // Si le serveur a un jeton que je n'ai pas encore
                             if(board[r][c] === 0 && serverBoard[r][c] !== 0) {
                                 board[r][c] = serverBoard[r][c];
                                 animateDrop(r, c, serverBoard[r][c]);
+                                hasChanged = true;
                             }
                         }
                     }
-                    currentPlayer = data.turn;
-                    updateTurnUI();
                 }
 
-                // Game Over sync
-                if(data.status === 'finished' || data.status === 'draw') {
+                // 4. Fin de partie
+                if(data.winner) {
                     gameActive = false;
                     setTimeout(() => {
-                        let msg = "Match Nul";
-                        if(data.winner) {
-                            if(data.winner === 'red') msg = (playerColor === 1) ? "VICTOIRE !" : "DÉFAITE...";
-                            else msg = (playerColor === 2) ? "VICTOIRE !" : "DÉFAITE...";
-                        }
-                        showEndScreen(msg, data.winner ? "🏁" : "🤝");
+                        const winnerText = data.winner === 1 ? "Rouge" : "Jaune";
+                        showEndModal(winnerText + " gagne !", "🏆");
                     }, 500);
                 }
             });
         }
 
-        // UTILS
-        function log(m) {
-            const c = document.getElementById('logs-container');
-            const d = document.createElement('div');
-            d.innerText = "> " + m;
-            c.appendChild(d);
-            c.scrollTop = c.scrollHeight;
+        // --- VICTOIRE ---
+        function checkWin(r, c, player) {
+            const dirs = [[0,1], [1,0], [1,1], [1,-1]];
+            for(let d of dirs) {
+                let count = 1;
+                for(let i=1; i<4; i++) {
+                    const nr = r + d[0]*i, nc = c + d[1]*i;
+                    if(nr<0||nr>=ROWS||nc<0||nc>=COLS||board[nr][nc]!==player) break;
+                    count++;
+                }
+                for(let i=1; i<4; i++) {
+                    const nr = r - d[0]*i, nc = c - d[1]*i;
+                    if(nr<0||nr>=ROWS||nc<0||nc>=COLS||board[nr][nc]!==player) break;
+                    count++;
+                }
+                if(count>=4) return true;
+            }
+            return false;
         }
 
-        window.switchTab = (t) => {
-            document.getElementById('panel-online').classList.toggle('hidden', t !== 'online');
-            document.getElementById('panel-local').classList.toggle('hidden', t !== 'local');
-            document.getElementById('tab-online').className = t === 'online' ? "flex-1 py-3 bg-zinc-900 text-white border-b-2 border-red-500" : "flex-1 py-3 hover:bg-zinc-900 text-gray-500";
-            document.getElementById('tab-local').className = t === 'local' ? "flex-1 py-3 bg-zinc-900 text-white border-b-2 border-red-500" : "flex-1 py-3 hover:bg-zinc-900 text-gray-500";
-        };
+        function handleGameOver(winner) {
+            gameActive = false;
+            if(gameMode === 'online') {
+                update(ref(db, 'games_p4/' + gameId), { winner: winner });
+            } else {
+                setTimeout(() => showEndModal((winner === 1 ? "Rouge" : "Jaune") + " gagne !", "🏆"), 500);
+            }
+        }
 
-        function showEndScreen(title, emoji) {
+        function showEndModal(title, emoji) {
             document.getElementById('game-over-modal').classList.remove('hidden');
             document.getElementById('result-title').innerText = title;
             document.getElementById('result-emoji').innerText = emoji;
         }
 
-        // Init Layout
-        initBoardUI();
+        // --- UTILITAIRES ---
+        function log(msg) {
+            const div = document.createElement('div');
+            div.innerText = "> " + msg;
+            document.getElementById('logs-container').prepend(div);
+        }
+
+        window.switchTab = (tab) => {
+            document.getElementById('panel-online').classList.toggle('hidden', tab !== 'online');
+            document.getElementById('panel-local').classList.toggle('hidden', tab !== 'local');
+            document.getElementById('tab-online').className = tab === 'online' ? "flex-1 py-3 bg-zinc-900 text-white border-b-2 border-red-500" : "flex-1 py-3 hover:bg-zinc-900 text-gray-500";
+            document.getElementById('tab-local').className = tab === 'local' ? "flex-1 py-3 bg-zinc-900 text-white border-b-2 border-red-500" : "flex-1 py-3 hover:bg-zinc-900 text-gray-500";
+        }
+
+        window.startLocalGame = () => {
+            gameMode = 'local';
+            gameActive = true;
+            currentPlayer = 1;
+            initBoard();
+            document.getElementById('my-role-display').innerText = "LOCAL (1 vs 1)";
+            document.getElementById('btn-restart').classList.remove('hidden');
+            log("Mode Local activé");
+        }
+
+        window.startBotGame = () => {
+            gameMode = 'bot';
+            gameActive = true;
+            currentPlayer = 1;
+            initBoard();
+            document.getElementById('my-role-display').innerText = "VS IA";
+            document.getElementById('btn-restart').classList.remove('hidden');
+            log("Mode IA activé");
+        }
+
+        window.resetGame = () => {
+            if(gameMode === 'local') window.startLocalGame();
+            if(gameMode === 'bot') window.startBotGame();
+        }
+
+        // Init
+        initBoard();
 
     </script>
 </body>
