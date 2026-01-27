@@ -42,7 +42,7 @@
             overflow-x: hidden;
         }
 
-        /* Grain Texture (comme index.html) */
+        /* Grain Texture */
         .bg-grain {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E");
@@ -82,7 +82,7 @@
         /* Button Loader */
         .loader {
             border: 2px solid rgba(255,255,255,0.3); border-left-color: #fff;
-            border-radius: 50%; width: 20px; height: 20px;
+            border-radius: 50%; width: 16px; height: 16px;
             animation: spin 1s linear infinite; display: none;
         }
         .dark-mode .loader { border-color: rgba(0,0,0,0.3); border-left-color: #000; }
@@ -96,7 +96,7 @@
 <body class="flex flex-col min-h-screen relative justify-center items-center p-4">
     <div class="bg-grain"></div>
 
-    <!-- THEME TOGGLE (Top Right) -->
+    <!-- THEME TOGGLE -->
     <button onclick="toggleTheme()" class="absolute top-6 right-6 w-10 h-10 rounded-full border border-gray-200 dark:border-gray-800 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-zinc-800 transition z-50">
         <svg id="theme-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
     </button>
@@ -116,7 +116,7 @@
             <p class="text-sm text-gray-500 font-medium">Une seule identité pour tout l'écosystème.</p>
         </div>
 
-        <!-- NOTIFICATIONS (Error/Success) -->
+        <!-- NOTIFICATIONS -->
         <div id="notification-area" class="hidden mb-6 p-4 rounded-xl text-xs font-bold text-center"></div>
 
         <!-- --- VIEW: LOGIN --- -->
@@ -135,9 +135,9 @@
                     <button type="button" onclick="resetPassword()" class="text-xs font-bold text-gray-400 hover:text-black dark:hover:text-white transition">Mot de passe oublié ?</button>
                 </div>
 
-                <button type="submit" class="w-full py-4 rounded-xl bg-black dark:bg-white text-white dark:text-black font-bold text-xs uppercase tracking-widest hover:opacity-90 transition transform active:scale-95 flex justify-center items-center gap-2 group">
+                <button type="submit" id="btn-login-submit" class="w-full py-4 rounded-xl bg-black dark:bg-white text-white dark:text-black font-bold text-xs uppercase tracking-widest hover:opacity-90 transition transform active:scale-95 flex justify-center items-center gap-2 group">
                     <span>Se Connecter</span>
-                    <div class="loader group-hover:block"></div>
+                    <div class="loader"></div>
                 </button>
             </form>
             
@@ -176,7 +176,7 @@
                     <label class="input-label">Confirmer le mot de passe</label>
                 </div>
 
-                <button type="submit" class="w-full py-4 rounded-xl bg-black dark:bg-white text-white dark:text-black font-bold text-xs uppercase tracking-widest hover:opacity-90 transition transform active:scale-95 flex justify-center items-center gap-2">
+                <button type="submit" id="btn-reg-submit" class="w-full py-4 rounded-xl bg-black dark:bg-white text-white dark:text-black font-bold text-xs uppercase tracking-widest hover:opacity-90 transition transform active:scale-95 flex justify-center items-center gap-2">
                     <span>Créer mon compte</span>
                     <div class="loader"></div>
                 </button>
@@ -191,13 +191,11 @@
         <!-- --- VIEW: DASHBOARD (Logged In) --- -->
         <div id="view-dashboard" class="auth-view">
             <div class="flex flex-col items-center mb-8">
-                <div class="w-20 h-20 rounded-full bg-gradient-to-tr from-gray-200 to-gray-400 dark:from-zinc-800 dark:to-zinc-700 flex items-center justify-center text-3xl font-black mb-4 shadow-inner">
+                <div class="w-20 h-20 rounded-full bg-gradient-to-tr from-gray-200 to-gray-400 dark:from-zinc-800 dark:to-zinc-700 flex items-center justify-center text-3xl font-black mb-4 shadow-inner text-white">
                     <span id="dash-initials">U</span>
                 </div>
                 <h2 class="text-xl font-bold" id="dash-name">Utilisateur</h2>
-                <div id="status-badge" class="mt-2 px-3 py-1 rounded-full bg-gray-100 dark:bg-zinc-800 text-[10px] font-bold uppercase tracking-widest text-gray-500">
-                    Vérification en attente
-                </div>
+                <div id="status-badge"></div>
             </div>
 
             <div class="space-y-4">
@@ -211,6 +209,11 @@
                     </div>
                     <button id="btn-save-profile" class="mt-3 w-full py-2 bg-black dark:bg-white text-white dark:text-black rounded-lg text-xs font-bold uppercase">Mettre à jour</button>
                 </div>
+                
+                <!-- Zone Actions -->
+                <div id="verification-area" class="hidden text-center">
+                    <button id="btn-verify-email" class="text-xs text-blue-500 hover:underline">Envoyer un mail de vérification</button>
+                </div>
 
                 <button onclick="handleLogout()" class="w-full py-3 rounded-xl border border-red-500/20 text-red-500 hover:bg-red-500/10 font-bold text-xs uppercase tracking-widest transition">
                     Déconnexion
@@ -220,11 +223,11 @@
 
     </div>
 
-    <!-- FIREBASE LOGIC -->
+    <!-- FIREBASE LOGIC (Version corrigée 10.8.0) -->
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
-        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, sendPasswordResetEmail, sendEmailVerification } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-auth.js";
-        import { getDatabase, ref, set, get, child } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-database.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, sendPasswordResetEmail, sendEmailVerification } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getDatabase, ref, set, get, child } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
         // CONFIG WIKIMIND PRO
         const firebaseConfig = {
@@ -237,17 +240,17 @@
             appId: "1:154490257518:web:3276b1e64f2db9894be67f"
         };
 
+        // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getDatabase(app);
 
         // --- UI FUNCTIONS ---
 
-        // Notification System
         window.showNotif = (msg, type = 'error') => {
             const el = document.getElementById('notification-area');
             el.innerText = msg;
-            el.classList.remove('hidden', 'bg-red-100', 'text-red-600', 'bg-green-100', 'text-green-600');
+            el.classList.remove('hidden', 'bg-red-100', 'text-red-600', 'bg-green-100', 'text-green-600', 'dark:bg-red-900/30', 'dark:text-red-400', 'dark:bg-green-900/30', 'dark:text-green-400');
             
             if (type === 'error') {
                 el.classList.add('bg-red-100', 'text-red-600', 'dark:bg-red-900/30', 'dark:text-red-400');
@@ -258,7 +261,6 @@
             setTimeout(() => { el.style.display = 'none'; }, 5000);
         };
 
-        // View Switching with Animation
         window.switchAuthView = (viewName) => {
             document.querySelectorAll('.auth-view').forEach(el => {
                 el.style.opacity = '0';
@@ -268,132 +270,112 @@
             setTimeout(() => {
                 const target = document.getElementById(`view-${viewName}`);
                 target.style.display = 'block';
-                // Trigger reflow
-                target.offsetHeight; 
+                target.offsetHeight; // Trigger reflow
                 target.style.opacity = '1';
             }, 300);
             
-            // Clear notifications
             document.getElementById('notification-area').style.display = 'none';
         };
 
         // --- AUTH LOGIC ---
 
-        // State Monitor
         onAuthStateChanged(auth, async (user) => {
             if (user) {
-                // User logged in -> Load Data from Realtime DB
+                // User logged in -> Load Data
                 const dbRef = ref(db);
                 try {
                     const snapshot = await get(child(dbRef, `users/${user.uid}`));
                     if (snapshot.exists()) {
                         const data = snapshot.val();
                         renderDashboard(user, data);
+                        showNotif(`Bonjour ${data.firstName} !`, 'success');
                     } else {
-                        renderDashboard(user, {}); // No data yet
+                        renderDashboard(user, {});
                     }
                     switchAuthView('dashboard');
                 } catch (error) {
                     console.error(error);
-                    showNotif("Erreur de chargement du profil");
+                    // Fallback si pas de données DB
+                    renderDashboard(user, {});
+                    switchAuthView('dashboard');
                 }
             } else {
-                // User logged out
                 switchAuthView('login');
             }
         });
 
-        // Register
-        document.getElementById('form-register').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const btn = e.target.querySelector('button');
-            const loader = btn.querySelector('.loader');
-            
-            const email = document.getElementById('reg-email').value;
-            const pass = document.getElementById('reg-password').value;
-            const confirm = document.getElementById('reg-confirm').value;
-            const prenom = document.getElementById('reg-firstname').value;
-            const nom = document.getElementById('reg-lastname').value;
-
-            if (pass !== confirm) {
-                showNotif("Les mots de passe ne correspondent pas.");
-                return;
-            }
-
-            // UI Loading
-            btn.disabled = true;
-            loader.style.display = 'inline-block';
-
-            try {
-                const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
-                const user = userCredential.user;
-
-                // 1. Send Verification Email
-                await sendEmailVerification(user);
-
-                // 2. Save User Data to Realtime DB
-                await set(ref(db, 'users/' + user.uid), {
-                    firstName: prenom,
-                    lastName: nom,
-                    email: email,
-                    bio: "Nouveau membre WikiMind",
-                    createdAt: new Date().toISOString()
-                });
-
-                showNotif("Compte créé ! Vérifiez vos emails pour valider.", "success");
-                
-            } catch (error) {
-                let msg = "Erreur d'inscription.";
-                if (error.code === 'auth/email-already-in-use') msg = "Cet email est déjà utilisé.";
-                if (error.code === 'auth/weak-password') msg = "Mot de passe trop faible.";
-                showNotif(msg);
-                btn.disabled = false;
-                loader.style.display = 'none';
-            }
-        });
-
         // Login
-        document.getElementById('form-login').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const btn = e.target.querySelector('button');
-            const loader = btn.querySelector('.loader');
+        const loginForm = document.getElementById('form-login');
+        if(loginForm) {
+            loginForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const btn = document.getElementById('btn-login-submit');
+                const loader = btn.querySelector('.loader');
 
-            const email = document.getElementById('login-email').value;
-            const pass = document.getElementById('login-password').value;
+                const email = document.getElementById('login-email').value;
+                const pass = document.getElementById('login-password').value;
 
-            btn.disabled = true;
-            loader.style.display = 'inline-block';
+                btn.disabled = true;
+                loader.style.display = 'inline-block';
 
-            try {
-                await signInWithEmailAndPassword(auth, email, pass);
-                // onAuthStateChanged will handle transition
-            } catch (error) {
-                showNotif("Email ou mot de passe incorrect.");
-                btn.disabled = false;
-                loader.style.display = 'none';
-            }
-        });
+                try {
+                    await signInWithEmailAndPassword(auth, email, pass);
+                    // onAuthStateChanged takes over
+                } catch (error) {
+                    console.error("Login Error:", error);
+                    showNotif("Email ou mot de passe incorrect.");
+                    btn.disabled = false;
+                    loader.style.display = 'none';
+                }
+            });
+        }
 
-        // Password Reset
-        window.resetPassword = async () => {
-            const email = document.getElementById('login-email').value;
-            if (!email) {
-                showNotif("Entrez votre email dans le champ ci-dessus d'abord.");
-                return;
-            }
-            try {
-                await sendPasswordResetEmail(auth, email);
-                showNotif("Email de réinitialisation envoyé !", "success");
-            } catch (error) {
-                showNotif("Erreur: Vérifiez l'email.");
-            }
-        };
+        // Register
+        const regForm = document.getElementById('form-register');
+        if(regForm) {
+            regForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const btn = document.getElementById('btn-reg-submit');
+                const loader = btn.querySelector('.loader');
+                
+                const email = document.getElementById('reg-email').value;
+                const pass = document.getElementById('reg-password').value;
+                const confirm = document.getElementById('reg-confirm').value;
+                const prenom = document.getElementById('reg-firstname').value;
+                const nom = document.getElementById('reg-lastname').value;
 
-        // Logout
-        window.handleLogout = async () => {
-            await signOut(auth);
-            window.location.reload();
-        };
+                if (pass !== confirm) {
+                    showNotif("Les mots de passe ne correspondent pas.");
+                    return;
+                }
+
+                btn.disabled = true;
+                loader.style.display = 'inline-block';
+
+                try {
+                    const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
+                    const user = userCredential.user;
+
+                    // Save User Data to Realtime DB (Sans envoyer mail auto)
+                    await set(ref(db, 'users/' + user.uid), {
+                        firstName: prenom,
+                        lastName: nom,
+                        email: email,
+                        bio: "Nouveau membre WikiMind",
+                        createdAt: new Date().toISOString()
+                    });
+
+                    // On laisse onAuthStateChanged gérer la suite
+                } catch (error) {
+                    let msg = "Erreur d'inscription.";
+                    if (error.code === 'auth/email-already-in-use') msg = "Cet email est déjà utilisé.";
+                    if (error.code === 'auth/weak-password') msg = "Mot de passe trop faible.";
+                    showNotif(msg);
+                    btn.disabled = false;
+                    loader.style.display = 'none';
+                }
+            });
+        }
 
         // --- DASHBOARD LOGIC ---
 
@@ -401,52 +383,69 @@
             const fname = data.firstName || "Utilisateur";
             const lname = data.lastName || "";
             
-            // Set Name
+            // UI Setters
             document.getElementById('dash-name').innerText = `${fname} ${lname}`;
             
-            // Set Initials
             const initials = (fname[0] || "") + (lname[0] || "");
-            document.getElementById('dash-initials').innerText = initials.toUpperCase();
-
-            // Set Bio
+            document.getElementById('dash-initials').innerText = initials.toUpperCase() || "U";
             document.getElementById('dash-bio').value = data.bio || "";
 
-            // Check Email Verification
+            // Email Verification Status (Optionnel)
             const statusBadge = document.getElementById('status-badge');
+            const verifyArea = document.getElementById('verification-area');
+            const verifyBtn = document.getElementById('btn-verify-email');
+
             if (user.emailVerified) {
-                statusBadge.innerHTML = "✅ Compte Vérifié";
                 statusBadge.className = "mt-2 px-3 py-1 rounded-full bg-green-100 dark:bg-green-900/30 text-[10px] font-bold uppercase tracking-widest text-green-600 dark:text-green-400";
+                statusBadge.innerText = "Compte Vérifié";
+                verifyArea.classList.add('hidden');
             } else {
-                statusBadge.innerHTML = "⏳ Email non vérifié";
-                statusBadge.className = "mt-2 px-3 py-1 rounded-full bg-yellow-100 dark:bg-yellow-900/30 text-[10px] font-bold uppercase tracking-widest text-yellow-600 dark:text-yellow-400 cursor-pointer";
-                statusBadge.onclick = async () => {
-                    await sendEmailVerification(user);
-                    showNotif("Email de vérification renvoyé !", "success");
-                };
+                statusBadge.className = "mt-2 px-3 py-1 rounded-full bg-gray-100 dark:bg-zinc-800 text-[10px] font-bold uppercase tracking-widest text-gray-500";
+                statusBadge.innerText = "Membre Standard";
+                verifyArea.classList.remove('hidden');
+                
+                // Manual Verification Trigger
+                verifyBtn.onclick = async () => {
+                    try {
+                        await sendEmailVerification(user);
+                        showNotif("Email envoyé ! Vérifiez vos spams.", "success");
+                        verifyBtn.innerText = "Email envoyé ✓";
+                    } catch(e) {
+                        showNotif("Trop de demandes. Réessayez plus tard.");
+                    }
+                }
             }
         }
 
-        // Save Profile Update
         document.getElementById('btn-save-profile').addEventListener('click', async () => {
             const user = auth.currentUser;
             if(!user) return;
-            
             const bio = document.getElementById('dash-bio').value;
             const btn = document.getElementById('btn-save-profile');
             
             btn.innerText = "Sauvegarde...";
-            
             try {
-                // Update specific field in RTDB
                 await set(ref(db, `users/${user.uid}/bio`), bio);
-                
                 btn.innerText = "Enregistré !";
                 setTimeout(() => btn.innerText = "Mettre à jour", 2000);
             } catch (e) {
-                console.error(e);
                 btn.innerText = "Erreur";
             }
         });
+
+        window.resetPassword = async () => {
+            const email = document.getElementById('login-email').value;
+            if (!email) { showNotif("Entrez votre email d'abord."); return; }
+            try {
+                await sendPasswordResetEmail(auth, email);
+                showNotif("Email de réinitialisation envoyé !", "success");
+            } catch (error) { showNotif("Erreur: Vérifiez l'email."); }
+        };
+
+        window.handleLogout = async () => {
+            await signOut(auth);
+            window.location.reload();
+        };
 
         // --- THEME ---
         window.toggleTheme = () => {
@@ -454,18 +453,15 @@
             const isDark = document.body.classList.contains('dark-mode');
             localStorage.setItem('wikimind_landing_theme', isDark ? 'dark' : 'light');
             
-            // Update Icon
             const path = document.querySelector('#theme-icon path');
             if(isDark) path.setAttribute('d', 'M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z');
             else path.setAttribute('d', 'M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z');
         }
 
-        // Load saved theme
         const savedTheme = localStorage.getItem('wikimind_landing_theme');
         if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-            toggleTheme(); // Apply logic
+            toggleTheme();
         }
-
     </script>
 </body>
 </html>
