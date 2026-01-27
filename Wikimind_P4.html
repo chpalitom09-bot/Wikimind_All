@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>WikiMind P4 - En Ligne</title>
+    <title>WikiMind P4 - Connect & Win</title>
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -13,7 +13,7 @@
             theme: {
                 extend: {
                     fontFamily: { sans: ['Inter', 'sans-serif'] },
-                    colors: { bg: '#050505', card: '#111111' }
+                    colors: { bg: '#050505', card: '#111111', border: '#222222' }
                 }
             }
         }
@@ -21,132 +21,175 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #050505; color: white; touch-action: manipulation; }
+        body { font-family: 'Inter', sans-serif; background-color: #050505; color: white; overscroll-behavior: none; }
         
         .p4-board {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
-            gap: 5px;
-            padding: 8px;
-            background: #1e1e24;
+            gap: 6px;
+            padding: 10px;
+            background: rgba(30, 30, 40, 0.95);
+            border-radius: 16px;
             border: 2px solid #333;
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            position: relative;
+            z-index: 10;
         }
 
         .cell {
             aspect-ratio: 1/1;
             background-color: #0a0a0a;
             border-radius: 50%;
+            box-shadow: inset 0 3px 6px rgba(0,0,0,0.8);
             cursor: pointer;
             position: relative;
-            box-shadow: inset 0 2px 5px rgba(0,0,0,0.8);
+            overflow: hidden;
         }
         
         .chip {
             width: 100%; height: 100%;
             border-radius: 50%;
             position: absolute; top: 0; left: 0;
-            animation: drop 0.4s ease-out forwards;
+            transform: translateY(-600%);
+            animation: drop 0.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+            box-shadow: inset 0 -4px 4px rgba(0,0,0,0.3), 0 4px 8px rgba(0,0,0,0.4);
         }
         
-        .chip.red { background: radial-gradient(circle at 30% 30%, #ef4444, #991b1b); }
-        .chip.yellow { background: radial-gradient(circle at 30% 30%, #eab308, #854d0e); }
+        .chip.red { background: radial-gradient(circle at 30% 30%, #ff6b6b, #c0392b); }
+        .chip.yellow { background: radial-gradient(circle at 30% 30%, #f1c40f, #f39c12); }
 
-        @keyframes drop { from { transform: translateY(-400%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        
-        .active-turn { box-shadow: 0 0 15px rgba(255,255,255,0.1); border-color: #555; }
+        @keyframes drop { to { transform: translateY(0); } }
     </style>
 </head>
 <body class="flex flex-col h-screen overflow-hidden">
 
-    <!-- Header -->
-    <header class="h-14 border-b border-gray-800 bg-zinc-950 flex items-center justify-between px-4 z-20">
+    <!-- HEADER -->
+    <header class="h-14 border-b border-border bg-[#0a0a0a] flex items-center justify-between px-4 z-20 shrink-0">
         <div class="flex items-center gap-3 cursor-pointer" onclick="window.location.href='Wikimind_games.html'">
-            <div class="w-8 h-8 bg-white text-black rounded font-black flex items-center justify-center">W</div>
-            <span class="font-bold hidden md:block">WikiMind P4</span>
+            <div class="w-8 h-8 bg-white text-black rounded flex items-center justify-center font-black">W</div>
+            <span class="text-sm font-black uppercase hidden md:block">WikiMind P4</span>
         </div>
-        <div class="flex items-center gap-3">
-            <div class="w-2 h-2 rounded-full bg-red-500" id="conn-dot"></div>
-            <span id="player-id" class="text-xs font-mono text-gray-400">Connexion...</span>
+        
+        <div class="flex items-center gap-3 bg-zinc-900 px-3 py-1 rounded-full border border-zinc-800">
+            <div class="w-2 h-2 rounded-full bg-red-500" id="conn-status"></div>
+            <div class="flex flex-col text-right">
+                <span id="user-name" class="text-xs font-bold text-white max-w-[100px] truncate">Connexion...</span>
+                <span id="user-elo" class="text-[10px] font-mono text-red-400">---</span>
+            </div>
         </div>
     </header>
 
-    <!-- Main Game Area -->
-    <div class="flex-grow flex flex-col items-center justify-center p-4 relative">
-        
-        <!-- Info Bar -->
-        <div class="w-full max-w-[400px] flex justify-between items-center mb-4 bg-zinc-900/50 p-2 rounded-lg border border-zinc-800">
-            <div class="flex items-center gap-2" id="p1-display">
-                <div class="w-6 h-6 rounded-full bg-red-500"></div>
-                <div class="text-xs font-bold text-red-500">ROUGE (Hôte)</div>
-            </div>
-            <div id="status-text" class="text-[10px] font-bold uppercase text-gray-500">En attente</div>
-            <div class="flex items-center gap-2" id="p2-display">
-                <div class="text-xs font-bold text-yellow-500">JAUNE (Invité)</div>
-                <div class="w-6 h-6 rounded-full bg-yellow-500"></div>
-            </div>
-        </div>
+    <!-- MAIN -->
+    <div class="flex-grow flex flex-col lg:flex-row h-full overflow-hidden relative">
 
-        <!-- Board -->
-        <div class="w-full max-w-[400px] aspect-[7/6]">
-            <div id="game-board" class="p4-board w-full h-full"></div>
-        </div>
-
-        <!-- Controls / Menu Overlay if not playing -->
-        <div id="menu-overlay" class="absolute inset-0 bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center z-30 p-6">
-            <div class="bg-zinc-900 p-6 rounded-2xl border border-zinc-800 w-full max-w-sm text-center">
-                <h1 class="text-3xl font-black uppercase mb-6 italic">Puissance 4</h1>
-                
-                <!-- Online Tabs -->
-                <div class="space-y-4">
-                    <button id="btn-create" class="w-full py-4 bg-red-600 hover:bg-red-500 text-white font-bold rounded-xl uppercase tracking-widest transition">
-                        Créer une partie
-                    </button>
-                    
-                    <div class="flex gap-2">
-                        <input type="text" id="game-code-input" placeholder="Code de partie" class="flex-1 bg-black border border-zinc-700 rounded-xl px-4 text-center font-mono uppercase focus:border-white outline-none">
-                        <button id="btn-join" class="px-6 bg-zinc-800 hover:bg-zinc-700 text-white font-bold rounded-xl uppercase tracking-widest transition">
-                            Rejoindre
-                        </button>
+        <!-- GAME AREA -->
+        <div class="flex-grow bg-[#050505] relative flex flex-col items-center justify-center p-4 order-1 lg:order-2">
+            
+            <!-- OPPONENT HUD -->
+            <div class="w-full max-w-[500px] flex justify-between items-end mb-4 px-2">
+                <div class="flex items-center gap-3">
+                    <div id="p2-avatar" class="w-10 h-10 rounded-full bg-zinc-800 border-2 border-zinc-700 flex items-center justify-center text-xl transition-colors opacity-50">🟡</div>
+                    <div>
+                        <div id="opponent-name-hud" class="text-sm font-bold text-gray-400">Adversaire</div>
+                        <div id="opponent-status" class="text-[10px] text-gray-600 uppercase">En attente</div>
                     </div>
+                </div>
+                <div id="game-status-badge" class="px-3 py-1 bg-zinc-800 rounded text-[10px] font-bold uppercase text-gray-500">
+                    En attente
+                </div>
+            </div>
 
-                    <div class="pt-4 border-t border-zinc-800">
-                        <button onclick="startLocal()" class="text-xs text-gray-500 hover:text-white uppercase font-bold tracking-widest">
-                            Jouer en Local (1vs1)
-                        </button>
+            <!-- BOARD -->
+            <div id="board-container" class="w-full max-w-[450px] aspect-[7/6] relative">
+                <div id="game-board" class="p4-board w-full h-full"></div>
+            </div>
+
+            <!-- PLAYER HUD -->
+            <div class="w-full max-w-[500px] flex justify-between items-start mt-4 px-2">
+                <div class="flex items-center gap-3">
+                    <div id="p1-avatar" class="w-10 h-10 rounded-full bg-zinc-800 border-2 border-zinc-700 flex items-center justify-center text-xl transition-colors opacity-50">🔴</div>
+                    <div>
+                        <div id="my-name-hud" class="text-sm font-bold text-white">Moi</div>
+                        <div class="text-[10px] text-gray-400 font-mono" id="my-role-display">SPECTATEUR</div>
+                    </div>
+                </div>
+                <button onclick="resetGame()" id="btn-restart" class="hidden px-4 py-2 bg-zinc-800 rounded-lg text-xs font-bold hover:bg-zinc-700 transition">REJOUER</button>
+            </div>
+        </div>
+
+        <!-- CONTROLS -->
+        <div class="w-full lg:w-96 border-t lg:border-t-0 lg:border-r border-border bg-[#0a0a0a] flex flex-col z-10 order-2 lg:order-1 h-[35vh] lg:h-auto shrink-0">
+            <div class="flex border-b border-border text-xs font-bold uppercase tracking-widest text-center shrink-0">
+                <button onclick="switchTab('online')" id="tab-online" class="flex-1 py-3 bg-zinc-900 text-white border-b-2 border-red-500">En Ligne</button>
+                <button onclick="switchTab('local')" id="tab-local" class="flex-1 py-3 hover:bg-zinc-900 text-gray-500">Solo / Local</button>
+            </div>
+
+            <div class="flex-grow overflow-y-auto p-4 relative">
+                
+                <!-- ONLINE -->
+                <div id="panel-online" class="space-y-4">
+                    <div id="online-controls">
+                        <div class="bg-red-900/10 p-4 rounded-xl border border-red-900/30 mb-4">
+                            <h3 class="text-xs font-bold uppercase text-red-400 mb-2">Créer une partie</h3>
+                            <button id="btn-create" class="w-full py-3 bg-red-600 text-white font-bold rounded-lg text-xs uppercase tracking-widest shadow-lg active:scale-95 transition">
+                                Générer Code
+                            </button>
+                            <div id="lobby-wait" class="hidden mt-3 text-center">
+                                <div id="display-code" class="text-2xl font-mono font-black text-white bg-black p-2 rounded select-all border border-red-500/50">----</div>
+                                <div class="mt-2 text-[10px] text-red-300 animate-pulse">En attente d'un joueur...</div>
+                            </div>
+                        </div>
+
+                        <div class="text-center text-[10px] font-bold text-gray-600 mb-4">- OU -</div>
+
+                        <div class="bg-zinc-900/50 p-4 rounded-xl border border-zinc-800">
+                            <h3 class="text-xs font-bold uppercase text-yellow-400 mb-2">Rejoindre</h3>
+                            <div class="flex gap-2">
+                                <input type="text" id="input-code" placeholder="CODE" class="flex-1 bg-black border border-zinc-700 rounded-lg px-3 text-center uppercase font-mono text-white focus:border-yellow-500 outline-none">
+                                <button id="btn-join" class="px-4 bg-yellow-600 text-white font-bold rounded-lg text-xs uppercase active:scale-95 transition">GO</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="online-active-ui" class="hidden bg-green-900/10 p-4 rounded-xl border border-green-900/30 text-center">
+                        <div class="text-green-500 font-bold text-sm uppercase">Partie en cours</div>
+                        <div class="text-[10px] text-gray-400 mt-1">Ne quittez pas la page</div>
                     </div>
                 </div>
 
-                <!-- Waiting Screen -->
-                <div id="waiting-screen" class="hidden mt-6">
-                    <p class="text-xs text-gray-400 mb-2">Partagez ce code :</p>
-                    <div id="code-display" class="text-3xl font-mono font-black text-white bg-black p-4 rounded-xl border border-red-500 select-all mb-2">...</div>
-                    <p class="text-[10px] text-red-400 animate-pulse">En attente d'un adversaire...</p>
+                <!-- LOCAL -->
+                <div id="panel-local" class="hidden space-y-4">
+                    <button onclick="startBotGame()" class="w-full p-4 rounded-xl bg-zinc-800 border border-zinc-700 text-left active:scale-95 transition hover:border-white">
+                        <div class="font-bold text-sm text-white">🤖 Vs WikiMind AI</div>
+                    </button>
+                    <button onclick="startLocalGame()" class="w-full p-4 rounded-xl bg-black border border-zinc-800 text-left active:scale-95 transition hover:border-white">
+                        <div class="font-bold text-sm text-white">👥 1 vs 1 Local</div>
+                    </button>
+                </div>
+
+                <!-- LOGS -->
+                <div id="logs-container" class="mt-4 p-3 bg-black rounded border border-zinc-800 h-24 overflow-y-auto text-[10px] font-mono text-gray-400">
+                    <div>> WikiMind P4 Ready.</div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Logs -->
-    <div id="debug-log" class="fixed bottom-0 left-0 w-full h-12 bg-black border-t border-zinc-800 text-[10px] text-gray-500 font-mono p-2 overflow-y-auto z-50 opacity-50 pointer-events-none"></div>
-
-    <!-- Modal Fin -->
-    <div id="end-modal" class="hidden fixed inset-0 bg-black/90 z-50 flex items-center justify-center">
-        <div class="text-center">
-            <div class="text-6xl mb-4" id="end-emoji">🏆</div>
-            <h2 class="text-3xl font-black text-white mb-8" id="end-msg">VICTOIRE</h2>
-            <button onclick="location.reload()" class="px-8 py-3 bg-white text-black font-bold rounded-full uppercase tracking-widest">Retour</button>
+    <!-- MODAL FIN -->
+    <div id="game-over-modal" class="hidden fixed inset-0 bg-black/90 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-zinc-900 border border-zinc-700 p-6 rounded-2xl text-center max-w-sm w-full">
+            <div class="text-4xl mb-2" id="result-emoji">🏆</div>
+            <h2 id="result-title" class="text-2xl font-black uppercase text-white mb-2">FIN</h2>
+            <button onclick="location.reload()" class="w-full bg-white text-black font-bold py-3 rounded-xl uppercase text-xs tracking-widest hover:bg-gray-200">Menu Principal</button>
         </div>
     </div>
 
     <script type="module">
-        // --- IMPORTS STABLES (v10.8.0) ---
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getDatabase, ref, set, onValue, update, get } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-auth.js";
+        import { getDatabase, ref, set, onValue, update, get } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-database.js";
 
-        // CONFIG (Votre config exacte)
+        // CONFIGURATION
         const firebaseConfig = {
             apiKey: "AIzaSyCy5oWMLf1hQmFgAqZDeNPJmfQj71u6Wio",
             authDomain: "wikimindchess.firebaseapp.com",
@@ -161,259 +204,366 @@
         const auth = getAuth(app);
         const db = getDatabase(app);
 
-        // --- ETAT DU JEU ---
-        const ROWS = 6, COLS = 7;
-        let board = Array(ROWS).fill().map(() => Array(COLS).fill(0));
-        let myId = null;
-        let gameId = null;
-        let playerRole = 0; // 0=Spec, 1=Red(Host), 2=Yellow(Guest)
-        let currentTurn = 1; 
-        let isOnline = false;
+        // ETAT DU JEU
+        const ROWS = 6;
+        const COLS = 7;
+        let board = [];
+        let currentPlayer = 1; // 1 = Red, 2 = Yellow
         let gameActive = false;
+        let gameMode = 'online'; // local, bot, online
+        let myPlayerColor = 0; // 0 = Spectator, 1 = Red, 2 = Yellow
+        let gameId = null;
+        let myUid = null;
+        let myName = "Guest";
 
-        // --- AUTH ---
-        function log(msg) {
-            const d = document.getElementById('debug-log');
-            d.innerHTML = `> ${msg}<br>` + d.innerHTML;
-        }
-
-        signInAnonymously(auth).catch(e => log("Auth Error: " + e.message));
-
-        onAuthStateChanged(auth, (user) => {
+        // AUTH
+        signInAnonymously(auth);
+        onAuthStateChanged(auth, async (user) => {
             if (user) {
-                myId = user.uid;
-                document.getElementById('conn-dot').classList.replace('bg-red-500', 'bg-green-500');
-                document.getElementById('player-id').innerText = "ID: " + user.uid.substring(0,5);
-                log("Connecté Firebase.");
+                myUid = user.uid;
+                document.getElementById('conn-status').classList.replace('bg-red-500', 'bg-green-500');
+                
+                const uRef = ref(db, 'users/' + myUid);
+                const snap = await get(uRef);
+                if(snap.exists()) {
+                    myName = snap.val().email ? snap.val().email.split('@')[0] : "Joueur";
+                    document.getElementById('user-elo').innerText = snap.val().elo || 1200;
+                }
+                document.getElementById('user-name').innerText = myName;
+                document.getElementById('my-name-hud').innerText = myName;
+                log(`Connecté: ${myName}`);
             }
         });
 
         // --- MOTEUR DE JEU ---
-        function initGrid() {
-            const bg = document.getElementById('game-board');
-            bg.innerHTML = '';
-            for(let r=0; r<ROWS; r++) {
-                for(let c=0; c<COLS; c++) {
+
+        function initBoard() {
+            const container = document.getElementById('game-board');
+            container.innerHTML = '';
+            board = Array(ROWS).fill().map(() => Array(COLS).fill(0));
+
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
                     const cell = document.createElement('div');
                     cell.className = 'cell';
-                    cell.onclick = () => handleClick(c);
-                    bg.appendChild(cell);
+                    cell.dataset.c = c;
+                    cell.onclick = () => handleColumnClick(c);
+                    container.appendChild(cell);
                 }
             }
+            updateUI();
         }
 
-        function handleClick(col) {
-            if(!gameActive) return;
-            
-            // Règle stricte en ligne : Est-ce mon tour ?
-            if(isOnline) {
-                if(playerRole !== currentTurn) {
-                    log("Pas votre tour !");
+        function handleColumnClick(col) {
+            if (!gameActive) {
+                if(gameMode === 'online' && !gameId) log("Créez ou rejoignez une partie.");
+                else if(gameMode === 'online') log("En attente de l'adversaire...");
+                return;
+            }
+
+            // Vérification stricte du tour en ligne
+            if (gameMode === 'online') {
+                if (myPlayerColor !== currentPlayer) {
+                    log("Ce n'est pas votre tour !");
                     return;
                 }
             }
 
-            // Calcul gravité
-            let row = -1;
-            for(let r=ROWS-1; r>=0; r--) {
-                if(board[r][col] === 0) { row = r; break; }
-            }
-            if(row === -1) return; // Colonne pleine
+            // Vérification tour bot
+            if (gameMode === 'bot' && currentPlayer !== 1) return;
 
-            // Jouer le coup
-            playMove(row, col, currentTurn);
+            makeMove(col);
         }
 
-        function playMove(r, c, p) {
-            // Mettre à jour local
-            board[r][c] = p;
-            drawPiece(r, c, p);
+        function makeMove(col) {
+            // Trouver la première case vide en partant du bas
+            let row = -1;
+            for (let r = ROWS - 1; r >= 0; r--) {
+                if (board[r][col] === 0) {
+                    row = r;
+                    break;
+                }
+            }
 
-            // Vérifier victoire
-            if(checkWin(r, c, p)) {
-                endGame(p);
-                if(isOnline) update(ref(db, `games_p4/${gameId}`), { board: JSON.stringify(board), winner: p });
+            if (row === -1) return; // Colonne pleine
+
+            // 1. Mise à jour locale (Optimiste)
+            board[row][col] = currentPlayer;
+            animateDrop(row, col, currentPlayer);
+
+            // 2. Vérification Victoire
+            if (checkWin(row, col, currentPlayer)) {
+                handleGameOver(currentPlayer);
                 return;
             }
 
-            // Passer le tour
-            const next = p === 1 ? 2 : 1;
-            currentTurn = next;
-            updateStatus();
+            // 3. Changement de joueur
+            const nextPlayer = currentPlayer === 1 ? 2 : 1;
+            currentPlayer = nextPlayer;
+            updateUI();
 
-            // Si en ligne, envoyer à Firebase
-            if(isOnline) {
-                update(ref(db, `games_p4/${gameId}`), {
+            // 4. Synchronisation
+            if (gameMode === 'online') {
+                update(ref(db, 'games_p4/' + gameId), {
                     board: JSON.stringify(board),
-                    turn: next
-                }).catch(e => log("Erreur Sync: " + e));
+                    turn: nextPlayer
+                });
+            } else if (gameMode === 'bot' && nextPlayer === 2) {
+                setTimeout(playBot, 700);
             }
         }
 
-        function drawPiece(r, c, p) {
-            const index = r * COLS + c;
-            const container = document.getElementById('game-board').children[index];
-            if(container.querySelector('.chip')) return; // Déjà dessiné
+        function animateDrop(row, col, player) {
+            const index = row * COLS + col;
+            const container = document.getElementById('game-board');
+            // Vérifier si un jeton existe déjà (pour éviter les doublons lors de la sync)
+            if(container.children[index].querySelector('.chip')) return;
+
             const chip = document.createElement('div');
-            chip.className = `chip ${p === 1 ? 'red' : 'yellow'}`;
-            container.appendChild(chip);
+            chip.className = `chip ${player === 1 ? 'red' : 'yellow'}`;
+            container.children[index].appendChild(chip);
         }
 
-        function updateStatus() {
-            const txt = document.getElementById('status-text');
-            const p1d = document.getElementById('p1-display');
-            const p2d = document.getElementById('p2-display');
+        function updateUI() {
+            const p1 = document.getElementById('p1-avatar');
+            const p2 = document.getElementById('p2-avatar');
+            const badge = document.getElementById('game-status-badge');
 
-            p1d.style.opacity = currentTurn === 1 ? '1' : '0.3';
-            p2d.style.opacity = currentTurn === 2 ? '1' : '0.3';
+            // Opacité pour montrer qui joue
+            p1.style.opacity = currentPlayer === 1 ? '1' : '0.3';
+            p1.style.transform = currentPlayer === 1 ? 'scale(1.1)' : 'scale(1)';
+            
+            p2.style.opacity = currentPlayer === 2 ? '1' : '0.3';
+            p2.style.transform = currentPlayer === 2 ? 'scale(1.1)' : 'scale(1)';
 
-            if(isOnline) {
-                if(currentTurn === playerRole) {
-                    txt.innerText = "À TOI DE JOUER !";
-                    txt.className = "text-sm font-black text-green-500 animate-pulse";
+            if (gameMode === 'online') {
+                if (!gameActive) {
+                    badge.innerText = "En attente...";
+                    badge.className = "px-3 py-1 bg-zinc-800 rounded text-[10px] font-bold uppercase text-gray-500";
+                } else if (currentPlayer === myPlayerColor) {
+                    badge.innerText = "À TOI DE JOUER";
+                    badge.className = "px-3 py-1 bg-green-600 rounded text-[10px] font-bold uppercase text-white animate-pulse";
                 } else {
-                    txt.innerText = "ADVERSAIRE RÉFLÉCHIT...";
-                    txt.className = "text-[10px] font-bold text-gray-500";
+                    badge.innerText = "TOUR ADVERSAIRE";
+                    badge.className = "px-3 py-1 bg-red-900 rounded text-[10px] font-bold uppercase text-red-200";
                 }
             } else {
-                txt.innerText = currentTurn === 1 ? "TOUR ROUGE" : "TOUR JAUNE";
+                badge.innerText = currentPlayer === 1 ? "TOUR ROUGE" : "TOUR JAUNE";
+                badge.className = "px-3 py-1 bg-zinc-700 rounded text-[10px] font-bold uppercase text-white";
             }
         }
 
-        // --- LOGIQUE EN LIGNE ---
-        
-        // 1. CRÉER
-        document.getElementById('btn-create').addEventListener('click', () => {
-            if(!myId) return alert("Attendez la connexion...");
-            gameId = Math.random().toString(36).substring(2,6).toUpperCase();
-            playerRole = 1; // Hôte = Rouge
-            isOnline = true;
+        // --- BOT ---
+        function playBot() {
+            if(!gameActive) return;
+            // IA très simple : aléatoire valide
+            let validCols = [];
+            for(let c=0; c<COLS; c++) if(board[0][c] === 0) validCols.push(c);
             
-            // Reset DB
-            set(ref(db, `games_p4/${gameId}`), {
-                host: myId,
-                status: 'waiting',
+            if(validCols.length > 0) {
+                const randomCol = validCols[Math.floor(Math.random() * validCols.length)];
+                makeMove(randomCol);
+            }
+        }
+
+        // --- LOGIQUE MULTIJOUEUR ---
+
+        // CRÉER
+        document.getElementById('btn-create').addEventListener('click', () => {
+            gameId = Math.random().toString(36).substring(2, 6).toUpperCase();
+            gameMode = 'online';
+            myPlayerColor = 1; // Créateur = Rouge
+            currentPlayer = 1;
+            gameActive = false; // Bloqué tant que personne ne rejoint
+
+            initBoard();
+            document.getElementById('my-role-display').innerText = "JOUEUR 1 (ROUGE)";
+
+            // Création DB
+            set(ref(db, 'games_p4/' + gameId), {
+                host: myName,
+                board: JSON.stringify(board),
                 turn: 1,
-                board: JSON.stringify(board)
+                status: 'waiting'
             });
 
-            // UI Waiting
+            // UI
             document.getElementById('btn-create').classList.add('hidden');
-            document.getElementById('waiting-screen').classList.remove('hidden');
-            document.getElementById('code-display').innerText = gameId;
-            document.getElementById('game-code-input').parentElement.classList.add('hidden'); // Cacher input join
+            document.getElementById('lobby-wait').classList.remove('hidden');
+            document.getElementById('display-code').innerText = gameId;
+            log(`Salle créée : ${gameId}`);
 
-            listenGame();
+            listenGame(gameId);
         });
 
-        // 2. REJOINDRE
+        // REJOINDRE
         document.getElementById('btn-join').addEventListener('click', async () => {
-            const code = document.getElementById('game-code-input').value.toUpperCase().trim();
+            const code = document.getElementById('input-code').value.toUpperCase().trim();
             if(!code) return;
-            
-            const snap = await get(ref(db, `games_p4/${code}`));
+
+            const gRef = ref(db, 'games_p4/' + code);
+            const snap = await get(gRef);
+
             if(snap.exists() && snap.val().status === 'waiting') {
                 gameId = code;
-                playerRole = 2; // Invité = Jaune
-                isOnline = true;
-
-                // Update DB pour dire qu'on est là
-                update(ref(db, `games_p4/${gameId}`), {
-                    guest: myId,
-                    status: 'playing'
+                gameMode = 'online';
+                myPlayerColor = 2; // Rejoignant = Jaune
+                
+                // Important : On met le jeu en actif dans la DB pour débloquer le créateur
+                update(gRef, {
+                    guest: myName,
+                    status: 'active'
                 });
 
-                document.getElementById('menu-overlay').classList.add('hidden');
-                initGrid();
+                initBoard();
+                
+                // Charger le plateau existant si besoin (rare au début)
+                if(snap.val().board) board = JSON.parse(snap.val().board);
+                
+                document.getElementById('my-role-display').innerText = "JOUEUR 2 (JAUNE)";
+                document.getElementById('opponent-name-hud').innerText = snap.val().host;
+                
+                // Masquer controls
+                document.getElementById('online-controls').classList.add('hidden');
+                document.getElementById('online-active-ui').classList.remove('hidden');
+
                 gameActive = true;
-                listenGame();
-                log("Rejoint avec succès !");
+                log("Partie rejointe !");
+                listenGame(code);
             } else {
-                alert("Code invalide ou partie pleine.");
+                log("Code invalide ou partie pleine.");
             }
         });
 
-        // 3. ECOUTER (SYNC)
-        function listenGame() {
-            onValue(ref(db, `games_p4/${gameId}`), (snap) => {
+        // ÉCOUTER
+        function listenGame(id) {
+            const gRef = ref(db, 'games_p4/' + id);
+            
+            onValue(gRef, (snap) => {
                 const data = snap.val();
                 if(!data) return;
 
-                // Démarrage pour l'hôte
-                if(data.status === 'playing' && playerRole === 1 && !gameActive) {
+                // 1. Détection début de partie (pour le créateur)
+                if(data.status === 'active' && !gameActive && myPlayerColor === 1) {
                     gameActive = true;
-                    document.getElementById('menu-overlay').classList.add('hidden');
-                    initGrid();
-                    updateStatus();
-                    log("Adversaire connecté !");
+                    document.getElementById('lobby-wait').classList.add('hidden');
+                    document.getElementById('opponent-name-hud').innerText = data.guest || "Adversaire";
+                    document.getElementById('online-active-ui').classList.remove('hidden');
+                    document.getElementById('online-controls').classList.add('hidden');
+                    log("Adversaire connecté ! À vous.");
+                    updateUI();
                 }
 
-                // Sync Tour
-                if(data.turn && data.turn !== currentTurn) {
-                    currentTurn = data.turn;
-                    updateStatus();
+                // 2. Synchronisation du Tour
+                if(data.turn) {
+                    currentPlayer = data.turn;
+                    updateUI();
                 }
 
-                // Sync Plateau
+                // 3. Synchronisation du Plateau (Uniquement si différent)
                 if(data.board) {
-                    const remoteBoard = JSON.parse(data.board);
-                    for(let r=0; r<ROWS; r++) {
-                        for(let c=0; c<COLS; c++) {
-                            // Si le serveur a une pièce que je n'ai pas
-                            if(board[r][c] === 0 && remoteBoard[r][c] !== 0) {
-                                board[r][c] = remoteBoard[r][c];
-                                drawPiece(r, c, remoteBoard[r][c]);
+                    const serverBoard = JSON.parse(data.board);
+                    let hasChanged = false;
+
+                    for(let r=0; r<ROWS; r++){
+                        for(let c=0; c<COLS; c++){
+                            // Si le serveur a un jeton que je n'ai pas encore
+                            if(board[r][c] === 0 && serverBoard[r][c] !== 0) {
+                                board[r][c] = serverBoard[r][c];
+                                animateDrop(r, c, serverBoard[r][c]);
+                                hasChanged = true;
                             }
                         }
                     }
                 }
 
-                // Sync Victoire
+                // 4. Fin de partie
                 if(data.winner) {
-                    endGame(data.winner);
+                    gameActive = false;
+                    setTimeout(() => {
+                        const winnerText = data.winner === 1 ? "Rouge" : "Jaune";
+                        showEndModal(winnerText + " gagne !", "🏆");
+                    }, 500);
                 }
             });
         }
 
-        // --- LOCAL ---
-        window.startLocal = () => {
-            isOnline = false;
-            gameActive = true;
-            document.getElementById('menu-overlay').classList.add('hidden');
-            initGrid();
-            updateStatus();
-        };
-
         // --- VICTOIRE ---
-        function checkWin(r, c, p) {
+        function checkWin(r, c, player) {
             const dirs = [[0,1], [1,0], [1,1], [1,-1]];
             for(let d of dirs) {
                 let count = 1;
-                for(let k=1; k<4; k++) {
-                    const nr=r+d[0]*k, nc=c+d[1]*k;
-                    if(nr<0||nr>=ROWS||nc<0||nc>=COLS||board[nr][nc]!==p) break;
+                for(let i=1; i<4; i++) {
+                    const nr = r + d[0]*i, nc = c + d[1]*i;
+                    if(nr<0||nr>=ROWS||nc<0||nc>=COLS||board[nr][nc]!==player) break;
                     count++;
                 }
-                for(let k=1; k<4; k++) {
-                    const nr=r-d[0]*k, nc=c-d[1]*k;
-                    if(nr<0||nr>=ROWS||nc<0||nc>=COLS||board[nr][nc]!==p) break;
+                for(let i=1; i<4; i++) {
+                    const nr = r - d[0]*i, nc = c - d[1]*i;
+                    if(nr<0||nr>=ROWS||nc<0||nc>=COLS||board[nr][nc]!==player) break;
                     count++;
                 }
-                if(count >= 4) return true;
+                if(count>=4) return true;
             }
             return false;
         }
 
-        function endGame(winner) {
+        function handleGameOver(winner) {
             gameActive = false;
-            document.getElementById('end-modal').classList.remove('hidden');
-            const msg = winner === playerRole ? "TU AS GAGNÉ !" : (isOnline ? "TU AS PERDU..." : "JOUEUR " + winner + " GAGNE");
-            document.getElementById('end-msg').innerText = msg;
-            document.getElementById('end-emoji').innerText = winner === playerRole ? "🎉" : "💀";
+            if(gameMode === 'online') {
+                update(ref(db, 'games_p4/' + gameId), { winner: winner });
+            } else {
+                setTimeout(() => showEndModal((winner === 1 ? "Rouge" : "Jaune") + " gagne !", "🏆"), 500);
+            }
         }
 
-        // Init blank grid visual
-        initGrid();
+        function showEndModal(title, emoji) {
+            document.getElementById('game-over-modal').classList.remove('hidden');
+            document.getElementById('result-title').innerText = title;
+            document.getElementById('result-emoji').innerText = emoji;
+        }
+
+        // --- UTILITAIRES ---
+        function log(msg) {
+            const div = document.createElement('div');
+            div.innerText = "> " + msg;
+            document.getElementById('logs-container').prepend(div);
+        }
+
+        window.switchTab = (tab) => {
+            document.getElementById('panel-online').classList.toggle('hidden', tab !== 'online');
+            document.getElementById('panel-local').classList.toggle('hidden', tab !== 'local');
+            document.getElementById('tab-online').className = tab === 'online' ? "flex-1 py-3 bg-zinc-900 text-white border-b-2 border-red-500" : "flex-1 py-3 hover:bg-zinc-900 text-gray-500";
+            document.getElementById('tab-local').className = tab === 'local' ? "flex-1 py-3 bg-zinc-900 text-white border-b-2 border-red-500" : "flex-1 py-3 hover:bg-zinc-900 text-gray-500";
+        }
+
+        window.startLocalGame = () => {
+            gameMode = 'local';
+            gameActive = true;
+            currentPlayer = 1;
+            initBoard();
+            document.getElementById('my-role-display').innerText = "LOCAL (1 vs 1)";
+            document.getElementById('btn-restart').classList.remove('hidden');
+            log("Mode Local activé");
+        }
+
+        window.startBotGame = () => {
+            gameMode = 'bot';
+            gameActive = true;
+            currentPlayer = 1;
+            initBoard();
+            document.getElementById('my-role-display').innerText = "VS IA";
+            document.getElementById('btn-restart').classList.remove('hidden');
+            log("Mode IA activé");
+        }
+
+        window.resetGame = () => {
+            if(gameMode === 'local') window.startLocalGame();
+            if(gameMode === 'bot') window.startBotGame();
+        }
+
+        // Init
+        initBoard();
 
     </script>
 </body>
