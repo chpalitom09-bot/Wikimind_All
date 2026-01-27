@@ -3,43 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>WikiMind GTW - Online</title>
+    <title>WikiMind GTW 3D - Online</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { margin: 0; overflow: hidden; background: #1a1a1a; font-family: 'Courier New', monospace; }
-        canvas { display: block; }
-        .ui-layer { position: absolute; pointer-events: none; width: 100%; height: 100%; top: 0; left: 0; }
-        .hud-panel { background: rgba(0,0,0,0.7); border: 2px solid rgba(255,255,255,0.2); backdrop-filter: blur(4px); }
+        body { margin: 0; overflow: hidden; background: #000; font-family: 'Courier New', monospace; user-select: none; }
+        #game-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+        .ui-layer { position: absolute; pointer-events: none; width: 100%; height: 100%; top: 0; left: 0; z-index: 10; }
+        .hud-panel { background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.2); backdrop-filter: blur(4px); pointer-events: auto; }
         
-        /* Chat et Killfeed */
         #killfeed { position: absolute; top: 20px; right: 20px; text-align: right; display: flex; flex-direction: column; gap: 5px; }
-        .kill-msg { background: rgba(255,0,0,0.2); padding: 5px 10px; border-radius: 4px; color: white; font-size: 12px; animation: fadeOut 5s forwards; }
+        .kill-msg { background: rgba(255,0,0,0.4); padding: 5px 10px; border-radius: 4px; color: white; font-size: 12px; animation: fadeOut 5s forwards; }
         
-        @keyframes fadeOut { 0% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; } }
-
-        /* Crosshair */
-        body { cursor: crosshair; }
+        @keyframes fadeOut { 0% { opacity: 1; } 90% { opacity: 1; } 100% { opacity: 0; } }
+        
+        /* Crosshair au centre pour viser */
+        #crosshair {
+            position: absolute; top: 50%; left: 50%; width: 20px; height: 20px;
+            transform: translate(-50%, -50%); pointer-events: none; opacity: 0.7;
+        }
     </style>
 </head>
 <body>
 
     <!-- UI LAYER -->
     <div class="ui-layer flex flex-col justify-between p-6">
-        
-        <!-- Top Bar -->
         <div class="flex justify-between items-start">
             <div class="hud-panel p-4 rounded-xl text-white">
-                <h1 class="text-2xl font-black italic tracking-tighter text-yellow-400">WIKIMIND <span class="text-white">GTW</span></h1>
+                <h1 class="text-2xl font-black italic tracking-tighter text-yellow-400">GTW <span class="text-white">3D</span></h1>
                 <div class="text-xs text-gray-400 flex items-center gap-2">
                     <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                    <span id="player-count">0</span> Joueurs en ligne
+                    <span id="player-count">0</span> Joueurs
                 </div>
             </div>
-            
             <div id="killfeed"></div>
         </div>
 
-        <!-- Bottom Bar (Stats) -->
+        <!-- Crosshair SVG -->
+        <div id="crosshair">
+            <svg viewBox="0 0 100 100" fill="none" stroke="white" stroke-width="8">
+                <circle cx="50" cy="50" r="40" />
+                <line x1="50" y1="20" x2="50" y2="80" />
+                <line x1="20" y1="50" x2="80" y2="50" />
+            </svg>
+        </div>
+
         <div class="flex justify-between items-end">
             <div class="hud-panel p-4 rounded-xl text-white w-64">
                 <div class="flex justify-between mb-1">
@@ -49,31 +56,35 @@
                 <div class="w-full bg-gray-800 h-2 rounded-full overflow-hidden mb-4">
                     <div id="hp-bar" class="h-full bg-red-600 w-full transition-all duration-200"></div>
                 </div>
-
-                <div class="flex justify-between mb-1">
-                    <span class="text-xs font-bold uppercase text-gray-400">Arme</span>
-                    <span id="weapon-text" class="font-bold text-yellow-400">PISTOLET</span>
-                </div>
-                <p class="text-[10px] text-gray-500 mt-2">WASD: Bouger | CLICK: Tirer | F: Véhicule | 1/2: Armes</p>
-            </div>
-
-            <!-- Wanted Stars (Décoratif) -->
-            <div class="flex gap-1 text-2xl text-gray-800" id="stars">
-                ★ ★ ★ ★ ★
+                <p class="text-[10px] text-gray-400 mt-2">
+                    ⬆/⬇ : Avancer/Reculer<br>
+                    ⬅/➡ : Tourner<br>
+                    ESPACE : Tirer | F : Voiture
+                </p>
             </div>
         </div>
     </div>
 
-    <!-- GAME CANVAS -->
-    <canvas id="gameCanvas"></canvas>
+    <!-- 3D CONTAINER -->
+    <div id="game-container"></div>
 
-    <!-- FIREBASE & GAME LOGIC -->
+    <!-- MODULES -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
     <script type="module">
+        import * as THREE from 'three';
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
         import { getDatabase, ref, set, onValue, onDisconnect, push, remove, update, get } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-database.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-auth.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-auth.js";
 
-        // --- CONFIGURATION FIREBASE (La tienne) ---
+        // --- FIREBASE CONFIG ---
         const firebaseConfig = {
             apiKey: "AIzaSyCuozxRg0t1MyzaoMwYDdWK6nyE3Btd--o",
             authDomain: "wikimind-gtw.firebaseapp.com",
@@ -88,516 +99,515 @@
         const db = getDatabase(app);
         const auth = getAuth(app);
 
-        // --- CONSTANTES JEU ---
-        const CANVAS = document.getElementById('gameCanvas');
-        const CTX = CANVAS.getContext('2d');
-        const TILE_SIZE = 50;
-        const MAP_WIDTH = 60; // Tuiles
-        const MAP_HEIGHT = 40; // Tuiles
+        // --- 3D ENGINE SETUP ---
+        const container = document.getElementById('game-container');
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x87CEEB); // Ciel bleu
+        scene.fog = new THREE.Fog(0x87CEEB, 200, 900);
+
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 1500);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        container.appendChild(renderer.domElement);
+
+        // Lumières
+        const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.6);
+        scene.add(hemiLight);
+
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+        dirLight.position.set(100, 200, 50);
+        dirLight.castShadow = true;
+        dirLight.shadow.camera.top = 500;
+        dirLight.shadow.camera.bottom = -500;
+        dirLight.shadow.camera.left = -500;
+        dirLight.shadow.camera.right = 500;
+        scene.add(dirLight);
+
+        // --- GAME CONSTANTS ---
+        const TILE_SIZE = 40; // Echelle 3D
+        const MAP_WIDTH = 40;
+        const MAP_HEIGHT = 40;
         const WORLD_W = MAP_WIDTH * TILE_SIZE;
         const WORLD_H = MAP_HEIGHT * TILE_SIZE;
 
-        // Génération de map procédurale simple (Statique pour tous grâce à un seed simulé)
-        // 0: Route, 1: Batiment, 2: Herbe/Parc
-        const MAP_DATA = [];
-        
-        // Pseudo-random déterministe simple pour que tout le monde ait la même map
-        let seed = 1234;
-        function random() {
-            var x = Math.sin(seed++) * 10000;
-            return x - Math.floor(x);
-        }
+        // Materiaux
+        const matBuilding = new THREE.MeshPhongMaterial({ color: 0x888888 });
+        const matRoad = new THREE.MeshPhongMaterial({ color: 0x333333 });
+        const matGrass = new THREE.MeshPhongMaterial({ color: 0x4caf50 });
+        const matPlayer = new THREE.MeshPhongMaterial({ color: 0xff0000 });
+        const matWheel = new THREE.MeshLambertMaterial({ color: 0x111111 });
 
-        // Générer une ville type grille
-        for(let y=0; y<MAP_HEIGHT; y++) {
+        // Map Data & Generation
+        const MAP_DATA = [];
+        const colliders = []; // Pour physique simple
+        let seed = 5678;
+        function random() { var x = Math.sin(seed++) * 10000; return x - Math.floor(x); }
+
+        const cityGroup = new THREE.Group();
+        scene.add(cityGroup);
+
+        // Sol géant
+        const groundGeo = new THREE.PlaneGeometry(WORLD_W * 2, WORLD_H * 2);
+        const groundMat = new THREE.MeshLambertMaterial({ color: 0x222222 });
+        const ground = new THREE.Mesh(groundGeo, groundMat);
+        ground.rotation.x = -Math.PI / 2;
+        ground.position.set(WORLD_W/2, -0.1, WORLD_H/2);
+        scene.add(ground);
+
+        // Génération procédurale
+        for(let z=0; z<MAP_HEIGHT; z++) {
             let row = [];
             for(let x=0; x<MAP_WIDTH; x++) {
-                if (x === 0 || x === MAP_WIDTH-1 || y === 0 || y === MAP_HEIGHT-1) {
-                    row.push(1); // Murs extérieurs
-                } else if (x % 4 === 0 || y % 4 === 0) {
-                    row.push(0); // Routes tous les 4 blocs
+                let type = 1; // Batiment par defaut
+                
+                // Routes
+                if (x === 0 || x === MAP_WIDTH-1 || z === 0 || z === MAP_HEIGHT-1) type = 1; // Murs exterieurs
+                else if (x % 4 === 0 || z % 4 === 0) type = 0; // Route
+                else if (random() > 0.7) type = 2; // Parc
+
+                row.push(type);
+
+                const posX = x * TILE_SIZE;
+                const posZ = z * TILE_SIZE;
+
+                if (type === 1) {
+                    // BATIMENT
+                    const h = 50 + random() * 100;
+                    const geo = new THREE.BoxGeometry(TILE_SIZE - 2, h, TILE_SIZE - 2);
+                    const mesh = new THREE.Mesh(geo, matBuilding);
+                    mesh.position.set(posX, h/2, posZ);
+                    mesh.castShadow = true;
+                    mesh.receiveShadow = true;
+                    cityGroup.add(mesh);
+                    
+                    // Collider simple (Box 2D)
+                    colliders.push({ x: posX, z: posZ, size: TILE_SIZE });
+                } else if (type === 2) {
+                    // PARC
+                    const geo = new THREE.BoxGeometry(TILE_SIZE, 2, TILE_SIZE);
+                    const mesh = new THREE.Mesh(geo, matGrass);
+                    mesh.position.set(posX, 1, posZ);
+                    mesh.receiveShadow = true;
+                    cityGroup.add(mesh);
+                    
+                    // Arbre simple
+                    if(random() > 0.5) {
+                        const treeTrunk = new THREE.Mesh(new THREE.CylinderGeometry(2,2,10), new THREE.MeshLambertMaterial({color:0x5D4037}));
+                        treeTrunk.position.set(posX, 5, posZ);
+                        cityGroup.add(treeTrunk);
+                        const treeTop = new THREE.Mesh(new THREE.ConeGeometry(8,20), new THREE.MeshLambertMaterial({color:0x2E7D32}));
+                        treeTop.position.set(posX, 15, posZ);
+                        cityGroup.add(treeTop);
+                    }
                 } else {
-                    row.push(random() > 0.8 ? 2 : 1); // Batiments ou parcs
+                    // ROUTE
+                    const geo = new THREE.PlaneGeometry(TILE_SIZE, TILE_SIZE);
+                    const mesh = new THREE.Mesh(geo, matRoad);
+                    mesh.rotation.x = -Math.PI / 2;
+                    mesh.position.set(posX, 0.1, posZ);
+                    mesh.receiveShadow = true;
+                    cityGroup.add(mesh);
+                    
+                    // Lignes jaunes
+                    if(x%2===0 && z%2!==0) {
+                         const line = new THREE.Mesh(new THREE.PlaneGeometry(2, 20), new THREE.MeshBasicMaterial({color:0xFFD700}));
+                         line.rotation.x = -Math.PI/2;
+                         line.position.set(posX, 0.2, posZ);
+                         cityGroup.add(line);
+                    }
                 }
             }
             MAP_DATA.push(row);
         }
 
-        // Liste des voitures statiques (pour l'instant, on peut les "voler")
-        const STATIC_CARS = [];
-        for(let i=0; i<15; i++) {
-            // Trouver une position sur la route
-            let found = false;
-            while(!found) {
-                let rx = Math.floor(random() * MAP_WIDTH);
-                let ry = Math.floor(random() * MAP_HEIGHT);
-                if(MAP_DATA[ry][rx] === 0) {
-                    STATIC_CARS.push({
-                        id: `car_${i}`,
-                        x: rx * TILE_SIZE + TILE_SIZE/2,
-                        y: ry * TILE_SIZE + TILE_SIZE/2,
-                        color: `hsl(${random()*360}, 70%, 50%)`,
-                        angle: (Math.floor(random()*4) * 90) * (Math.PI/180)
-                    });
-                    found = true;
-                }
-            }
-        }
-
-        // --- ETAT LOCAL ---
-        let me = null; // Mon objet joueur
+        // --- GAME LOGIC ---
+        let me = null;
         let myId = null;
-        let players = {}; // Tous les joueurs
-        let bullets = {}; // Toutes les balles
+        const playersMap = {}; // Map ID -> { mesh, data }
+        const bulletsMap = {}; // Map ID -> { mesh, data }
         
         // Input
-        const keys = { w:false, a:false, s:false, d:false };
-        const mouse = { x:0, y:0, worldX: 0, worldY: 0 };
+        const keys = { up: false, down: false, left: false, right: false, space: false, f: false };
         
-        // Camera
-        const cam = { x:0, y:0 };
+        window.addEventListener('keydown', (e) => {
+            if (e.key === "ArrowUp") keys.up = true;
+            if (e.key === "ArrowDown") keys.down = true;
+            if (e.key === "ArrowLeft") keys.left = true;
+            if (e.key === "ArrowRight") keys.right = true;
+            if (e.key === " ") {
+                keys.space = true;
+                shoot();
+            }
+            if (e.key.toLowerCase() === "f") {
+                 keys.f = true;
+                 toggleCar();
+            }
+        });
 
-        // --- GAMEPLAY LOGIC ---
-        
-        function resize() {
-            CANVAS.width = window.innerWidth;
-            CANVAS.height = window.innerHeight;
-        }
-        window.addEventListener('resize', resize);
-        resize();
+        window.addEventListener('keyup', (e) => {
+            if (e.key === "ArrowUp") keys.up = false;
+            if (e.key === "ArrowDown") keys.down = false;
+            if (e.key === "ArrowLeft") keys.left = false;
+            if (e.key === "ArrowRight") keys.right = false;
+            if (e.key === " ") keys.space = false;
+            if (e.key.toLowerCase() === "f") keys.f = false;
+        });
 
-        // Contrôles
-        window.addEventListener('keydown', e => {
-            if(e.key.toLowerCase() === 'z' || e.key.toLowerCase() === 'w') keys.w = true;
-            if(e.key.toLowerCase() === 'q' || e.key.toLowerCase() === 'a') keys.a = true;
-            if(e.key.toLowerCase() === 's') keys.s = true;
-            if(e.key.toLowerCase() === 'd') keys.d = true;
+        // --- PLAYER & ENTITIES 3D CREATION ---
+
+        function createPlayerMesh(color) {
+            const group = new THREE.Group();
             
-            if(e.key === '1') changeWeapon('gun');
-            if(e.key === '2') changeWeapon('knife');
-            if(e.key.toLowerCase() === 'f') tryEnterExitCar();
-        });
+            // Corps Humain
+            const mat = new THREE.MeshPhongMaterial({ color: color });
+            const body = new THREE.Mesh(new THREE.BoxGeometry(6, 14, 4), mat);
+            body.position.y = 7;
+            body.castShadow = true;
+            group.add(body);
 
-        window.addEventListener('keyup', e => {
-            if(e.key.toLowerCase() === 'z' || e.key.toLowerCase() === 'w') keys.w = false;
-            if(e.key.toLowerCase() === 'q' || e.key.toLowerCase() === 'a') keys.a = false;
-            if(e.key.toLowerCase() === 's') keys.s = false;
-            if(e.key.toLowerCase() === 'd') keys.d = false;
-        });
+            const head = new THREE.Mesh(new THREE.BoxGeometry(5, 5, 5), new THREE.MeshLambertMaterial({color: 0xffccaa}));
+            head.position.y = 16;
+            group.add(head);
 
-        window.addEventListener('mousemove', e => {
-            mouse.x = e.clientX;
-            mouse.y = e.clientY;
-        });
+            // Arme (cube noir)
+            const gun = new THREE.Mesh(new THREE.BoxGeometry(2, 2, 8), new THREE.MeshLambertMaterial({color: 0x000000}));
+            gun.position.set(4, 10, 4);
+            group.add(gun);
 
-        window.addEventListener('mousedown', e => {
-            if(!me || me.hp <= 0) return;
-            shoot();
-        });
+            return group;
+        }
+
+        function createCarMesh(color) {
+            const group = new THREE.Group();
+            const mat = new THREE.MeshPhongMaterial({ color: color });
+            
+            // Chassis
+            const body = new THREE.Mesh(new THREE.BoxGeometry(16, 8, 30), mat);
+            body.position.y = 6;
+            body.castShadow = true;
+            group.add(body);
+            
+            // Toit
+            const top = new THREE.Mesh(new THREE.BoxGeometry(14, 6, 15), mat);
+            top.position.set(0, 12, -2);
+            group.add(top);
+
+            // Roues
+            const wheelGeo = new THREE.CylinderGeometry(3, 3, 2);
+            wheelGeo.rotateZ(Math.PI/2);
+            const w1 = new THREE.Mesh(wheelGeo, matWheel); w1.position.set(8, 3, 10);
+            const w2 = new THREE.Mesh(wheelGeo, matWheel); w2.position.set(-8, 3, 10);
+            const w3 = new THREE.Mesh(wheelGeo, matWheel); w3.position.set(8, 3, -10);
+            const w4 = new THREE.Mesh(wheelGeo, matWheel); w4.position.set(-8, 3, -10);
+            group.add(w1, w2, w3, w4);
+
+            return group;
+        }
 
         // --- AUTH & NETWORK ---
 
         signInAnonymously(auth).then((cred) => {
             myId = cred.user.uid;
-            
-            // Spawn initial
             spawnMe();
 
-            // Handle disconnect
+            // Disconnect Logic
             const userRef = ref(db, `players/${myId}`);
             onDisconnect(userRef).remove();
 
-            // Listen to other players
+            // SYNC PLAYERS
             onValue(ref(db, 'players'), (snapshot) => {
-                players = snapshot.val() || {};
-                // Mettre à jour le compteur
-                document.getElementById('player-count').innerText = Object.keys(players).length;
-                
-                // Sync locale si besoin (correction de lag pour les autres)
-                // Ici on fait confiance à l'état global pour la simplicité
+                const data = snapshot.val() || {};
+                document.getElementById('player-count').innerText = Object.keys(data).length;
+
+                // Update or Create
+                for (let id in data) {
+                    if (id === myId) continue; // On gère notre propre mesh localement pour la fluidité
+                    const pData = data[id];
+                    
+                    if (!playersMap[id]) {
+                        // Nouveau joueur distant
+                        const mesh = pData.inCar ? createCarMesh(pData.carColor || 0xff0000) : createPlayerMesh(pData.skinColor || 0xffffff);
+                        scene.add(mesh);
+                        playersMap[id] = { mesh, data: pData, isCar: pData.inCar };
+                    } else {
+                        // Mise à jour existant
+                        const pEntry = playersMap[id];
+                        
+                        // Si changement état voiture, recréer mesh
+                        if (pEntry.isCar !== pData.inCar) {
+                            scene.remove(pEntry.mesh);
+                            const newMesh = pData.inCar ? createCarMesh(pData.carColor) : createPlayerMesh(pData.skinColor);
+                            scene.add(newMesh);
+                            pEntry.mesh = newMesh;
+                            pEntry.isCar = pData.inCar;
+                        }
+
+                        // Interpolation simple
+                        pEntry.mesh.position.lerp(new THREE.Vector3(pData.x, 0, pData.z), 0.2);
+                        // Rotation interpolée (plus complexe avec les angles, on fait simple)
+                        pEntry.mesh.rotation.y = pData.angle;
+                    }
+                }
+
+                // Cleanup disconnected
+                for (let id in playersMap) {
+                    if (!data[id]) {
+                        scene.remove(playersMap[id].mesh);
+                        delete playersMap[id];
+                    }
+                }
             });
 
-            // Listen to bullets
+            // SYNC BULLETS
             onValue(ref(db, 'bullets'), (snapshot) => {
-                bullets = snapshot.val() || {};
+                const data = snapshot.val() || {};
+                
+                for(let bid in data) {
+                    const bData = data[bid];
+                    if (!bulletsMap[bid]) {
+                        const geo = new THREE.SphereGeometry(1, 4, 4);
+                        const mat = new THREE.MeshBasicMaterial({color: 0xffff00});
+                        const mesh = new THREE.Mesh(geo, mat);
+                        mesh.position.set(bData.x, 8, bData.z);
+                        scene.add(mesh);
+                        bulletsMap[bid] = { mesh, data: bData };
+                    }
+                    // Les balles bougent vite, on fait confiance au serveur/créateur pour la suppression
+                }
+                
+                // Cleanup bullets
+                for(let bid in bulletsMap) {
+                    if(!data[bid]) {
+                        scene.remove(bulletsMap[bid].mesh);
+                        delete bulletsMap[bid];
+                    }
+                }
             });
 
-            // Boucle de jeu
-            requestAnimationFrame(gameLoop);
+            // Boucle principale
+            animate();
             
-            // Sync Loop (Envoi de ma position 20 fois par seconde)
+            // Sync Loop (Envoi pos)
             setInterval(sendUpdate, 50);
 
-        }).catch((error) => {
-            console.error("Auth error:", error);
         });
 
         function spawnMe() {
-            // Trouver point de spawn (route)
-            let sx, sy;
-            do {
-                let tx = Math.floor(Math.random() * MAP_WIDTH);
-                let ty = Math.floor(Math.random() * MAP_HEIGHT);
-                if (MAP_DATA[ty][tx] === 0) {
-                    sx = tx * TILE_SIZE + TILE_SIZE/2;
-                    sy = ty * TILE_SIZE + TILE_SIZE/2;
+            let sx, sz;
+            // Trouver spot sur route
+            while(true) {
+                let rx = Math.floor(Math.random() * MAP_WIDTH);
+                let rz = Math.floor(Math.random() * MAP_HEIGHT);
+                if (MAP_DATA[rz] && MAP_DATA[rz][rx] === 0) {
+                    sx = rx * TILE_SIZE;
+                    sz = rz * TILE_SIZE;
+                    break;
                 }
-            } while (!sx);
+            }
 
             me = {
                 id: myId,
                 x: sx,
-                y: sy,
+                z: sz,
                 angle: 0,
                 hp: 100,
-                skinColor: `hsl(${Math.random()*360}, 80%, 60%)`,
-                weapon: 'gun', // gun, knife
                 inCar: false,
+                skinColor: '#' + new THREE.Color(`hsl(${Math.random()*360}, 100%, 50%)`).getHexString(),
                 carColor: null,
-                name: `Gangster-${Math.floor(Math.random()*1000)}`
+                name: "Player"
             };
+
+            // Créer mon mesh local
+            if (playersMap[myId]) scene.remove(playersMap[myId].mesh);
+            const mesh = createPlayerMesh(me.skinColor);
+            scene.add(mesh);
+            playersMap[myId] = { mesh, data: me, isCar: false };
             
             updateHUD();
         }
 
-        function changeWeapon(w) {
-            if(!me || me.inCar) return;
-            me.weapon = w;
-            document.getElementById('weapon-text').innerText = w === 'gun' ? 'PISTOLET' : 'COUTEAU';
+        function checkCollision(x, z) {
+            // Limites monde
+            if (x < 0 || x > WORLD_W || z < 0 || z > WORLD_H) return true;
+            
+            // Batiments (Approche grille simple)
+            // On convertit pos x,z en index grille
+            const gx = Math.floor((x + TILE_SIZE/2) / TILE_SIZE);
+            const gz = Math.floor((z + TILE_SIZE/2) / TILE_SIZE);
+            
+            if (MAP_DATA[gz] && MAP_DATA[gz][gx] === 1) return true;
+            
+            return false;
         }
 
-        function tryEnterExitCar() {
+        function toggleCar() {
             if (!me) return;
-
+            // Si pas en voiture, on en "invoque" une ou on rentre dedans (simplifié: toggle immédiat)
+            // Pour le fun: on dit qu'on peut spawn une voiture si on est sur la route
+            const gx = Math.floor((me.x + TILE_SIZE/2) / TILE_SIZE);
+            const gz = Math.floor((me.z + TILE_SIZE/2) / TILE_SIZE);
+            
+            // Changement d'état
+            me.inCar = !me.inCar;
+            
             if (me.inCar) {
-                // Sortir
-                me.inCar = false;
-                me.carColor = null;
+                me.carColor = '#' + new THREE.Color(`hsl(${Math.random()*360}, 100%, 50%)`).getHexString();
+                scene.remove(playersMap[myId].mesh);
+                const mesh = createCarMesh(me.carColor);
+                scene.add(mesh);
+                playersMap[myId].mesh = mesh;
+                playersMap[myId].isCar = true;
             } else {
-                // Chercher voiture proche
-                for (let car of STATIC_CARS) {
-                    let dist = Math.hypot(car.x - me.x, car.y - me.y);
-                    if (dist < 40) {
-                        me.inCar = true;
-                        me.carColor = car.color;
-                        me.x = car.x;
-                        me.y = car.y;
-                        break;
-                    }
-                }
+                me.carColor = null;
+                scene.remove(playersMap[myId].mesh);
+                const mesh = createPlayerMesh(me.skinColor);
+                scene.add(mesh);
+                playersMap[myId].mesh = mesh;
+                playersMap[myId].isCar = false;
             }
         }
 
         function shoot() {
-            if (me.weapon === 'gun') {
-                const bulletId = push(ref(db, 'bullets')).key;
-                const bData = {
-                    id: bulletId,
-                    owner: myId,
-                    x: me.x,
-                    y: me.y,
-                    angle: me.angle,
-                    speed: 15,
-                    damage: 20,
-                    timestamp: Date.now()
-                };
-                // Optimiste
-                bullets[bulletId] = bData;
-                set(ref(db, `bullets/${bulletId}`), bData);
-                
-                // Suppression auto après 2 sec
-                setTimeout(() => { remove(ref(db, `bullets/${bulletId}`)); }, 2000);
-            } else {
-                // Couteau (Raycast court)
-                const knifeRange = 40;
-                const hitX = me.x + Math.cos(me.angle) * knifeRange;
-                const hitY = me.y + Math.sin(me.angle) * knifeRange;
-                
-                // Vérifier si on touche quelqu'un
-                for(let pid in players) {
-                    if(pid === myId) continue;
-                    let p = players[pid];
-                    let dist = Math.hypot(p.x - hitX, p.y - hitY);
-                    if(dist < 20) {
-                        // HIT !
-                        damagePlayer(pid, 50); // Couteau fait mal
-                    }
-                }
-            }
-        }
-
-        function damagePlayer(targetId, dmg) {
-            // Seul le client qui tire calcule les dégâts pour simplifier (pas sécurisé mais ok pour proto)
-            // L'idéal serait d'envoyer "J'ai touché X" et le client X vérifie ou le serveur.
-            // Ici, on va tricher : on met à jour la DB de l'autre joueur.
-            // Note: Les règles Firebase doivent permettre d'écrire sur les autres joueurs.
+            if (!me || me.hp <= 0) return;
+            const bulletId = push(ref(db, 'bullets')).key;
+            // Tirer dans la direction du joueur
+            const bData = {
+                id: bulletId,
+                owner: myId,
+                x: me.x + Math.sin(me.angle) * 10,
+                z: me.z + Math.cos(me.angle) * 10,
+                vx: Math.sin(me.angle), // Vecteur direction
+                vz: Math.cos(me.angle),
+                timestamp: Date.now()
+            };
             
-            get(ref(db, `players/${targetId}/hp`)).then((snap) => {
-                if(snap.exists()) {
-                    let newHp = snap.val() - dmg;
-                    if (newHp <= 0) {
-                        newHp = 0;
-                        killFeed(me.name, players[targetId].name);
-                        // Reset player (respawn géré par le client victime normalement, mais on force ici)
-                    }
-                    update(ref(db, `players/${targetId}`), { hp: newHp });
-                }
-            });
-        }
-        
-        function killFeed(killer, victim) {
-            const el = document.createElement('div');
-            el.className = 'kill-msg';
-            el.innerHTML = `<span class="font-bold text-yellow-400">${killer}</span> 🔫 ${victim}`;
-            document.getElementById('killfeed').prepend(el);
-            setTimeout(() => el.remove(), 5000);
+            // On l'ajoute localement pour réactivité
+            set(ref(db, `bullets/${bulletId}`), bData);
+            
+            // Auto delete
+            setTimeout(() => { remove(ref(db, `bullets/${bulletId}`)); }, 2000);
         }
 
         function sendUpdate() {
             if(!me) return;
-            set(ref(db, `players/${myId}`), me);
-        }
-
-        function checkCollision(x, y) {
-            // Map boundaries
-            if (x < 0 || x > WORLD_W || y < 0 || y > WORLD_H) return true;
-
-            // Buildings
-            let tx = Math.floor(x / TILE_SIZE);
-            let ty = Math.floor(y / TILE_SIZE);
-            
-            if (MAP_DATA[ty] && MAP_DATA[ty][tx] === 1) return true; // Mur
-            
-            return false;
+            // On envoie seulement les données essentielles
+            update(ref(db, `players/${myId}`), {
+                x: me.x,
+                z: me.z,
+                angle: me.angle,
+                inCar: me.inCar,
+                skinColor: me.skinColor,
+                carColor: me.carColor,
+                hp: me.hp
+            });
         }
 
         function updateHUD() {
             if(!me) return;
             const hpBar = document.getElementById('hp-bar');
             const hpText = document.getElementById('hp-text');
-            
             hpBar.style.width = me.hp + '%';
             hpText.innerText = me.hp + '%';
-
-            if(me.hp <= 30) hpBar.className = "h-full bg-red-600 w-full animate-pulse";
-            else hpBar.className = "h-full bg-green-500 w-full transition-all";
-
-            // Si mort
+            
             if(me.hp <= 0) {
-                spawnMe(); // Respawn immédiat
+                // Respawn
+                spawnMe();
+                // Reset remote HP
+                update(ref(db, `players/${myId}`), { hp: 100 });
             }
         }
 
-        // --- MOTEUR PHYSIQUE & RENDU ---
+        function killFeed(msg) {
+            const el = document.createElement('div');
+            el.className = 'kill-msg';
+            el.innerText = msg;
+            document.getElementById('killfeed').prepend(el);
+            setTimeout(()=>el.remove(), 5000);
+        }
 
-        function gameLoop() {
-            // 1. UPDATE LOCAL PLAYER
-            if (me && me.hp > 0) {
-                let speed = me.inCar ? 6 : 3;
-                let dx = 0;
-                let dy = 0;
+        // --- MAIN LOOP ---
+        function animate() {
+            requestAnimationFrame(animate);
 
-                if (keys.w) dy -= speed;
-                if (keys.s) dy += speed;
-                if (keys.a) dx -= speed;
-                if (keys.d) dx += speed;
+            // 1. Déplacement Joueur Local
+            if (me && playersMap[myId]) {
+                const speed = me.inCar ? 4 : 1.5;
+                const rotSpeed = me.inCar ? 0.04 : 0.08;
 
-                // Normaliser diagonale
-                if (dx !== 0 && dy !== 0) {
-                    dx *= 0.707;
-                    dy *= 0.707;
+                // Rotation
+                if (keys.left) me.angle += rotSpeed;
+                if (keys.right) me.angle -= rotSpeed;
+
+                // Avancer / Reculer
+                let dx = 0, dz = 0;
+                if (keys.up) {
+                    dx = Math.sin(me.angle) * speed;
+                    dz = Math.cos(me.angle) * speed;
+                }
+                if (keys.down) {
+                    dx = -Math.sin(me.angle) * speed;
+                    dz = -Math.cos(me.angle) * speed;
                 }
 
-                if (!checkCollision(me.x + dx, me.y)) me.x += dx;
-                if (!checkCollision(me.x, me.y + dy)) me.y += dy;
-
-                // Rotation vers souris
-                // Convertir souris écran -> monde
-                mouse.worldX = mouse.x + cam.x;
-                mouse.worldY = mouse.y + cam.y;
-
-                // Si en voiture, rotation suit le mouvement (type GTA 1/2), sinon souris
-                if (me.inCar) {
-                    if (dx !== 0 || dy !== 0) me.angle = Math.atan2(dy, dx);
-                } else {
-                    me.angle = Math.atan2(mouse.worldY - me.y, mouse.worldX - me.x);
+                // Collision Check
+                if (!checkCollision(me.x + dx, me.z + dz)) {
+                    me.x += dx;
+                    me.z += dz;
                 }
 
-                updateHUD();
-            }
+                // Update Mesh
+                const pMesh = playersMap[myId].mesh;
+                pMesh.position.set(me.x, 0, me.z);
+                pMesh.rotation.y = me.angle; // Rotation Y en ThreeJS est l'axe vertical
 
-            // 2. UPDATE BULLETS LOCALLY (Prediction)
-            for(let bid in bullets) {
-                let b = bullets[bid];
-                b.x += Math.cos(b.angle) * b.speed;
-                b.y += Math.sin(b.angle) * b.speed;
+                // Update Camera (Suivi Third Person)
+                // Position idéale caméra : derrière le joueur et en hauteur
+                const camDist = me.inCar ? 80 : 50;
+                const camHeight = me.inCar ? 40 : 30;
                 
-                // Collision balle/mur
-                if(checkCollision(b.x, b.y)) {
-                    delete bullets[bid]; // Visuel seulement
-                }
+                // Calcul position derrière
+                const cx = me.x - Math.sin(me.angle) * camDist;
+                const cz = me.z - Math.cos(me.angle) * camDist;
+
+                // Lerp camera pour fluidité
+                camera.position.x += (cx - camera.position.x) * 0.1;
+                camera.position.z += (cz - camera.position.z) * 0.1;
+                camera.position.y += (camHeight - camera.position.y) * 0.1;
+                
+                camera.lookAt(me.x, 10, me.z);
             }
 
-            // 3. CAMERA
-            if (me) {
-                cam.x = me.x - CANVAS.width / 2;
-                cam.y = me.y - CANVAS.height / 2;
-                // Clamp camera
-                cam.x = Math.max(0, Math.min(cam.x, WORLD_W - CANVAS.width));
-                cam.y = Math.max(0, Math.min(cam.y, WORLD_H - CANVAS.height));
-            }
+            // 2. Physique Balles
+            const bulletSpeed = 8;
+            for(let bid in bulletsMap) {
+                const b = bulletsMap[bid];
+                // Avancer mesh
+                b.mesh.position.x += b.data.vx * bulletSpeed;
+                b.mesh.position.z += b.data.vz * bulletSpeed;
 
-            // 4. DRAW
-            CTX.fillStyle = '#1a1a1a'; // Asphalte fond
-            CTX.fillRect(0, 0, CANVAS.width, CANVAS.height);
-
-            CTX.save();
-            CTX.translate(-cam.x, -cam.y);
-
-            // Draw Map
-            for(let y=0; y<MAP_HEIGHT; y++) {
-                for(let x=0; x<MAP_WIDTH; x++) {
-                    let type = MAP_DATA[y][x];
-                    let posX = x * TILE_SIZE;
-                    let posY = y * TILE_SIZE;
-
-                    // Culling simple (ne pas dessiner hors écran)
-                    if (posX + TILE_SIZE < cam.x || posX > cam.x + CANVAS.width ||
-                        posY + TILE_SIZE < cam.y || posY > cam.y + CANVAS.height) continue;
-
-                    if (type === 1) { // Batiment
-                        // Ombre
-                        CTX.fillStyle = 'rgba(0,0,0,0.5)';
-                        CTX.fillRect(posX+5, posY+5, TILE_SIZE, TILE_SIZE);
-                        // Toit
-                        CTX.fillStyle = '#4a4a4a';
-                        CTX.fillRect(posX, posY, TILE_SIZE, TILE_SIZE);
-                        // Bordure
-                        CTX.strokeStyle = '#333';
-                        CTX.strokeRect(posX, posY, TILE_SIZE, TILE_SIZE);
-                    } else if (type === 2) { // Parc
-                        CTX.fillStyle = '#2d4a2d';
-                        CTX.fillRect(posX, posY, TILE_SIZE, TILE_SIZE);
-                    } else {
-                        // Route (déjà couleur fond)
-                        // Lignes jaunes
-                        if (x%2===0 && y%2!==0) {
-                            CTX.fillStyle = '#d4af37';
-                            CTX.fillRect(posX + TILE_SIZE/2 - 2, posY + 10, 4, 30);
-                        }
+                // Hit Detection simple (uniquement si je suis la cible)
+                if (me && myId !== b.data.owner) {
+                    const dist = Math.hypot(me.x - b.mesh.position.x, me.z - b.mesh.position.z);
+                    if (dist < 8) {
+                        // Touché !
+                        me.hp -= 10;
+                        updateHUD();
+                        // Supprimer visuellement pour pas se faire toucher 50 fois
+                        b.mesh.position.y = -100; 
                     }
                 }
             }
 
-            // Draw Static Cars (non utilisés)
-            for(let car of STATIC_CARS) {
-                drawCar(car.x, car.y, car.angle, car.color, false);
-            }
-
-            // Draw Players
-            for (let pid in players) {
-                let p = players[pid];
-                if (p.inCar) {
-                    drawCar(p.x, p.y, p.angle, p.carColor, true, p.name);
-                } else {
-                    drawHuman(p.x, p.y, p.angle, p.skinColor, p.weapon, p.name);
-                }
-            }
-
-            // Draw Bullets
-            CTX.fillStyle = '#ffaa00';
-            for (let bid in bullets) {
-                let b = bullets[bid];
-                CTX.beginPath();
-                CTX.arc(b.x, b.y, 3, 0, Math.PI * 2);
-                CTX.fill();
-            }
-
-            CTX.restore();
-            requestAnimationFrame(gameLoop);
+            renderer.render(scene, camera);
         }
 
-        function drawHuman(x, y, angle, color, weapon, name) {
-            CTX.save();
-            CTX.translate(x, y);
-            
-            // Name tag
-            CTX.fillStyle = 'white';
-            CTX.font = '10px Arial';
-            CTX.textAlign = 'center';
-            CTX.fillText(name, 0, -20);
-
-            CTX.rotate(angle);
-
-            // Corps
-            CTX.fillStyle = color;
-            CTX.beginPath();
-            CTX.arc(0, 0, 12, 0, Math.PI * 2);
-            CTX.fill();
-            
-            // Epaules
-            CTX.fillStyle = 'rgba(0,0,0,0.3)';
-            CTX.fillRect(-8, -8, 16, 4);
-
-            // Bras / Arme
-            if (weapon === 'gun') {
-                CTX.fillStyle = '#000';
-                CTX.fillRect(5, -3, 15, 6); // Bras tendu
-            } else {
-                CTX.fillStyle = '#888'; // Couteau
-                CTX.beginPath();
-                CTX.moveTo(10, 0);
-                CTX.lineTo(25, 0);
-                CTX.lineWidth = 3;
-                CTX.strokeStyle = '#ccc';
-                CTX.stroke();
-            }
-
-            CTX.restore();
-        }
-
-        function drawCar(x, y, angle, color, isOccupied, name) {
-            CTX.save();
-            CTX.translate(x, y);
-            
-            if(name) {
-                CTX.fillStyle = 'white';
-                CTX.font = '10px Arial';
-                CTX.textAlign = 'center';
-                CTX.fillText(name, 0, -25);
-            }
-
-            CTX.rotate(angle);
-            
-            // Ombre
-            CTX.fillStyle = 'rgba(0,0,0,0.4)';
-            CTX.fillRect(-22, -12, 44, 24);
-
-            // Car body
-            CTX.fillStyle = color;
-            CTX.beginPath();
-            CTX.roundRect(-20, -10, 40, 20, 3);
-            CTX.fill();
-
-            // Pare-brise
-            CTX.fillStyle = '#111';
-            CTX.fillRect(0, -8, 8, 16); // Arrière
-            CTX.fillStyle = '#87ceeb';
-            CTX.fillRect(10, -8, 5, 16); // Avant
-
-            // Phares
-            if (isOccupied) {
-                CTX.fillStyle = 'rgba(255, 255, 200, 0.5)';
-                CTX.beginPath();
-                CTX.moveTo(20, -8);
-                CTX.lineTo(100, -30);
-                CTX.lineTo(100, 30);
-                CTX.lineTo(20, 8);
-                CTX.fill();
-            }
-
-            CTX.restore();
-        }
+        // Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
 
     </script>
 </body>
