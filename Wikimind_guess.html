@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WikiMind Guess - Mapillary Edition</title>
+    <title>WikiMind Guess - Version Stable</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
     
@@ -11,25 +11,29 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
+    <!-- PANNELLUM (Le moteur 360) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css"/>
+    <script src="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js"></script>
+
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
 
     <style>
         body { font-family: 'Outfit', sans-serif; background-color: #0f172a; color: white; overflow: hidden; height: 100vh; width: 100vw; }
         
-        /* Conteneur de la vue Street View (Mapillary) */
-        #street-view-container {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1;
-            background: #000;
-        }
-        #mly-frame {
-            width: 100%; height: 100%; border: none;
-            filter: contrast(1.1) saturate(1.1); /* Petit boost visuel */
+        /* CONTENEUR 360 */
+        #panorama { height: 100%; width: 100%; position: absolute; top: 0; left: 0; z-index: 1; background: #000; }
+        
+        /* Message d'erreur si écran noir */
+        #error-msg {
+            display: none;
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            z-index: 5; text-align: center; background: rgba(0,0,0,0.8); padding: 20px; border-radius: 10px; border: 1px solid red;
         }
 
         /* HUD Overlay */
         .hud-top {
             position: absolute; top: 0; left: 0; width: 100%; height: 80px;
-            background: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent);
+            background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
             z-index: 10; pointer-events: none;
             display: flex; justify-content: space-between; align-items: flex-start;
             padding: 15px 25px;
@@ -41,12 +45,11 @@
             background: rgba(255,255,255,0.1); z-index: 12;
         }
         #timer-bar {
-            height: 100%; width: 100%; background: #0ea5e9;
+            height: 100%; width: 100%; background: #ef4444;
             transition: width 1s linear;
-            box-shadow: 0 0 10px #0ea5e9;
         }
 
-        /* Carte de Guess */
+        /* Minimap */
         #guess-map-wrapper {
             position: absolute; bottom: 20px; right: 20px;
             width: 300px; height: 200px;
@@ -59,7 +62,7 @@
         }
         #guess-map-wrapper:hover { width: 500px; height: 400px; }
         
-        /* Mode Resultat (Carte en grand) */
+        /* Mode Résultat */
         #guess-map-wrapper.result-mode {
             width: 80vw !important; height: 70vh !important;
             bottom: 50%; right: 50%;
@@ -85,7 +88,7 @@
         #btn-guess:hover { transform: translateX(-50%) scale(1.05); background: #16a34a; }
         #btn-guess:disabled { background: #525252; opacity: 0.5; cursor: not-allowed; }
 
-        /* Écrans (Menu, etc) */
+        /* Écrans */
         .fullscreen-overlay {
             position: fixed; inset: 0; z-index: 3000;
             background: rgba(15, 23, 42, 0.95);
@@ -100,17 +103,18 @@
             background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
             border-radius: 20px; padding: 40px; box-shadow: 0 20px 50px rgba(0,0,0,0.5);
         }
-        
-        /* Loader mapillary */
-        #loading-msg {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            z-index: 0; color: gray; font-size: 12px; pointer-events: none;
-        }
     </style>
 </head>
 <body>
 
-    <!-- HUD DU JEU -->
+    <!-- Message erreur si image bloque -->
+    <div id="error-msg">
+        <h3 class="text-red-500 font-bold text-xl">⚠️ Image bloquée</h3>
+        <p class="text-sm mt-2">Le navigateur a bloqué l'image 360°.</p>
+        <p class="text-xs text-gray-400 mt-1">Essaie d'installer l'extension "Web Server for Chrome"<br>ou lance ce fichier via un serveur local.</p>
+    </div>
+
+    <!-- HUD -->
     <div id="game-hud" class="hidden">
         <div id="timer-container"><div id="timer-bar"></div></div>
         
@@ -126,38 +130,22 @@
         </div>
     </div>
 
-    <!-- MENU PRINCIPAL -->
+    <!-- MENU -->
     <div id="menu-screen" class="fullscreen-overlay">
-        <div class="glass max-w-lg w-full relative overflow-hidden">
-            <!-- Décoration fond -->
-            <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-500 to-purple-500"></div>
-
-            <h1 class="text-5xl font-black mb-2 italic text-white tracking-tighter">STREET<span class="text-blue-500">GUESS</span></h1>
-            <p class="text-gray-400 mb-8 text-sm uppercase tracking-widest">Mapillary Powered</p>
+        <div class="glass max-w-lg w-full">
+            <h1 class="text-5xl font-black mb-2 italic text-white">WIKI GUESS</h1>
+            <p class="text-gray-400 mb-8 text-sm uppercase tracking-widest">Version Stable (Pannellum)</p>
             
-            <div class="grid grid-cols-2 gap-3 mb-8 text-left">
-                <div class="bg-white/5 p-3 rounded border border-white/5">
-                    <div class="text-blue-400 font-bold text-lg">🌍 Déplacement</div>
-                    <div class="text-xs text-gray-400">Tu peux bouger dans la rue</div>
-                </div>
-                <div class="bg-white/5 p-3 rounded border border-white/5">
-                    <div class="text-green-400 font-bold text-lg">⏱️ 30 Secondes</div>
-                    <div class="text-xs text-gray-400">Pour trouver l'endroit</div>
-                </div>
-            </div>
-
             <button onclick="startGame()" class="w-full py-4 bg-blue-600 hover:bg-blue-500 rounded-xl font-bold text-xl uppercase shadow-lg transition transform hover:scale-[1.02]">
-                Lancer la partie
+                JOUER
             </button>
         </div>
     </div>
 
-    <!-- INTERFACE JEU -->
+    <!-- JEU -->
     <div id="game-ui" class="hidden h-full w-full relative">
-        <div id="street-view-container">
-            <span id="loading-msg">Chargement Street View...</span>
-            <iframe id="mly-frame" src="" allowfullscreen></iframe>
-        </div>
+        <!-- Le viewer 360 -->
+        <div id="panorama"></div>
 
         <div id="guess-map-wrapper">
             <div id="guess-map"></div>
@@ -165,72 +153,74 @@
         </div>
     </div>
 
-    <!-- ÉCRAN RÉSULTAT INTERMÉDIAIRE -->
+    <!-- RESULTATS -->
     <div id="intermission-screen" class="fullscreen-overlay hidden">
         <div class="glass max-w-md w-full animate-bounce-in">
-            <div class="text-5xl mb-4">🎯</div>
+            <div class="text-5xl mb-4">📍</div>
             <h2 class="text-3xl font-black text-white mb-2">RÉSULTAT</h2>
-            
             <div class="py-6 border-y border-white/10 my-4">
                 <div class="text-sm text-gray-400 uppercase">Distance</div>
                 <div class="text-4xl font-mono font-bold text-white" id="round-distance">0 km</div>
                 <div class="text-sm text-gray-400 uppercase mt-4">Points</div>
                 <div class="text-5xl font-black text-green-400" id="round-score">+0</div>
             </div>
-
-            <button onclick="nextRound()" class="w-full py-3 bg-white text-black font-bold rounded-lg uppercase hover:bg-gray-200 transition">
-                Tour Suivant
-            </button>
+            <button onclick="nextRound()" class="w-full py-3 bg-white text-black font-bold rounded-lg uppercase hover:bg-gray-200 transition">Suite</button>
         </div>
     </div>
 
-    <!-- ÉCRAN FIN -->
     <div id="end-screen" class="fullscreen-overlay hidden">
-        <div class="glass max-w-lg w-full text-center">
-            <h2 class="text-4xl font-black text-white mb-2">FIN DE PARTIE</h2>
-            <p class="text-gray-400 mb-6">Tous les lieux ont été visités</p>
-            
+        <div class="glass max-w-lg w-full">
+            <h2 class="text-4xl font-black text-white mb-2">SCORE FINAL</h2>
             <div class="text-7xl font-black text-yellow-400 mb-8" id="final-score">0</div>
-            
             <button onclick="location.reload()" class="w-full py-4 bg-blue-600 font-bold rounded-xl uppercase">Rejouer</button>
         </div>
     </div>
 
     <script>
-        // --- DATA (Mapillary Image Keys) ---
-        // Ce sont des IDs d'images Mapillary vérifiés.
-        // Avantage : Ce sont des iframes, donc 0 bug de texture ou de CORS.
+        // LISTE D'IMAGES FIABLES (Hébergées sur Pannellum.org et Wikimedia avec CORS activé)
         const LOCATIONS = [
-            { key: "498763468214164", lat: 48.858, lng: 2.294, name: "Paris - Tour Eiffel" },
-            { key: "313498964344462", lat: 40.758, lng: -73.985, name: "NY - Times Square" },
-            { key: "1486331908422201", lat: 35.659, lng: 139.700, name: "Tokyo - Shibuya" },
-            { key: "244678854228746", lat: 51.500, lng: -0.124, name: "Londres - Big Ben" },
-            { key: "235658634734687", lat: -33.857, lng: 151.215, name: "Sydney - Opera" },
-            { key: "508496494056285", lat: 41.890, lng: 12.492, name: "Rome - Colisée" },
-            { key: "789642921822822", lat: 27.175, lng: 78.042, name: "Inde - Taj Mahal" },
-            { key: "447844623788734", lat: 37.820, lng: -122.478, name: "San Francisco - Golden Gate" },
-            { key: "515796696417531", lat: 55.752, lng: 37.622, name: "Moscou - Place Rouge" },
-            { key: "123616616377014", lat: -22.951, lng: -43.210, name: "Rio - Christ Rédempteur" }
+            { 
+                name: "Alpes Suisses (Demo)", 
+                lat: 46.558, lng: 7.905, 
+                pano: "https://pannellum.org/images/alma.jpg" 
+            },
+            { 
+                name: "Bibliothèque de Londres", 
+                lat: 51.507, lng: -0.127, 
+                pano: "https://pannellum.org/images/bma-0.jpg" 
+            },
+            { 
+                name: "Cerro Torre", 
+                lat: -49.293, lng: -73.097, 
+                pano: "https://pannellum.org/images/cerro-torre.jpg" 
+            },
+            { 
+                name: "Grand Canyon (US)", 
+                lat: 36.054, lng: -112.140, 
+                pano: "https://upload.wikimedia.org/wikipedia/commons/2/21/Grand_Canyon_Horseshoe_Bend_Panorama.jpg" 
+            },
+            { 
+                name: "Place Rouge (Moscou)", 
+                lat: 55.753, lng: 37.622, 
+                pano: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/15/Red_Square_Saint_Basils_Cathedral_GUM_Mosaic_Panorama.jpg/1024px-Red_Square_Saint_Basils_Cathedral_GUM_Mosaic_Panorama.jpg" 
+            }
         ];
 
-        let map, guessMarker, targetMarker, linePoly;
+        let map, viewer, guessMarker, targetMarker, linePoly;
         let currentRound = 0;
         let totalScore = 0;
         let timeLeft;
         let timerInterval;
         let currentLoc;
-        const ROUND_TIME = 30; // Temps pour deviner
-        const MAX_ROUNDS = 5;  // Nombre de manches par partie
+        const ROUND_TIME = 20;
+        const MAX_ROUNDS = 5;
         let gameQueue = [];
 
         function startGame() {
-            // Mélanger et prendre 5 lieux au hasard
             gameQueue = [...LOCATIONS].sort(() => 0.5 - Math.random()).slice(0, MAX_ROUNDS);
-            
             document.getElementById('menu-screen').classList.add('hidden');
             document.getElementById('game-hud').classList.remove('hidden');
             document.getElementById('game-ui').classList.remove('hidden');
-            
             initMap();
             loadRound(0);
         }
@@ -241,7 +231,6 @@
             L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
                 maxZoom: 19
             }).addTo(map);
-
             map.on('click', (e) => {
                 if(guessMarker) map.removeLayer(guessMarker);
                 guessMarker = L.marker(e.latlng).addTo(map);
@@ -252,78 +241,85 @@
             currentRound = index;
             currentLoc = gameQueue[currentRound];
             
-            // Reset UI
+            // UI Reset
             document.getElementById('intermission-screen').classList.add('hidden');
             document.getElementById('guess-map-wrapper').classList.remove('result-mode');
             document.getElementById('btn-guess').disabled = false;
             document.getElementById('round-display').innerText = `${currentRound + 1}/${MAX_ROUNDS}`;
-            
-            // Clean Map
+            document.getElementById('error-msg').style.display = 'none'; // Cacher erreur
+
+            // Map Clean
             if(guessMarker) map.removeLayer(guessMarker);
             if(targetMarker) map.removeLayer(targetMarker);
             if(linePoly) map.removeLayer(linePoly);
             map.setView([20, 0], 1);
             map.invalidateSize();
 
-            // Load Mapillary Iframe
-            // On utilise l'embed officiel qui est stable
-            const embedUrl = `https://www.mapillary.com/embed?image_key=${currentLoc.key}&style=classic`;
-            document.getElementById('mly-frame').src = embedUrl;
+            // CHARGEMENT PANNELLUM
+            if(viewer) viewer.destroy();
+            
+            try {
+                viewer = pannellum.viewer('panorama', {
+                    type: 'equirectangular',
+                    panorama: currentLoc.pano,
+                    autoLoad: true,
+                    showControls: false,
+                    compass: false,
+                    // Cette option aide parfois pour le CORS
+                    crossOrigin: 'anonymous' 
+                });
+                
+                // Détection d'erreur de chargement
+                viewer.on('error', function(e) {
+                    console.error("Erreur Pannellum:", e);
+                    document.getElementById('error-msg').style.display = 'block';
+                });
+            } catch(e) {
+                console.error(e);
+                document.getElementById('error-msg').style.display = 'block';
+            }
 
-            // Timer
             startTimer();
         }
 
         function startTimer() {
             timeLeft = ROUND_TIME;
             const bar = document.getElementById('timer-bar');
-            
             clearInterval(timerInterval);
             bar.style.transition = 'none';
             bar.style.width = '100%';
-            
             setTimeout(() => {
                 bar.style.transition = `width ${ROUND_TIME}s linear`;
                 bar.style.width = '0%';
             }, 50);
-
             timerInterval = setInterval(() => {
                 timeLeft--;
-                if(timeLeft <= 0) {
-                    submitGuess(true);
-                }
+                if(timeLeft <= 0) submitGuess(true);
             }, 1000);
         }
 
         function submitGuess(force = false) {
             if (!guessMarker && !force) {
-                alert("Place un point sur la carte !");
+                alert("Clique sur la carte !");
                 return;
             }
-            
             clearInterval(timerInterval);
             document.getElementById('btn-guess').disabled = true;
 
-            let dist = 10000; // Penalité si pas de guess
+            let dist = 10000; 
             let points = 0;
             let guessLatLng = null;
 
             if (guessMarker) {
                 guessLatLng = guessMarker.getLatLng();
                 dist = map.distance(guessLatLng, [currentLoc.lat, currentLoc.lng]) / 1000;
-                
-                // Formule de score (max 5000)
                 points = Math.round(5000 * Math.exp(-dist / 2000));
             }
             
             totalScore += points;
             document.getElementById('score-display').innerText = totalScore;
-
             showMapResult(guessLatLng, [currentLoc.lat, currentLoc.lng]);
-
-            setTimeout(() => {
-                showIntermission(dist, points);
-            }, 2500);
+            setTimeout(() => { showIntermission(dist, points); }, 2500);
         }
 
         function showMapResult(guessPos, targetPos) {
@@ -362,7 +358,6 @@
                 document.getElementById('final-score').innerText = totalScore;
             }
         };
-
     </script>
 </body>
 </html>
