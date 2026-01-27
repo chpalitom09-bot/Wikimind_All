@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>WikiMind Guess - Free Edition</title>
+    <title>WikiMind Guess - Mode Arcade</title>
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- LEAFLET (Carte OpenSource) -->
+    <!-- LEAFLET (Carte OpenSource Gratuite) -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
@@ -16,332 +16,355 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css"/>
     <script src="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js"></script>
 
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: { bg: '#0f172a', card: '#1e293b', accent: '#3b82f6' }
-                }
-            }
-        }
-    </script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
 
     <style>
-        body { font-family: 'Outfit', sans-serif; background-color: #0f172a; color: white; overflow: hidden; }
+        body { font-family: 'Outfit', sans-serif; background-color: #0f172a; color: white; overflow: hidden; height: 100vh; width: 100vw; }
         
-        /* Conteneur 360 */
-        #panorama { height: 100vh; width: 100vw; position: absolute; top: 0; left: 0; z-index: 0; }
-        .pnlm-load-box { display: none !important; } /* Cacher le loading moche par défaut */
-        
-        /* Carte de guessing flottante */
-        #guess-map-container {
-            position: absolute;
-            bottom: 20px;
-            right: 20px;
-            width: 320px;
-            height: 240px;
-            z-index: 1000;
-            border-radius: 12px;
-            overflow: hidden;
-            border: 3px solid rgba(255,255,255,0.8);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            transition: all 0.3s ease;
-            background: #1e293b;
-        }
-        #guess-map-container:hover {
-            width: 500px;
-            height: 500px;
-        }
-        #guess-map { width: 100%; height: 100%; background: #222; }
+        /* Vue 360 */
+        #panorama { height: 100%; width: 100%; position: absolute; top: 0; left: 0; z-index: 1; }
+        .pnlm-load-box { display: none !important; }
+        .pnlm-about-msg { display: none !important; }
 
-        /* UI Elements */
-        .glass-panel {
-            background: rgba(15, 23, 42, 0.95);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255,255,255,0.1);
+        /* HUD Overlay */
+        .hud-top {
+            position: absolute; top: 0; left: 0; width: 100%; height: 80px;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
+            z-index: 10; pointer-events: none;
+            display: flex; justify-content: space-between; align-items: flex-start;
+            padding: 15px 25px;
         }
+
+        /* Timer Bar */
+        #timer-container {
+            position: absolute; top: 0; left: 0; width: 100%; height: 6px;
+            background: rgba(255,255,255,0.2); z-index: 12;
+        }
+        #timer-bar {
+            height: 100%; width: 100%; background: #ef4444;
+            transition: width 1s linear;
+        }
+
+        /* Minimap Flottante */
+        #guess-map-wrapper {
+            position: absolute; bottom: 20px; right: 20px;
+            width: 320px; height: 240px;
+            z-index: 20;
+            border-radius: 12px; overflow: hidden;
+            border: 3px solid white;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+            background: #1e293b;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            opacity: 0.9;
+        }
+        #guess-map-wrapper:hover { opacity: 1; width: 600px; height: 450px; }
         
-        /* Bouton Valider */
-        #btn-guess-container {
-            position: absolute; bottom: 15px; left: 0; width: 100%; 
-            display: flex; justify-content: center; pointer-events: none; z-index: 1001;
+        /* Mode Resultat Map (Plein écran partiel) */
+        #guess-map-wrapper.result-mode {
+            width: 80vw !important; height: 70vh !important;
+            bottom: 50%; right: 50%;
+            transform: translate(50%, 50%);
+            border-color: #fbbf24;
         }
+
+        #guess-map { width: 100%; height: 100%; background: #111; cursor: crosshair; }
+
+        /* Bouton Guess */
         #btn-guess {
-            pointer-events: auto;
-            background: #16a34a; color: white;
-            font-weight: 800; padding: 12px 30px;
+            position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%);
+            z-index: 1001; pointer-events: auto;
+            background: #22c55e; color: white;
+            font-weight: 800; padding: 12px 40px;
             border-radius: 9999px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
             border: 2px solid white;
-            text-transform: uppercase; font-size: 14px; letter-spacing: 1px;
+            text-transform: uppercase; font-size: 16px; letter-spacing: 1px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.4);
             transition: all 0.2s;
         }
-        #btn-guess:hover { transform: scale(1.05); background: #15803d; }
-        #btn-guess:disabled { background: #525252; opacity: 0.7; cursor: not-allowed; }
+        #btn-guess:hover { transform: translateX(-50%) scale(1.05); background: #16a34a; }
+        #btn-guess:disabled { background: #525252; cursor: not-allowed; opacity: 0; pointer-events: none; }
 
-        /* Custom marker Leaflet */
-        .custom-icon { filter: drop-shadow(0 0 5px black); }
+        /* Écrans (Menu, Intermission, Fin) */
+        .fullscreen-overlay {
+            position: fixed; inset: 0; z-index: 3000;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(10px);
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            text-align: center;
+            transition: opacity 0.3s;
+        }
+        .hidden { display: none !important; }
+
+        /* Glass Panel */
+        .glass {
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 20px; padding: 40px; box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
     </style>
 </head>
 <body>
 
-    <!-- HEADER HUD -->
-    <header class="fixed top-0 left-0 w-full h-16 z-50 flex items-center justify-between px-6 pointer-events-none">
-        <div class="pointer-events-auto bg-black/60 backdrop-blur rounded-full px-4 py-2 flex items-center gap-3 border border-white/10">
-            <div class="w-3 h-3 rounded-full bg-green-500 animate-pulse" id="conn-status"></div>
-            <span class="font-bold text-sm tracking-wider">WIKIMIND GUESS (Free)</span>
-        </div>
+    <!-- TIMER -->
+    <div id="game-hud" class="hidden">
+        <div id="timer-container"><div id="timer-bar"></div></div>
         
-        <div class="pointer-events-auto bg-black/60 backdrop-blur rounded-full px-4 py-2 flex items-center gap-4 border border-white/10">
-            <button onclick="window.location.href='Wikimind_games.html'" class="text-xs font-bold text-gray-400 hover:text-white">QUITTER</button>
+        <div class="hud-top">
+            <div class="glass px-4 py-2 rounded-full bg-black/50 flex items-center gap-3">
+                <span class="text-xs text-gray-400 uppercase font-bold">Manche</span>
+                <span id="round-display" class="text-xl font-black text-white">1/10</span>
+            </div>
+            <div class="glass px-4 py-2 rounded-full bg-black/50 text-right">
+                <div class="text-xs text-gray-400 uppercase font-bold">Score Total</div>
+                <div id="score-display" class="text-xl font-black text-yellow-400">0 pts</div>
+            </div>
         </div>
-    </header>
+    </div>
 
     <!-- MENU PRINCIPAL -->
-    <div id="main-menu" class="fixed inset-0 z-[2000] flex items-center justify-center bg-black/80 backdrop-blur-sm">
-        <div class="glass-panel p-8 rounded-2xl max-w-md w-full text-center shadow-2xl border-t border-blue-500/50">
-            <h1 class="text-5xl font-black mb-2 italic text-white">🌍 GUESS</h1>
-            <p class="text-gray-400 mb-8 text-sm">Version Open Source - 100% Gratuit</p>
-
-            <!-- Mode Tabs -->
-            <div class="flex gap-2 mb-6 bg-black/40 p-1 rounded-lg">
-                <button onclick="setMode('solo')" id="tab-solo" class="flex-1 py-2 rounded font-bold text-xs uppercase bg-blue-600 text-white shadow">Solo</button>
-                <button onclick="setMode('online')" id="tab-online" class="flex-1 py-2 rounded font-bold text-xs uppercase text-gray-400 hover:bg-white/5 transition">En Ligne</button>
-            </div>
-
-            <!-- Panel Solo -->
-            <div id="panel-solo" class="space-y-3">
-                <button onclick="startGame('solo')" class="w-full py-4 bg-gradient-to-r from-blue-600 to-blue-500 rounded-xl font-bold text-lg shadow-lg shadow-blue-900/50 uppercase tracking-widest hover:scale-[1.02] transition">
-                    Jouer Solo
-                </button>
-            </div>
-
-            <!-- Panel Online -->
-            <div id="panel-online" class="hidden space-y-4">
-                <button id="btn-create" class="w-full py-3 bg-green-600 hover:bg-green-500 text-white font-bold rounded-xl uppercase tracking-widest shadow-lg">
-                    Créer Partie
-                </button>
-                
-                <div class="flex gap-2">
-                    <input type="text" id="input-code" placeholder="CODE" class="flex-1 bg-black/50 border border-white/20 rounded-xl px-4 text-center font-mono text-white focus:border-blue-500 outline-none uppercase h-12">
-                    <button id="btn-join" class="px-6 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-xl uppercase text-sm h-12">Join</button>
+    <div id="menu-screen" class="fullscreen-overlay">
+        <div class="glass max-w-lg w-full">
+            <h1 class="text-6xl font-black mb-2 italic text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-green-400">WIKI GUESS</h1>
+            <p class="text-gray-400 mb-8 tracking-widest uppercase text-xs">Edition Arcade Gratuite</p>
+            
+            <div class="space-y-4">
+                <div class="grid grid-cols-2 gap-4 text-left text-sm text-gray-300 mb-6">
+                    <div class="bg-white/5 p-3 rounded">⏱️ <b>20 Secondes</b> / lieu</div>
+                    <div class="bg-white/5 p-3 rounded">🌍 <b>10 Manches</b></div>
+                    <div class="bg-white/5 p-3 rounded">🎯 <b>5000 Pts</b> max</div>
+                    <div class="bg-white/5 p-3 rounded">💰 <b>100% Gratuit</b></div>
                 </div>
 
-                <div id="lobby-ui" class="hidden mt-4 bg-white/5 p-4 rounded-xl border border-dashed border-white/20">
-                    <div class="text-xs text-gray-400 uppercase mb-1">Code Partie</div>
-                    <div id="display-code" class="text-3xl font-mono font-black text-blue-400 select-all cursor-pointer bg-black/50 rounded p-2">----</div>
-                    <div class="mt-2 text-[10px] text-yellow-300 animate-pulse">En attente d'un joueur...</div>
-                </div>
+                <button onclick="startGame()" class="w-full py-4 bg-green-600 hover:bg-green-500 rounded-xl font-bold text-xl uppercase shadow-lg shadow-green-900/50 transition transform hover:scale-[1.02]">
+                    Jouer Maintenant
+                </button>
             </div>
         </div>
     </div>
 
     <!-- JEU -->
-    <div id="game-ui" class="hidden w-full h-full relative">
-        <!-- Lecteur 360 -->
+    <div id="game-ui" class="hidden h-full w-full relative">
         <div id="panorama"></div>
 
-        <!-- Carte -->
-        <div id="guess-map-container">
+        <div id="guess-map-wrapper">
             <div id="guess-map"></div>
-            <div id="btn-guess-container">
-                <button id="btn-guess">VALIDER GUESS</button>
-            </div>
+            <button id="btn-guess" onclick="submitGuess()">VALIDER</button>
         </div>
     </div>
 
-    <!-- RESULTAT MODAL -->
-    <div id="result-modal" class="hidden fixed inset-0 z-[3000] flex items-center justify-center bg-black/90 backdrop-blur-md p-4">
-        <div class="glass-panel p-6 rounded-2xl max-w-lg w-full text-center relative border border-white/10">
-            <div class="text-6xl mb-4">📍</div>
-            <h2 class="text-3xl font-black text-white mb-1 uppercase" id="result-title">Résultat</h2>
-            <div class="text-5xl font-mono font-bold text-green-400 mb-4" id="result-distance">0 km</div>
+    <!-- INTERMISSION / LEADERBOARD TEMPORAIRE -->
+    <div id="intermission-screen" class="fullscreen-overlay hidden">
+        <div class="glass max-w-md w-full animate-in fade-in zoom-in duration-300">
+            <div class="text-6xl mb-4" id="intermission-icon">📍</div>
+            <h2 class="text-4xl font-black text-white mb-2" id="intermission-title">Résultat</h2>
             
-            <div class="flex justify-around mb-6 text-sm text-gray-400 bg-black/30 p-4 rounded-xl border border-white/5">
-                <div>
-                    <div class="font-bold text-white text-xl" id="p1-score">---</div>
-                    <div class="text-[10px] uppercase tracking-wider mt-1">Moi</div>
-                </div>
-                <div id="p2-score-container" class="hidden border-l border-white/10 pl-8">
-                    <div class="font-bold text-white text-xl" id="p2-score">---</div>
-                    <div class="text-[10px] uppercase tracking-wider mt-1">Adversaire</div>
-                </div>
+            <div class="my-6">
+                <div class="text-sm text-gray-400 uppercase">Distance</div>
+                <div class="text-5xl font-mono font-bold text-white mb-4" id="round-distance">---</div>
+                
+                <div class="text-sm text-gray-400 uppercase">Points Manche</div>
+                <div class="text-4xl font-black text-green-400" id="round-score">+0</div>
             </div>
 
-            <button onclick="location.reload()" class="w-full bg-white text-black font-bold py-4 rounded-xl uppercase text-xs tracking-widest hover:bg-gray-200 transition">Retour Menu</button>
+            <div class="w-full bg-white/10 h-1 mt-4 rounded-full overflow-hidden">
+                <div id="intermission-timer" class="h-full bg-blue-500 w-full"></div>
+            </div>
+            <p class="text-xs text-gray-500 mt-2 uppercase">Prochaine manche dans <span id="next-round-sec">7</span>s</p>
         </div>
     </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getDatabase, ref, set, onValue, update, get } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+    <!-- FIN DE PARTIE -->
+    <div id="end-screen" class="fullscreen-overlay hidden">
+        <div class="glass max-w-lg w-full">
+            <h2 class="text-4xl font-black text-white mb-6">PARTIE TERMINÉE</h2>
+            
+            <div class="bg-black/40 p-6 rounded-2xl border border-white/10 mb-8">
+                <div class="text-sm text-gray-400 uppercase mb-1">Score Final</div>
+                <div class="text-6xl font-black text-yellow-400" id="final-score">0</div>
+                <div class="text-sm text-gray-500 mt-2">sur 50,000 pts possibles</div>
+            </div>
 
-        // FIREBASE CONFIG (Remet ta config si elle change)
-        const firebaseConfig = {
-            apiKey: "AIzaSyC_P0rfBDbRugnh5xKEJG5IE6P6kub6vV8",
-            authDomain: "wikimind-guesser.firebaseapp.com",
-            databaseURL: "https://wikimind-guesser-default-rtdb.europe-west1.firebasedatabase.app",
-            projectId: "wikimind-guesser",
-            storageBucket: "wikimind-guesser.firebasestorage.app",
-            messagingSenderId: "977613671463",
-            appId: "1:977613671463:web:f7203e96b97cea3b5a5202"
-        };
+            <button onclick="location.reload()" class="w-full py-4 bg-blue-600 hover:bg-blue-500 rounded-xl font-bold uppercase transition">
+                Rejouer
+            </button>
+        </div>
+    </div>
 
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getDatabase(app);
-
-        // --- DONNÉES DE JEU (IMAGES 360 GRATUITES) ---
-        // On ne peut pas "parcourir" le monde entier gratuitement comme Google.
-        // On utilise une liste de lieux pré-définis avec des images libres de droits.
-        const LOCATIONS = [
-            { 
-                name: "Alpes Suisses",
-                lat: 46.558, lng: 7.905, 
-                pano: "https://pannellum.org/images/alma.jpg" 
-            },
-            {
-                name: "Bibliothèque",
-                lat: 51.507, lng: -0.127, // Fake coords for demo
-                pano: "https://pannellum.org/images/bma-0.jpg"
-            },
-            {
-                name: "Cerro Torre (Argentine)",
-                lat: -49.293, lng: -73.097,
-                pano: "https://pannellum.org/images/cerro-torre.jpg"
-            },
-            // Tu peux ajouter tes propres URLs d'images 360 ici
+    <script>
+        // --- BASE DE DONNÉES (IMAGES GRATUITES - WIKIMEDIA/PANNELLUM) ---
+        // Pour en avoir une "infinité", il faudrait une API payante.
+        // Ici, j'ai compilé une liste diversifiée. Le code en piochera 10 au hasard.
+        const DATABASE = [
+            { name: "Alpes Suisses", lat: 46.558, lng: 7.905, pano: "https://pannellum.org/images/alma.jpg" },
+            { name: "Londres Bibliothèque", lat: 51.507, lng: -0.127, pano: "https://pannellum.org/images/bma-0.jpg" },
+            { name: "Cerro Torre", lat: -49.293, lng: -73.097, pano: "https://pannellum.org/images/cerro-torre.jpg" },
+            { name: "Milan", lat: 45.464, lng: 9.190, pano: "https://upload.wikimedia.org/wikipedia/commons/e/ea/Galleria_Vittorio_Emanuele_II%2C_Milan%2C_Italy_-_360_degree_panoramic_view.jpg" },
+            { name: "Grand Canyon", lat: 36.054, lng: -112.140, pano: "https://upload.wikimedia.org/wikipedia/commons/2/21/Grand_Canyon_Horseshoe_Bend_Panorama.jpg" },
+            { name: "Paris, Louvre", lat: 48.860, lng: 2.337, pano: "https://upload.wikimedia.org/wikipedia/commons/b/b5/Louvre_Cour_Napol%C3%A9on_panoramic_view%2C_Paris_9_July_2016.jpg" },
+            { name: "Place Rouge, Moscou", lat: 55.753, lng: 37.622, pano: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/15/Red_Square_Saint_Basils_Cathedral_GUM_Mosaic_Panorama.jpg/1024px-Red_Square_Saint_Basils_Cathedral_GUM_Mosaic_Panorama.jpg" },
+            { name: "Machu Picchu", lat: -13.163, lng: -72.545, pano: "https://upload.wikimedia.org/wikipedia/commons/1/1d/Machu_Picchu_Peru_Panorama.jpg" },
+            { name: "Venise", lat: 45.434, lng: 12.339, pano: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d7/Piazza_San_Marco_Venice_September_2015_panorama.jpg/1280px-Piazza_San_Marco_Venice_September_2015_panorama.jpg" },
+            { name: "New York Times Square", lat: 40.758, lng: -73.985, pano: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/Times_Square_Panorama_2014.jpg/1280px-Times_Square_Panorama_2014.jpg" },
+            { name: "Kyoto Temple", lat: 34.995, lng: 135.785, pano: "https://upload.wikimedia.org/wikipedia/commons/e/e0/Kiyomizu-dera_Main_Hall_Panorama.jpg" },
+            { name: "Islande Cascade", lat: 63.532, lng: -19.511, pano: "https://upload.wikimedia.org/wikipedia/commons/6/6f/Sk%C3%B3gafoss_waterfall_panorama_2.jpg" },
+            { name: "Chateau de Versailles", lat: 48.804, lng: 2.120, pano: "https://upload.wikimedia.org/wikipedia/commons/f/f0/Versailles_Gardens_Panorama_July_2012.jpg" },
+            { name: "Sydney Opera", lat: -33.856, lng: 151.215, pano: "https://upload.wikimedia.org/wikipedia/commons/8/82/Sydney_Harbour_Bridge_from_Circular_Quay_Panorama.jpg" },
+            { name: "Rome Colisée", lat: 41.890, lng: 12.492, pano: "https://upload.wikimedia.org/wikipedia/commons/0/08/Colosseum_interior_panorama_2016.jpg" }
         ];
 
+        // --- VARIABLES DE JEU ---
         let map, viewer, guessMarker, targetMarker, linePoly;
-        let currentTarget = null;
-        let gameId = null;
-        let myUid = null;
-        let gameMode = 'solo';
-        let isHost = false;
+        let currentRound = 1;
+        const MAX_ROUNDS = 10;
+        const ROUND_TIME = 20; // secondes
+        
+        let totalScore = 0;
+        let currentLoc = null;
+        let gameQueue = [];
+        let timerInterval;
+        let timeLeft;
         let hasGuessed = false;
 
-        // --- AUTH ---
-        signInAnonymously(auth);
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                myUid = user.uid;
-                document.getElementById('conn-status').classList.remove('animate-pulse');
-            }
-        });
+        // --- LOGIQUE ---
 
-        // --- MOTEUR DE JEU ---
-
-        window.startGame = (mode, locationIndex = null) => {
-            gameMode = mode;
-            document.getElementById('main-menu').classList.add('hidden');
+        function startGame() {
+            // Mélanger et prendre 10 lieux
+            gameQueue = [...DATABASE].sort(() => 0.5 - Math.random()).slice(0, MAX_ROUNDS);
+            
+            // UI Reset
+            document.getElementById('menu-screen').classList.add('hidden');
+            document.getElementById('game-hud').classList.remove('hidden');
             document.getElementById('game-ui').classList.remove('hidden');
-
-            // 1. Choix du lieu
-            let locIndex;
-            if (locationIndex !== null) {
-                locIndex = locationIndex;
-            } else {
-                locIndex = Math.floor(Math.random() * LOCATIONS.length);
-            }
-            currentTarget = LOCATIONS[locIndex];
-            currentTarget.index = locIndex; // Stocker l'index pour le multi
-
-            // 2. Initialiser Pannellum (Vue 360)
-            if(viewer) viewer.destroy();
-            viewer = pannellum.viewer('panorama', {
-                type: 'equirectangular',
-                panorama: currentTarget.pano,
-                autoLoad: true,
-                showControls: false // Pour plus d'immersion
-            });
-
-            // 3. Initialiser Leaflet (Carte OpenSource)
-            if(map) {
-                map.remove(); // Reset map
-                guessMarker = null;
-            }
             
-            map = L.map('guess-map', { zoomControl: false }).setView([20, 0], 1);
+            totalScore = 0;
+            currentRound = 0;
+            updateHUD();
             
-            // Fond de carte sombre (CartoDB Dark Matter)
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-                attribution: '&copy; OpenStreetMap &copy; CartoDB',
-                subdomains: 'abcd',
+            initMap();
+            nextRound();
+        }
+
+        function initMap() {
+            if(map) map.remove();
+            map = L.map('guess-map', { zoomControl: false, attributionControl: false }).setView([20, 0], 1);
+            
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
                 maxZoom: 19
             }).addTo(map);
 
-            // Clic sur la carte
-            map.on('click', function(e) {
+            map.on('click', (e) => {
                 if(hasGuessed) return;
-                placeGuessMarker(e.latlng);
+                if(guessMarker) map.removeLayer(guessMarker);
+                guessMarker = L.marker(e.latlng).addTo(map);
+                document.getElementById('btn-guess').innerText = "VALIDER";
+                document.getElementById('btn-guess').disabled = false;
             });
-
-            hasGuessed = false;
-            document.getElementById('btn-guess').innerText = "VALIDER GUESS";
-            document.getElementById('btn-guess').disabled = false;
-            document.getElementById('btn-guess').onclick = submitGuess;
-        };
-
-        function placeGuessMarker(latlng) {
-            if (guessMarker) map.removeLayer(guessMarker);
-            
-            guessMarker = L.marker(latlng, {
-                icon: L.icon({
-                    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/markers-default/red-marker.png',
-                    iconSize: [25, 41],
-                    iconAnchor: [12, 41],
-                    popupAnchor: [1, -34],
-                    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-                    shadowSize: [41, 41]
-                })
-            }).addTo(map);
         }
 
-        function submitGuess() {
-            if (!guessMarker || hasGuessed) {
-                if(!guessMarker) alert("Place un point sur la carte !");
+        function nextRound() {
+            if (currentRound >= MAX_ROUNDS) {
+                endGame();
                 return;
             }
-            hasGuessed = true;
-            const btn = document.getElementById('btn-guess');
-            btn.innerText = "CALCUL...";
-            btn.disabled = true;
 
-            const guessPos = guessMarker.getLatLng();
+            // Reset État
+            currentRound++;
+            currentLoc = gameQueue[currentRound - 1];
+            hasGuessed = false;
+            timeLeft = ROUND_TIME;
             
-            // Calcul distance
-            const distance = map.distance(guessPos, [currentTarget.lat, currentTarget.lng]) / 1000;
+            // Reset UI
+            document.getElementById('guess-map-wrapper').classList.remove('result-mode');
+            document.getElementById('btn-guess').disabled = true;
+            document.getElementById('btn-guess').innerText = "CLIQUE SUR LA CARTE";
+            document.getElementById('intermission-screen').classList.add('hidden');
+            
+            // Nettoyage Map
+            if(guessMarker) map.removeLayer(guessMarker);
+            if(targetMarker) map.removeLayer(targetMarker);
+            if(linePoly) map.removeLayer(linePoly);
+            map.setView([20, 0], 1);
+            setTimeout(() => map.invalidateSize(), 500); // Fix bug affichage map
 
-            showResultOnMap(guessPos, [currentTarget.lat, currentTarget.lng]);
+            // Chargement Panorama
+            if(viewer) viewer.destroy();
+            viewer = pannellum.viewer('panorama', {
+                type: 'equirectangular',
+                panorama: currentLoc.pano,
+                autoLoad: true,
+                showControls: false,
+                compass: false
+            });
 
-            if (gameMode === 'solo') {
-                setTimeout(() => showEndScreen(distance, null), 2000);
-            } else {
-                const updates = {};
-                updates[`games_geo/${gameId}/guesses/${myUid}`] = {
-                    distance: distance,
-                    lat: guessPos.lat,
-                    lng: guessPos.lng
-                };
-                update(ref(db), updates);
-            }
+            updateHUD();
+            startTimer();
         }
 
-        function showResultOnMap(guessPos, targetPos) {
-            // Agrandir la carte
-            const container = document.getElementById('guess-map-container');
-            container.style.width = "80vw";
-            container.style.height = "60vh";
-            container.style.bottom = "50%";
-            container.style.right = "50%";
-            container.style.transform = "translate(50%, 50%)";
-            map.invalidateSize(); // Force refresh leaflet
+        function startTimer() {
+            const bar = document.getElementById('timer-bar');
+            bar.style.transition = 'none';
+            bar.style.width = '100%';
+            
+            clearInterval(timerInterval);
+            
+            // Petit délai pour laisser le CSS reflow
+            setTimeout(() => {
+                bar.style.transition = `width ${ROUND_TIME}s linear`;
+                bar.style.width = '0%';
+            }, 50);
 
-            // Marqueur vert pour la cible
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                if(timeLeft <= 0) {
+                    submitGuess(true); // Time's up
+                }
+            }, 1000);
+        }
+
+        function submitGuess(forceTimeout = false) {
+            clearInterval(timerInterval);
+            hasGuessed = true;
+            document.getElementById('btn-guess').disabled = true;
+
+            let dist = 0;
+            let points = 0;
+            let guessPos = null;
+
+            if (forceTimeout || !guessMarker) {
+                // Pas de guess ou temps écoulé
+                dist = 20000; // max distance terre approx
+                points = 0;
+            } else {
+                guessPos = guessMarker.getLatLng();
+                dist = map.distance(guessPos, [currentLoc.lat, currentLoc.lng]) / 1000; // km
+                points = calculateScore(dist);
+            }
+
+            totalScore += points;
+            updateHUD();
+
+            // Affichage Résultat sur Map
+            showMapResult(guessPos, [currentLoc.lat, currentLoc.lng]);
+
+            // Attendre 3s pour voir la carte, puis intermission
+            setTimeout(() => {
+                showIntermission(dist, points);
+            }, 3000);
+        }
+
+        function calculateScore(km) {
+            // Formule style Geoguessr : 5000 * e^(-distance/2000)
+            // Si < 50m, 5000pts.
+            if(km < 0.05) return 5000;
+            const score = Math.round(5000 * Math.exp(-km / 2000));
+            return Math.max(0, score);
+        }
+
+        function showMapResult(guessPos, targetPos) {
+            const wrapper = document.getElementById('guess-map-wrapper');
+            wrapper.classList.add('result-mode');
+            map.invalidateSize();
+
             targetMarker = L.marker(targetPos, {
                 icon: L.icon({
                     iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/markers-default/green-marker.png',
@@ -349,102 +372,61 @@
                 })
             }).addTo(map);
 
-            // Ligne
-            linePoly = L.polyline([guessPos, targetPos], {color: 'yellow', weight: 3, dashArray: '10, 10'}).addTo(map);
-
-            // Zoomer pour voir tout
-            const group = new L.featureGroup([guessMarker, targetMarker]);
-            map.fitBounds(group.getBounds().pad(0.2));
-        }
-
-        function showEndScreen(myDist, oppDist) {
-            document.getElementById('result-modal').classList.remove('hidden');
-            const formatDist = (d) => d < 1 ? Math.round(d * 1000) + " m" : Math.round(d) + " km";
-            
-            document.getElementById('result-distance').innerText = formatDist(myDist);
-            document.getElementById('p1-score').innerText = formatDist(myDist);
-
-            if (oppDist !== null) {
-                document.getElementById('p2-score-container').classList.remove('hidden');
-                document.getElementById('p2-score').innerText = formatDist(oppDist);
-                
-                if (myDist < oppDist) {
-                    document.getElementById('result-title').innerText = "VICTOIRE !";
-                    document.getElementById('result-title').className = "text-3xl font-black text-green-500 mb-1 uppercase";
-                } else {
-                    document.getElementById('result-title').innerText = "DÉFAITE...";
-                    document.getElementById('result-title').className = "text-3xl font-black text-red-500 mb-1 uppercase";
-                }
-            }
-        }
-
-        // --- LOGIQUE MULTIJOUEUR ---
-        document.getElementById('btn-create').addEventListener('click', () => {
-            gameId = Math.random().toString(36).substring(2, 6).toUpperCase();
-            isHost = true;
-            // Choisir un index aléatoire pour le multi
-            const randomLocIndex = Math.floor(Math.random() * LOCATIONS.length);
-
-            set(ref(db, 'games_geo/' + gameId), {
-                host: myUid,
-                status: 'waiting',
-                targetIndex: randomLocIndex // On envoie l'index, pas tout l'objet
-            });
-
-            document.getElementById('btn-create').classList.add('hidden');
-            document.getElementById('lobby-ui').classList.remove('hidden');
-            document.getElementById('display-code').innerText = gameId;
-
-            listenGame(gameId);
-        });
-
-        document.getElementById('btn-join').addEventListener('click', async () => {
-            const code = document.getElementById('input-code').value.toUpperCase().trim();
-            if(!code) return;
-            const gRef = ref(db, 'games_geo/' + code);
-            const snap = await get(gRef);
-            if(snap.exists() && snap.val().status === 'waiting') {
-                gameId = code;
-                isHost = false;
-                update(gRef, { guest: myUid, status: 'playing' });
-                // Le client lance avec le même index que l'hôte
-                startGame('online', snap.val().targetIndex);
-                listenGame(code);
-            }
-        });
-
-        function listenGame(id) {
-            onValue(ref(db, 'games_geo/' + id), (snap) => {
-                const data = snap.val();
-                if(!data) return;
-                
-                // Si je suis l'host et que le jeu passe en "playing", je lance ma partie
-                if(isHost && data.status === 'playing' && document.getElementById('game-ui').classList.contains('hidden')) {
-                    startGame('online', data.targetIndex);
-                }
-
-                if(data.guesses && data.guesses[data.host] && data.guesses[data.guest]) {
-                    const myG = data.guesses[myUid];
-                    const oppUid = isHost ? data.guest : data.host;
-                    const oppG = data.guesses[oppUid];
-                    if(myG && oppG) {
-                        setTimeout(() => showEndScreen(myG.distance, oppG.distance), 1000);
-                    }
-                }
-            });
-        }
-
-        window.setMode = (mode) => {
-            document.getElementById('panel-solo').classList.toggle('hidden', mode !== 'solo');
-            document.getElementById('panel-online').classList.toggle('hidden', mode !== 'online');
-            if(mode === 'online') {
-                document.getElementById('tab-online').className = "flex-1 py-2 rounded font-bold text-xs uppercase bg-purple-600 text-white shadow transition-all";
-                document.getElementById('tab-solo').className = "flex-1 py-2 rounded font-bold text-xs uppercase text-gray-400 hover:bg-white/5 transition";
+            if (guessPos) {
+                linePoly = L.polyline([guessPos, targetPos], {color: '#fbbf24', weight: 4, dashArray: '10, 10'}).addTo(map);
+                map.fitBounds(linePoly.getBounds().pad(0.2));
             } else {
-                document.getElementById('tab-solo').className = "flex-1 py-2 rounded font-bold text-xs uppercase bg-blue-600 text-white shadow transition-all";
-                document.getElementById('tab-online').className = "flex-1 py-2 rounded font-bold text-xs uppercase text-gray-400 hover:bg-white/5 transition";
+                map.setView(targetPos, 5);
             }
-        };
+        }
+
+        function showIntermission(dist, points) {
+            const screen = document.getElementById('intermission-screen');
+            screen.classList.remove('hidden');
+
+            const distText = dist > 10000 ? "Temps Écoulé / Pas de réponse" : 
+                             dist < 1 ? Math.round(dist*1000)+" m" : Math.round(dist)+" km";
+
+            document.getElementById('round-distance').innerText = distText;
+            document.getElementById('round-score').innerText = "+" + points;
+
+            // Timer de 7s avant next round
+            let seconds = 7;
+            const nextSpan = document.getElementById('next-round-sec');
+            const bar = document.getElementById('intermission-timer');
+            
+            bar.style.transition = 'none';
+            bar.style.width = '100%';
+            nextSpan.innerText = seconds;
+
+            setTimeout(() => {
+                bar.style.transition = 'width 7s linear';
+                bar.style.width = '0%';
+            }, 50);
+
+            const intTimer = setInterval(() => {
+                seconds--;
+                nextSpan.innerText = seconds;
+                if(seconds <= 0) {
+                    clearInterval(intTimer);
+                    nextRound();
+                }
+            }, 1000);
+        }
+
+        function updateHUD() {
+            document.getElementById('round-display').innerText = `${currentRound}/${MAX_ROUNDS}`;
+            document.getElementById('score-display').innerText = `${totalScore} pts`;
+        }
+
+        function endGame() {
+            document.getElementById('game-ui').classList.add('hidden');
+            document.getElementById('game-hud').classList.add('hidden');
+            document.getElementById('intermission-screen').classList.add('hidden');
+            document.getElementById('end-screen').classList.remove('hidden');
+            document.getElementById('final-score').innerText = totalScore;
+        }
+
     </script>
 </body>
 </html>
