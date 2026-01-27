@@ -2,70 +2,94 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>WikiMind GTW 3D - Online</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>WikiMind GTW - Chaos Edition</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { margin: 0; overflow: hidden; background: #000; font-family: 'Courier New', monospace; user-select: none; }
+        body { margin: 0; overflow: hidden; background: #000; font-family: 'Segoe UI', sans-serif; user-select: none; }
         #game-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
         .ui-layer { position: absolute; pointer-events: none; width: 100%; height: 100%; top: 0; left: 0; z-index: 10; }
-        .hud-panel { background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.2); backdrop-filter: blur(4px); pointer-events: auto; }
+        .hud-panel { background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(5px); pointer-events: auto; }
         
+        /* Killfeed */
         #killfeed { position: absolute; top: 20px; right: 20px; text-align: right; display: flex; flex-direction: column; gap: 5px; }
-        .kill-msg { background: rgba(255,0,0,0.4); padding: 5px 10px; border-radius: 4px; color: white; font-size: 12px; animation: fadeOut 5s forwards; }
-        
+        .kill-msg { background: rgba(200,0,0,0.4); padding: 4px 8px; border-radius: 4px; color: white; font-size: 12px; font-weight: bold; animation: fadeOut 5s forwards; }
         @keyframes fadeOut { 0% { opacity: 1; } 90% { opacity: 1; } 100% { opacity: 0; } }
+
+        /* Crosshair */
+        #crosshair { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 20px; height: 20px; pointer-events: none; transition: transform 0.1s; }
         
-        /* Crosshair au centre pour viser */
-        #crosshair {
-            position: absolute; top: 50%; left: 50%; width: 20px; height: 20px;
-            transform: translate(-50%, -50%); pointer-events: none; opacity: 0.7;
-        }
+        /* Inventory Bar */
+        .inv-slot { width: 40px; height: 40px; border: 1px solid #555; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; font-size: 10px; color: white; position: relative; }
+        .inv-slot.active { border: 2px solid yellow; background: rgba(255,255,0,0.2); transform: scale(1.1); }
+        .inv-key { position: absolute; top: 0; left: 2px; font-size: 8px; color: #aaa; }
+        
+        /* Interaction Prompt */
+        #interact-msg { position: absolute; top: 60%; left: 50%; transform: translate(-50%, -50%); color: yellow; font-weight: bold; font-size: 14px; text-shadow: 0 2px 4px black; display: none; }
+        
+        /* Start Overlay */
+        #start-screen { position: absolute; z-index: 50; inset: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; flex-direction: column; pointer-events: auto; }
     </style>
 </head>
 <body>
 
+    <!-- START SCREEN -->
+    <div id="start-screen">
+        <h1 class="text-6xl font-black text-yellow-500 italic mb-4 tracking-tighter">WIKIMIND <span class="text-white">GTW</span></h1>
+        <p class="text-gray-300 mb-8">Cliquez pour capturer la souris et jouer</p>
+        <button id="start-btn" class="bg-yellow-500 text-black font-bold px-8 py-3 rounded-full hover:bg-white transition">JOUER</button>
+    </div>
+
     <!-- UI LAYER -->
-    <div class="ui-layer flex flex-col justify-between p-6">
+    <div class="ui-layer flex flex-col justify-between p-6" id="ui-layer" style="display:none;">
+        <!-- Top -->
         <div class="flex justify-between items-start">
-            <div class="hud-panel p-4 rounded-xl text-white">
-                <h1 class="text-2xl font-black italic tracking-tighter text-yellow-400">GTW <span class="text-white">3D</span></h1>
-                <div class="text-xs text-gray-400 flex items-center gap-2">
-                    <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                    <span id="player-count">0</span> Joueurs
-                </div>
+            <div class="text-white drop-shadow-md">
+                <div class="font-black text-2xl italic">GTW ONLINE</div>
+                <div class="text-xs text-green-400 font-mono">PING: <span id="ping">24</span>ms | PLAYERS: <span id="player-count">0</span></div>
             </div>
             <div id="killfeed"></div>
         </div>
 
-        <!-- Crosshair SVG -->
+        <!-- Center Interaction -->
+        <div id="interact-msg">[F] Monter dans le véhicule</div>
+        
+        <!-- Crosshair -->
         <div id="crosshair">
-            <svg viewBox="0 0 100 100" fill="none" stroke="white" stroke-width="8">
-                <circle cx="50" cy="50" r="40" />
-                <line x1="50" y1="20" x2="50" y2="80" />
-                <line x1="20" y1="50" x2="80" y2="50" />
+            <svg viewBox="0 0 100 100" fill="none" stroke="white" stroke-width="2" style="filter: drop-shadow(0 0 2px black);">
+                <circle cx="50" cy="50" r="2" fill="white"/>
+                <line x1="40" y1="50" x2="60" y2="50" />
+                <line x1="50" y1="40" x2="50" y2="60" />
             </svg>
         </div>
 
-        <div class="flex justify-between items-end">
-            <div class="hud-panel p-4 rounded-xl text-white w-64">
-                <div class="flex justify-between mb-1">
-                    <span class="text-xs font-bold uppercase text-gray-400">Santé</span>
-                    <span id="hp-text" class="font-bold text-red-500">100%</span>
+        <!-- Bottom Inventory & Stats -->
+        <div class="flex flex-col items-center gap-4 w-full">
+            
+            <!-- HP & Ammo -->
+            <div class="flex gap-4 items-end w-full max-w-3xl px-10 justify-between">
+                <div class="w-64">
+                    <div class="flex justify-between text-xs font-bold text-white uppercase mb-1">
+                        <span>Santé</span>
+                        <span id="hp-val">100</span>
+                    </div>
+                    <div class="h-4 bg-gray-800 rounded-full overflow-hidden border border-gray-600">
+                        <div id="hp-bar" class="h-full bg-gradient-to-r from-red-600 to-red-400 w-full transition-all"></div>
+                    </div>
                 </div>
-                <div class="w-full bg-gray-800 h-2 rounded-full overflow-hidden mb-4">
-                    <div id="hp-bar" class="h-full bg-red-600 w-full transition-all duration-200"></div>
+                <div class="text-right">
+                    <div class="text-4xl font-black text-yellow-400" id="ammo-display">∞</div>
+                    <div class="text-xs text-gray-400 uppercase" id="weapon-name">Couteau</div>
                 </div>
-                <p class="text-[10px] text-gray-400 mt-2">
-                    ⬆/⬇ : Avancer/Reculer<br>
-                    ⬅/➡ : Tourner<br>
-                    ESPACE : Tirer | F : Voiture
-                </p>
+            </div>
+
+            <!-- Inventory Slots -->
+            <div class="flex gap-2 bg-black/50 p-2 rounded-xl backdrop-blur-md" id="inventory-container">
+                <!-- Généré par JS -->
             </div>
         </div>
     </div>
 
-    <!-- 3D CONTAINER -->
     <div id="game-container"></div>
 
     <!-- MODULES -->
@@ -80,8 +104,9 @@
 
     <script type="module">
         import * as THREE from 'three';
+        import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
-        import { getDatabase, ref, set, onValue, onDisconnect, push, remove, update, get } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-database.js";
+        import { getDatabase, ref, set, onValue, onDisconnect, push, remove, update } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-database.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-auth.js";
 
         // --- FIREBASE CONFIG ---
@@ -94,521 +119,584 @@
             messagingSenderId: "576444288903",
             appId: "1:576444288903:web:e8568ba12fab086c794d22"
         };
-
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
         const auth = getAuth(app);
 
-        // --- 3D ENGINE SETUP ---
-        const container = document.getElementById('game-container');
-        const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x87CEEB); // Ciel bleu
-        scene.fog = new THREE.Fog(0x87CEEB, 200, 900);
+        // --- INVENTORY DATA ---
+        const INVENTORY = [
+            { id: 0, name: 'COUTEAU', icon: '🔪', type: 'melee', dmg: 25, range: 5, rate: 500 },
+            { id: 1, name: 'PISTOLET', icon: '🔫', type: 'hitscan', dmg: 15, range: 100, rate: 400, ammo: Infinity },
+            { id: 2, name: 'POMPE', icon: '💥', type: 'shotgun', dmg: 10, count: 6, range: 40, rate: 1000, ammo: 50 },
+            { id: 3, name: 'ASSAUT', icon: 'rifle', type: 'hitscan', dmg: 12, range: 200, rate: 100, ammo: 200 },
+            { id: 4, name: 'SNIPER', icon: '🎯', type: 'hitscan', dmg: 80, range: 500, rate: 1500, ammo: 20 },
+            { id: 5, name: 'GRENADE', icon: '💣', type: 'projectile', pType: 'frag', dmg: 90, radius: 20, rate: 1000, ammo: 5 },
+            { id: 6, name: 'LACRYMO', icon: '💨', type: 'projectile', pType: 'smoke', dmg: 1, radius: 30, rate: 1000, ammo: 5 },
+            { id: 7, name: 'BAZOOKA', icon: '🚀', type: 'projectile', pType: 'rocket', dmg: 100, radius: 15, rate: 2000, ammo: 5 },
+            { id: 8, name: 'AVION BOMB', icon: '✈️', type: 'plane_bomb', dmg: 150, radius: 40, rate: 500, ammo: Infinity } // Slot spécial
+        ];
 
-        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 1500);
+        // --- GRAPHICS ENGINE ---
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x87CEEB);
+        scene.fog = new THREE.FogExp2(0x87CEEB, 0.0015);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.shadowMap.enabled = true;
-        container.appendChild(renderer.domElement);
+        document.getElementById('game-container').appendChild(renderer.domElement);
 
-        // Lumières
+        // Lights
         const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.6);
         scene.add(hemiLight);
-
-        const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
-        dirLight.position.set(100, 200, 50);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
+        dirLight.position.set(100, 300, 100);
         dirLight.castShadow = true;
+        dirLight.shadow.mapSize.width = 2048;
+        dirLight.shadow.mapSize.height = 2048;
         dirLight.shadow.camera.top = 500;
         dirLight.shadow.camera.bottom = -500;
         dirLight.shadow.camera.left = -500;
         dirLight.shadow.camera.right = 500;
         scene.add(dirLight);
 
-        // --- GAME CONSTANTS ---
-        const TILE_SIZE = 40; // Echelle 3D
-        const MAP_WIDTH = 40;
-        const MAP_HEIGHT = 40;
-        const WORLD_W = MAP_WIDTH * TILE_SIZE;
-        const WORLD_H = MAP_HEIGHT * TILE_SIZE;
-
-        // Materiaux
-        const matBuilding = new THREE.MeshPhongMaterial({ color: 0x888888 });
-        const matRoad = new THREE.MeshPhongMaterial({ color: 0x333333 });
-        const matGrass = new THREE.MeshPhongMaterial({ color: 0x4caf50 });
-        const matPlayer = new THREE.MeshPhongMaterial({ color: 0xff0000 });
-        const matWheel = new THREE.MeshLambertMaterial({ color: 0x111111 });
-
-        // Map Data & Generation
-        const MAP_DATA = [];
-        const colliders = []; // Pour physique simple
-        let seed = 5678;
-        function random() { var x = Math.sin(seed++) * 10000; return x - Math.floor(x); }
-
-        const cityGroup = new THREE.Group();
-        scene.add(cityGroup);
-
-        // Sol géant
-        const groundGeo = new THREE.PlaneGeometry(WORLD_W * 2, WORLD_H * 2);
-        const groundMat = new THREE.MeshLambertMaterial({ color: 0x222222 });
-        const ground = new THREE.Mesh(groundGeo, groundMat);
-        ground.rotation.x = -Math.PI / 2;
-        ground.position.set(WORLD_W/2, -0.1, WORLD_H/2);
-        scene.add(ground);
-
-        // Génération procédurale
-        for(let z=0; z<MAP_HEIGHT; z++) {
-            let row = [];
-            for(let x=0; x<MAP_WIDTH; x++) {
-                let type = 1; // Batiment par defaut
-                
-                // Routes
-                if (x === 0 || x === MAP_WIDTH-1 || z === 0 || z === MAP_HEIGHT-1) type = 1; // Murs exterieurs
-                else if (x % 4 === 0 || z % 4 === 0) type = 0; // Route
-                else if (random() > 0.7) type = 2; // Parc
-
-                row.push(type);
-
-                const posX = x * TILE_SIZE;
-                const posZ = z * TILE_SIZE;
-
-                if (type === 1) {
-                    // BATIMENT
-                    const h = 50 + random() * 100;
-                    const geo = new THREE.BoxGeometry(TILE_SIZE - 2, h, TILE_SIZE - 2);
-                    const mesh = new THREE.Mesh(geo, matBuilding);
-                    mesh.position.set(posX, h/2, posZ);
-                    mesh.castShadow = true;
-                    mesh.receiveShadow = true;
-                    cityGroup.add(mesh);
-                    
-                    // Collider simple (Box 2D)
-                    colliders.push({ x: posX, z: posZ, size: TILE_SIZE });
-                } else if (type === 2) {
-                    // PARC
-                    const geo = new THREE.BoxGeometry(TILE_SIZE, 2, TILE_SIZE);
-                    const mesh = new THREE.Mesh(geo, matGrass);
-                    mesh.position.set(posX, 1, posZ);
-                    mesh.receiveShadow = true;
-                    cityGroup.add(mesh);
-                    
-                    // Arbre simple
-                    if(random() > 0.5) {
-                        const treeTrunk = new THREE.Mesh(new THREE.CylinderGeometry(2,2,10), new THREE.MeshLambertMaterial({color:0x5D4037}));
-                        treeTrunk.position.set(posX, 5, posZ);
-                        cityGroup.add(treeTrunk);
-                        const treeTop = new THREE.Mesh(new THREE.ConeGeometry(8,20), new THREE.MeshLambertMaterial({color:0x2E7D32}));
-                        treeTop.position.set(posX, 15, posZ);
-                        cityGroup.add(treeTop);
-                    }
-                } else {
-                    // ROUTE
-                    const geo = new THREE.PlaneGeometry(TILE_SIZE, TILE_SIZE);
-                    const mesh = new THREE.Mesh(geo, matRoad);
-                    mesh.rotation.x = -Math.PI / 2;
-                    mesh.position.set(posX, 0.1, posZ);
-                    mesh.receiveShadow = true;
-                    cityGroup.add(mesh);
-                    
-                    // Lignes jaunes
-                    if(x%2===0 && z%2!==0) {
-                         const line = new THREE.Mesh(new THREE.PlaneGeometry(2, 20), new THREE.MeshBasicMaterial({color:0xFFD700}));
-                         line.rotation.x = -Math.PI/2;
-                         line.position.set(posX, 0.2, posZ);
-                         cityGroup.add(line);
-                    }
-                }
-            }
-            MAP_DATA.push(row);
-        }
-
-        // --- GAME LOGIC ---
-        let me = null;
+        // Controls
+        const controls = new PointerLockControls(camera, document.body);
+        
+        // --- GAME STATE ---
+        let me = { hp: 100, x: 0, y: 0, z: 0, slot: 1, inVehicle: false, vType: null };
         let myId = null;
-        const playersMap = {}; // Map ID -> { mesh, data }
-        const bulletsMap = {}; // Map ID -> { mesh, data }
+        const players = {}; 
+        const projectiles = []; // Local projectiles array
+        const explosions = [];
         
         // Input
-        const keys = { up: false, down: false, left: false, right: false, space: false, f: false };
-        
-        window.addEventListener('keydown', (e) => {
-            if (e.key === "ArrowUp") keys.up = true;
-            if (e.key === "ArrowDown") keys.down = true;
-            if (e.key === "ArrowLeft") keys.left = true;
-            if (e.key === "ArrowRight") keys.right = true;
-            if (e.key === " ") {
-                keys.space = true;
-                shoot();
-            }
-            if (e.key.toLowerCase() === "f") {
-                 keys.f = true;
-                 toggleCar();
-            }
-        });
+        const keys = { w: false, a: false, s: false, d: false, space: false, shift: false };
+        let canShoot = true;
 
-        window.addEventListener('keyup', (e) => {
-            if (e.key === "ArrowUp") keys.up = false;
-            if (e.key === "ArrowDown") keys.down = false;
-            if (e.key === "ArrowLeft") keys.left = false;
-            if (e.key === "ArrowRight") keys.right = false;
-            if (e.key === " ") keys.space = false;
-            if (e.key.toLowerCase() === "f") keys.f = false;
-        });
+        // --- WORLD GENERATION ---
+        const TILE_SIZE = 50;
+        const MAP_SIZE = 40;
+        const cityGroup = new THREE.Group();
+        const colliders = [];
+        const vehicles = [];
 
-        // --- PLAYER & ENTITIES 3D CREATION ---
-
-        function createPlayerMesh(color) {
-            const group = new THREE.Group();
+        // Texture Générator (Fenêtres)
+        function createBuildingTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 64; canvas.height = 64;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#444'; ctx.fillRect(0,0,64,64); // Mur
+            ctx.fillStyle = '#111'; ctx.fillRect(0,0,64,4); // Corniche
+            // Fenetres
+            ctx.fillStyle = Math.random() > 0.5 ? '#6688aa' : '#223344'; // Allumée ou éteinte
+            if (Math.random()>0.3) ctx.fillRect(10, 10, 15, 25);
+            if (Math.random()>0.3) ctx.fillRect(35, 10, 15, 25);
             
-            // Corps Humain
-            const mat = new THREE.MeshPhongMaterial({ color: color });
-            const body = new THREE.Mesh(new THREE.BoxGeometry(6, 14, 4), mat);
-            body.position.y = 7;
-            body.castShadow = true;
-            group.add(body);
-
-            const head = new THREE.Mesh(new THREE.BoxGeometry(5, 5, 5), new THREE.MeshLambertMaterial({color: 0xffccaa}));
-            head.position.y = 16;
-            group.add(head);
-
-            // Arme (cube noir)
-            const gun = new THREE.Mesh(new THREE.BoxGeometry(2, 2, 8), new THREE.MeshLambertMaterial({color: 0x000000}));
-            gun.position.set(4, 10, 4);
-            group.add(gun);
-
-            return group;
+            const tex = new THREE.CanvasTexture(canvas);
+            tex.magFilter = THREE.NearestFilter;
+            return tex;
         }
 
-        function createCarMesh(color) {
-            const group = new THREE.Group();
-            const mat = new THREE.MeshPhongMaterial({ color: color });
-            
-            // Chassis
-            const body = new THREE.Mesh(new THREE.BoxGeometry(16, 8, 30), mat);
-            body.position.y = 6;
-            body.castShadow = true;
-            group.add(body);
-            
-            // Toit
-            const top = new THREE.Mesh(new THREE.BoxGeometry(14, 6, 15), mat);
-            top.position.set(0, 12, -2);
-            group.add(top);
+        const buildingMat = new THREE.MeshPhongMaterial({ map: createBuildingTexture() });
+        const roadMat = new THREE.MeshPhongMaterial({ color: 0x222222 });
+        const grassMat = new THREE.MeshPhongMaterial({ color: 0x335533 });
 
-            // Roues
-            const wheelGeo = new THREE.CylinderGeometry(3, 3, 2);
-            wheelGeo.rotateZ(Math.PI/2);
-            const w1 = new THREE.Mesh(wheelGeo, matWheel); w1.position.set(8, 3, 10);
-            const w2 = new THREE.Mesh(wheelGeo, matWheel); w2.position.set(-8, 3, 10);
-            const w3 = new THREE.Mesh(wheelGeo, matWheel); w3.position.set(8, 3, -10);
-            const w4 = new THREE.Mesh(wheelGeo, matWheel); w4.position.set(-8, 3, -10);
-            group.add(w1, w2, w3, w4);
+        // Generate City
+        for(let x=0; x<MAP_SIZE; x++) {
+            for(let z=0; z<MAP_SIZE; z++) {
+                const posX = (x - MAP_SIZE/2) * TILE_SIZE;
+                const posZ = (z - MAP_SIZE/2) * TILE_SIZE;
 
-            return group;
-        }
-
-        // --- AUTH & NETWORK ---
-
-        signInAnonymously(auth).then((cred) => {
-            myId = cred.user.uid;
-            spawnMe();
-
-            // Disconnect Logic
-            const userRef = ref(db, `players/${myId}`);
-            onDisconnect(userRef).remove();
-
-            // SYNC PLAYERS
-            onValue(ref(db, 'players'), (snapshot) => {
-                const data = snapshot.val() || {};
-                document.getElementById('player-count').innerText = Object.keys(data).length;
-
-                // Update or Create
-                for (let id in data) {
-                    if (id === myId) continue; // On gère notre propre mesh localement pour la fluidité
-                    const pData = data[id];
-                    
-                    if (!playersMap[id]) {
-                        // Nouveau joueur distant
-                        const mesh = pData.inCar ? createCarMesh(pData.carColor || 0xff0000) : createPlayerMesh(pData.skinColor || 0xffffff);
-                        scene.add(mesh);
-                        playersMap[id] = { mesh, data: pData, isCar: pData.inCar };
-                    } else {
-                        // Mise à jour existant
-                        const pEntry = playersMap[id];
-                        
-                        // Si changement état voiture, recréer mesh
-                        if (pEntry.isCar !== pData.inCar) {
-                            scene.remove(pEntry.mesh);
-                            const newMesh = pData.inCar ? createCarMesh(pData.carColor) : createPlayerMesh(pData.skinColor);
-                            scene.add(newMesh);
-                            pEntry.mesh = newMesh;
-                            pEntry.isCar = pData.inCar;
+                // Simple Grid City
+                if (x === 0 || x === MAP_SIZE-1 || z === 0 || z === MAP_SIZE-1 || x%4 === 0 || z%4 === 0) {
+                    // ROUTE
+                    const road = new THREE.Mesh(new THREE.PlaneGeometry(TILE_SIZE, TILE_SIZE), roadMat);
+                    road.rotation.x = -Math.PI/2;
+                    road.position.set(posX, 0.05, posZ);
+                    road.receiveShadow = true;
+                    cityGroup.add(road);
+                } else {
+                    // BATIMENT
+                    if (Math.random() > 0.2) {
+                        const h = 50 + Math.random() * 200; // Hauteur variable
+                        const geo = new THREE.BoxGeometry(TILE_SIZE-4, h, TILE_SIZE-4);
+                        // UV Mapping rapide pour répéter la texture
+                        const uvAttribute = geo.attributes.uv;
+                        for ( let i = 0; i < uvAttribute.count; i ++ ) {
+                            // Simple scaling
+                            uvAttribute.setY( i, uvAttribute.getY( i ) * (h/30) );
                         }
-
-                        // Interpolation simple
-                        pEntry.mesh.position.lerp(new THREE.Vector3(pData.x, 0, pData.z), 0.2);
-                        // Rotation interpolée (plus complexe avec les angles, on fait simple)
-                        pEntry.mesh.rotation.y = pData.angle;
+                        
+                        const b = new THREE.Mesh(geo, buildingMat);
+                        b.position.set(posX, h/2, posZ);
+                        b.castShadow = true;
+                        b.receiveShadow = true;
+                        cityGroup.add(b);
+                        colliders.push(new THREE.Box3().setFromObject(b));
+                    } else {
+                        // PARC
+                        const park = new THREE.Mesh(new THREE.BoxGeometry(TILE_SIZE, 2, TILE_SIZE), grassMat);
+                        park.position.set(posX, 1, posZ);
+                        cityGroup.add(park);
                     }
                 }
+            }
+        }
+        
+        // Sol géant
+        const floor = new THREE.Mesh(new THREE.PlaneGeometry(5000, 5000), new THREE.MeshBasicMaterial({color:0x1a1a1a}));
+        floor.rotation.x = -Math.PI/2;
+        cityGroup.add(floor);
+        scene.add(cityGroup);
 
-                // Cleanup disconnected
-                for (let id in playersMap) {
-                    if (!data[id]) {
-                        scene.remove(playersMap[id].mesh);
-                        delete playersMap[id];
-                    }
-                }
-            });
-
-            // SYNC BULLETS
-            onValue(ref(db, 'bullets'), (snapshot) => {
-                const data = snapshot.val() || {};
-                
-                for(let bid in data) {
-                    const bData = data[bid];
-                    if (!bulletsMap[bid]) {
-                        const geo = new THREE.SphereGeometry(1, 4, 4);
-                        const mat = new THREE.MeshBasicMaterial({color: 0xffff00});
-                        const mesh = new THREE.Mesh(geo, mat);
-                        mesh.position.set(bData.x, 8, bData.z);
-                        scene.add(mesh);
-                        bulletsMap[bid] = { mesh, data: bData };
-                    }
-                    // Les balles bougent vite, on fait confiance au serveur/créateur pour la suppression
-                }
-                
-                // Cleanup bullets
-                for(let bid in bulletsMap) {
-                    if(!data[bid]) {
-                        scene.remove(bulletsMap[bid].mesh);
-                        delete bulletsMap[bid];
-                    }
-                }
-            });
-
-            // Boucle principale
-            animate();
+        // --- VEHICLES SPAWN ---
+        // On génère quelques véhicules statiques interactifs
+        const vehicleGeo = new THREE.BoxGeometry(20, 10, 35);
+        const planeGeo = new THREE.ConeGeometry(10, 40, 8); planeGeo.rotateX(Math.PI/2);
+        
+        function spawnVehicle(type, x, z) {
+            const mesh = new THREE.Group();
+            let body;
+            if(type === 'car') {
+                body = new THREE.Mesh(vehicleGeo, new THREE.MeshStandardMaterial({color: Math.random()*0xffffff}));
+                body.position.y = 5;
+                const wheels = new THREE.Mesh(new THREE.BoxGeometry(22, 4, 20), new THREE.MeshBasicMaterial({color:0x000000}));
+                wheels.position.y = 2;
+                mesh.add(wheels);
+            } else {
+                body = new THREE.Mesh(planeGeo, new THREE.MeshStandardMaterial({color: 0xffaa00}));
+                body.position.y = 10;
+                // Ailes
+                const wings = new THREE.Mesh(new THREE.BoxGeometry(60, 2, 10), new THREE.MeshStandardMaterial({color: 0xffaa00}));
+                wings.position.set(0, 10, 0);
+                mesh.add(wings);
+            }
+            mesh.add(body);
+            mesh.position.set(x, 0, z);
+            mesh.castShadow = true;
             
-            // Sync Loop (Envoi pos)
-            setInterval(sendUpdate, 50);
+            scene.add(mesh);
+            vehicles.push({ type: type, mesh: mesh, x: x, z: z, id: Math.random().toString(36) });
+        }
 
+        // Spawn quelques voitures et un avion
+        for(let i=0; i<10; i++) spawnVehicle('car', (Math.random()-0.5)*1000, (Math.random()-0.5)*1000);
+        spawnVehicle('plane', 0, 0); // Avion au centre
+
+        // --- PLAYER CONTROLLER ---
+        
+        const playerMesh = new THREE.Group(); // Visual representation (invisible for self)
+        scene.add(playerMesh);
+
+        // Camera Logic
+        const yawObject = new THREE.Object3D();
+        const pitchObject = new THREE.Object3D();
+        pitchObject.add(camera);
+        yawObject.add(pitchObject);
+        scene.add(yawObject);
+        
+        // Weapon Model (First person placeholder)
+        const weaponHand = new THREE.Mesh(new THREE.BoxGeometry(1,1,4), new THREE.MeshLambertMaterial({color:0x333}));
+        weaponHand.position.set(2, -2, -5);
+        camera.add(weaponHand);
+
+        // Inventory UI Generation
+        const invContainer = document.getElementById('inventory-container');
+        INVENTORY.forEach(item => {
+            if (item.id === 8) return; // Skip plane bomb in UI
+            const el = document.createElement('div');
+            el.className = 'inv-slot';
+            el.innerHTML = `<span class="inv-key">${item.id+1}</span>${item.icon}`;
+            el.id = `slot-${item.id}`;
+            invContainer.appendChild(el);
         });
 
-        function spawnMe() {
-            let sx, sz;
-            // Trouver spot sur route
-            while(true) {
-                let rx = Math.floor(Math.random() * MAP_WIDTH);
-                let rz = Math.floor(Math.random() * MAP_HEIGHT);
-                if (MAP_DATA[rz] && MAP_DATA[rz][rx] === 0) {
-                    sx = rx * TILE_SIZE;
-                    sz = rz * TILE_SIZE;
-                    break;
-                }
-            }
-
-            me = {
-                id: myId,
-                x: sx,
-                z: sz,
-                angle: 0,
-                hp: 100,
-                inCar: false,
-                skinColor: '#' + new THREE.Color(`hsl(${Math.random()*360}, 100%, 50%)`).getHexString(),
-                carColor: null,
-                name: "Player"
-            };
-
-            // Créer mon mesh local
-            if (playersMap[myId]) scene.remove(playersMap[myId].mesh);
-            const mesh = createPlayerMesh(me.skinColor);
-            scene.add(mesh);
-            playersMap[myId] = { mesh, data: me, isCar: false };
+        function updateInventoryUI() {
+            document.querySelectorAll('.inv-slot').forEach(el => el.classList.remove('active'));
+            const current = INVENTORY[me.slot];
+            if(current && current.id < 8) document.getElementById(`slot-${current.id}`).classList.add('active');
             
-            updateHUD();
+            document.getElementById('weapon-name').innerText = current ? current.name : '';
+            document.getElementById('ammo-display').innerText = current ? (current.ammo === Infinity ? '∞' : current.ammo) : 0;
         }
 
-        function checkCollision(x, z) {
-            // Limites monde
-            if (x < 0 || x > WORLD_W || z < 0 || z > WORLD_H) return true;
-            
-            // Batiments (Approche grille simple)
-            // On convertit pos x,z en index grille
-            const gx = Math.floor((x + TILE_SIZE/2) / TILE_SIZE);
-            const gz = Math.floor((z + TILE_SIZE/2) / TILE_SIZE);
-            
-            if (MAP_DATA[gz] && MAP_DATA[gz][gx] === 1) return true;
-            
-            return false;
-        }
+        // --- LOGIC LOOP ---
+        let velocity = new THREE.Vector3();
+        let direction = new THREE.Vector3();
+        const clock = new THREE.Clock();
 
-        function toggleCar() {
-            if (!me) return;
-            // Si pas en voiture, on en "invoque" une ou on rentre dedans (simplifié: toggle immédiat)
-            // Pour le fun: on dit qu'on peut spawn une voiture si on est sur la route
-            const gx = Math.floor((me.x + TILE_SIZE/2) / TILE_SIZE);
-            const gz = Math.floor((me.z + TILE_SIZE/2) / TILE_SIZE);
-            
-            // Changement d'état
-            me.inCar = !me.inCar;
-            
-            if (me.inCar) {
-                me.carColor = '#' + new THREE.Color(`hsl(${Math.random()*360}, 100%, 50%)`).getHexString();
-                scene.remove(playersMap[myId].mesh);
-                const mesh = createCarMesh(me.carColor);
-                scene.add(mesh);
-                playersMap[myId].mesh = mesh;
-                playersMap[myId].isCar = true;
-            } else {
-                me.carColor = null;
-                scene.remove(playersMap[myId].mesh);
-                const mesh = createPlayerMesh(me.skinColor);
-                scene.add(mesh);
-                playersMap[myId].mesh = mesh;
-                playersMap[myId].isCar = false;
-            }
-        }
-
-        function shoot() {
-            if (!me || me.hp <= 0) return;
-            const bulletId = push(ref(db, 'bullets')).key;
-            // Tirer dans la direction du joueur
-            const bData = {
-                id: bulletId,
-                owner: myId,
-                x: me.x + Math.sin(me.angle) * 10,
-                z: me.z + Math.cos(me.angle) * 10,
-                vx: Math.sin(me.angle), // Vecteur direction
-                vz: Math.cos(me.angle),
-                timestamp: Date.now()
-            };
-            
-            // On l'ajoute localement pour réactivité
-            set(ref(db, `bullets/${bulletId}`), bData);
-            
-            // Auto delete
-            setTimeout(() => { remove(ref(db, `bullets/${bulletId}`)); }, 2000);
-        }
-
-        function sendUpdate() {
-            if(!me) return;
-            // On envoie seulement les données essentielles
-            update(ref(db, `players/${myId}`), {
-                x: me.x,
-                z: me.z,
-                angle: me.angle,
-                inCar: me.inCar,
-                skinColor: me.skinColor,
-                carColor: me.carColor,
-                hp: me.hp
-            });
-        }
-
-        function updateHUD() {
-            if(!me) return;
-            const hpBar = document.getElementById('hp-bar');
-            const hpText = document.getElementById('hp-text');
-            hpBar.style.width = me.hp + '%';
-            hpText.innerText = me.hp + '%';
-            
-            if(me.hp <= 0) {
-                // Respawn
-                spawnMe();
-                // Reset remote HP
-                update(ref(db, `players/${myId}`), { hp: 100 });
-            }
-        }
-
-        function killFeed(msg) {
-            const el = document.createElement('div');
-            el.className = 'kill-msg';
-            el.innerText = msg;
-            document.getElementById('killfeed').prepend(el);
-            setTimeout(()=>el.remove(), 5000);
-        }
-
-        // --- MAIN LOOP ---
         function animate() {
             requestAnimationFrame(animate);
+            const delta = Math.min(clock.getDelta(), 0.1);
 
-            // 1. Déplacement Joueur Local
-            if (me && playersMap[myId]) {
-                const speed = me.inCar ? 4 : 1.5;
-                const rotSpeed = me.inCar ? 0.04 : 0.08;
+            if (controls.isLocked) {
+                // --- MOVEMENT ---
+                if (me.inVehicle) {
+                    // VEHICLE CONTROL
+                    const speed = me.vType === 'plane' ? 80 : 40;
+                    
+                    // Avion : Mouse Y = Pitch, A/D = Roll/Yaw approx
+                    if (me.vType === 'plane') {
+                         yawObject.translateZ(-speed * delta);
+                         // Contrôle altitude via Pitch caméra
+                         // Le vecteur avant de l'objet détermine la direction
+                    } else {
+                        // Voiture : Au sol
+                        if (keys.w) yawObject.translateZ(-speed * delta);
+                        if (keys.s) yawObject.translateZ(speed * delta);
+                        // Pour tourner en voiture, on tourne la cam (PointerLock) donc c'est implicite
+                    }
+                    
+                    // Sortir
+                    document.getElementById('interact-msg').style.display = 'block';
+                    document.getElementById('interact-msg').innerText = "[F] Sortir";
 
-                // Rotation
-                if (keys.left) me.angle += rotSpeed;
-                if (keys.right) me.angle -= rotSpeed;
+                } else {
+                    // HUMAN MOVEMENT
+                    velocity.x -= velocity.x * 10.0 * delta;
+                    velocity.z -= velocity.z * 10.0 * delta;
+                    velocity.y -= 9.8 * 30.0 * delta; // Gravity
 
-                // Avancer / Reculer
-                let dx = 0, dz = 0;
-                if (keys.up) {
-                    dx = Math.sin(me.angle) * speed;
-                    dz = Math.cos(me.angle) * speed;
+                    direction.z = Number(keys.w) - Number(keys.s);
+                    direction.x = Number(keys.d) - Number(keys.a);
+                    direction.normalize();
+
+                    if (keys.w || keys.s) velocity.z -= direction.z * 400.0 * delta;
+                    if (keys.a || keys.d) velocity.x -= direction.x * 400.0 * delta;
+
+                    // Apply Movement relative to Yaw
+                    yawObject.translateX(velocity.x * delta);
+                    yawObject.translateZ(velocity.z * delta);
+                    yawObject.position.y += velocity.y * delta; // Falling
+
+                    // Floor Collision
+                    if (yawObject.position.y < 5) {
+                        velocity.y = 0;
+                        yawObject.position.y = 5;
+                        if (keys.space) velocity.y = 200; // Jump
+                    }
+
+                    // Check vehicle interaction
+                    let nearVehicle = null;
+                    vehicles.forEach(v => {
+                         if (yawObject.position.distanceTo(v.mesh.position) < 30) nearVehicle = v;
+                    });
+                    
+                    const uiMsg = document.getElementById('interact-msg');
+                    if (nearVehicle) {
+                        uiMsg.style.display = 'block';
+                        uiMsg.innerText = `[F] Piloter ${nearVehicle.type.toUpperCase()}`;
+                    } else {
+                        uiMsg.style.display = 'none';
+                    }
                 }
-                if (keys.down) {
-                    dx = -Math.sin(me.angle) * speed;
-                    dz = -Math.cos(me.angle) * speed;
-                }
 
-                // Collision Check
-                if (!checkCollision(me.x + dx, me.z + dz)) {
-                    me.x += dx;
-                    me.z += dz;
-                }
+                // Update Camera
+                me.x = yawObject.position.x;
+                me.y = yawObject.position.y;
+                me.z = yawObject.position.z;
 
-                // Update Mesh
-                const pMesh = playersMap[myId].mesh;
-                pMesh.position.set(me.x, 0, me.z);
-                pMesh.rotation.y = me.angle; // Rotation Y en ThreeJS est l'axe vertical
-
-                // Update Camera (Suivi Third Person)
-                // Position idéale caméra : derrière le joueur et en hauteur
-                const camDist = me.inCar ? 80 : 50;
-                const camHeight = me.inCar ? 40 : 30;
-                
-                // Calcul position derrière
-                const cx = me.x - Math.sin(me.angle) * camDist;
-                const cz = me.z - Math.cos(me.angle) * camDist;
-
-                // Lerp camera pour fluidité
-                camera.position.x += (cx - camera.position.x) * 0.1;
-                camera.position.z += (cz - camera.position.z) * 0.1;
-                camera.position.y += (camHeight - camera.position.y) * 0.1;
-                
-                camera.lookAt(me.x, 10, me.z);
+                // Sync Mesh position (so bullets originate correctly)
+                playerMesh.position.copy(yawObject.position);
+                playerMesh.rotation.copy(yawObject.rotation);
             }
 
-            // 2. Physique Balles
-            const bulletSpeed = 8;
-            for(let bid in bulletsMap) {
-                const b = bulletsMap[bid];
-                // Avancer mesh
-                b.mesh.position.x += b.data.vx * bulletSpeed;
-                b.mesh.position.z += b.data.vz * bulletSpeed;
+            // --- PROJECTILES ---
+            for (let i = projectiles.length - 1; i >= 0; i--) {
+                const p = projectiles[i];
+                p.mesh.position.addScaledVector(p.velocity, delta);
+                p.velocity.y -= 9.8 * delta; // Gravity
 
-                // Hit Detection simple (uniquement si je suis la cible)
-                if (me && myId !== b.data.owner) {
-                    const dist = Math.hypot(me.x - b.mesh.position.x, me.z - b.mesh.position.z);
-                    if (dist < 8) {
-                        // Touché !
-                        me.hp -= 10;
-                        updateHUD();
-                        // Supprimer visuellement pour pas se faire toucher 50 fois
-                        b.mesh.position.y = -100; 
-                    }
+                // Collision sol
+                if (p.mesh.position.y <= 0) {
+                    createExplosion(p.mesh.position, p.data.radius, p.data.dmg);
+                    scene.remove(p.mesh);
+                    projectiles.splice(i, 1);
+                }
+            }
+
+            // --- EXPLOSIONS VISUALS ---
+            for (let i = explosions.length - 1; i >= 0; i--) {
+                const ex = explosions[i];
+                ex.mesh.scale.multiplyScalar(1.1);
+                ex.mesh.material.opacity -= delta * 2;
+                if(ex.mesh.material.opacity <= 0) {
+                    scene.remove(ex.mesh);
+                    explosions.splice(i, 1);
                 }
             }
 
             renderer.render(scene, camera);
         }
+        
+        // --- COMBAT SYSTEM ---
 
-        // Resize
+        function shoot() {
+            if(!canShoot) return;
+            const weapon = me.inVehicle && me.vType === 'plane' ? INVENTORY[8] : INVENTORY[me.slot];
+            
+            if (weapon.ammo <= 0 && weapon.ammo !== Infinity) return;
+            
+            // Recul / Cadence
+            canShoot = false;
+            setTimeout(() => canShoot = true, weapon.rate);
+            
+            if(weapon.ammo !== Infinity) weapon.ammo--;
+            updateInventoryUI();
+
+            // Logic
+            if (weapon.type === 'hitscan' || weapon.type === 'shotgun') {
+                // Raycast
+                const raycaster = new THREE.Raycaster();
+                // Partir du centre de l'écran
+                raycaster.setFromCamera(new THREE.Vector2(0,0), camera);
+                
+                // Effet visuel (Tracer)
+                // ...
+                
+                // Check Players
+                // Note: Dans une vraie implém, on checke les BoundingBox des meshes joueurs distants
+                // Ici on va simplifier en envoyant un event "shoot" au serveur ou en checkant localement les distances
+                
+                // On checke les intersections avec le décor pour l'impact
+                const intersects = raycaster.intersectObjects(cityGroup.children);
+                if(intersects.length > 0) {
+                    // Impact FX
+                    createImpact(intersects[0].point);
+                }
+
+                // Check players (simplifié distance cone)
+                for (let pid in players) {
+                    if (pid === myId) continue;
+                    const p = players[pid];
+                    const pPos = new THREE.Vector3(p.x, p.y, p.z);
+                    // Angle check
+                    const dirToP = pPos.clone().sub(yawObject.position).normalize();
+                    const camDir = new THREE.Vector3(); camera.getWorldDirection(camDir);
+                    if (camDir.angleTo(dirToP) < 0.1) { // Visé
+                         // HIT
+                         damagePlayer(pid, weapon.dmg);
+                         break; // Hit one
+                    }
+                }
+
+            } else if (weapon.type === 'projectile' || weapon.type === 'plane_bomb') {
+                // Spawn projectile
+                const geo = new THREE.SphereGeometry(1, 8, 8);
+                const mat = new THREE.MeshBasicMaterial({color: weapon.type === 'plane_bomb' ? 0x000000 : 0x00ff00});
+                const mesh = new THREE.Mesh(geo, mat);
+                
+                const spawnPos = yawObject.position.clone();
+                if(weapon.type === 'plane_bomb') spawnPos.y -= 5;
+                else spawnPos.add(new THREE.Vector3(0, 0, 0).applyQuaternion(yawObject.quaternion)); // Devant
+
+                mesh.position.copy(spawnPos);
+                scene.add(mesh);
+
+                const vel = new THREE.Vector3(0, 0, -1).applyQuaternion(pitchObject.getWorldQuaternion(new THREE.Quaternion()));
+                if(weapon.type === 'plane_bomb') vel.set(0, -1, 0); // Tombe tout droit
+                
+                vel.multiplyScalar(weapon.type === 'rocket' ? 100 : 30); // Vitesse
+                if(weapon.type === 'plane_bomb') vel.multiplyScalar(0.5);
+
+                projectiles.push({ mesh: mesh, velocity: vel, data: weapon });
+            }
+        }
+
+        function createExplosion(pos, radius, dmg) {
+            // Visual
+            const geo = new THREE.SphereGeometry(radius, 16, 16);
+            const mat = new THREE.MeshBasicMaterial({color: 0xffaa00, transparent: true, opacity: 1});
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.position.copy(pos);
+            scene.add(mesh);
+            explosions.push({ mesh: mesh });
+
+            // Damage AOE
+            for (let pid in players) {
+                if(pid === myId) continue; // Pas de friendly fire sur soi (optionnel)
+                const p = players[pid];
+                const dist = new THREE.Vector3(p.x, p.y, p.z).distanceTo(pos);
+                if (dist < radius) {
+                    damagePlayer(pid, dmg * (1 - dist/radius));
+                }
+            }
+        }
+        
+        function createImpact(pos) {
+            const mesh = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.5), new THREE.MeshBasicMaterial({color:0xffff00}));
+            mesh.position.copy(pos);
+            scene.add(mesh);
+            setTimeout(() => scene.remove(mesh), 500);
+        }
+
+        function damagePlayer(targetId, dmg) {
+             // On triche un peu : on lit/ecrit direct dans la DB de l'autre
+             // Idéalement : Cloud Function ou validation serveur
+             update(ref(db, `players/${targetId}`), {
+                 hp_hit: dmg // On envoie un signal "hit" et l'autre client gère sa vie, ou on force la vie
+             }).catch(()=>{});
+        }
+
+        // --- NETWORK & SYNC ---
+
+        signInAnonymously(auth).then((cred) => {
+            myId = cred.user.uid;
+            
+            // Initial State
+            me.hp = 100;
+            me.x = (Math.random()-0.5) * 200;
+            me.z = (Math.random()-0.5) * 200;
+            me.y = 5;
+            yawObject.position.set(me.x, me.y, me.z);
+
+            const userRef = ref(db, `players/${myId}`);
+            onDisconnect(userRef).remove();
+
+            // Listen Loop
+            onValue(ref(db, 'players'), (snap) => {
+                const data = snap.val() || {};
+                document.getElementById('player-count').innerText = Object.keys(data).length;
+                
+                // Sync Remote Players
+                for(let id in data) {
+                    if (id === myId) {
+                        // Check si on a pris des dégats (via le signal hp_hit hack)
+                        if (data[id].hp_hit) {
+                            me.hp -= data[id].hp_hit;
+                            // Reset signal
+                            update(ref(db, `players/${myId}`), { hp_hit: null });
+                            updateHUD();
+                        }
+                        continue;
+                    }
+
+                    const pData = data[id];
+                    if(!players[id]) {
+                        // Create mesh
+                        const mesh = new THREE.Mesh(new THREE.BoxGeometry(4, 12, 4), new THREE.MeshLambertMaterial({color: pData.color || 0xff0000}));
+                        scene.add(mesh);
+                        players[id] = { mesh: mesh, data: pData };
+                    }
+                    
+                    // Update Mesh
+                    const p = players[id];
+                    p.mesh.position.set(pData.x, pData.y + 6, pData.z); // +6 pour centrer boite
+                    // p.mesh.rotation.y = pData.rot; // Si on sync la rotation
+                    
+                    // Si vehicule, changer modele (simplifié ici : on change couleur)
+                    p.mesh.material.color.setHex(pData.inVehicle ? 0xffff00 : (pData.color || 0xff0000));
+                }
+
+                // Remove disconnected
+                for(let id in players) {
+                    if(!data[id]) {
+                        scene.remove(players[id].mesh);
+                        delete players[id];
+                    }
+                }
+            });
+            
+            setInterval(sendLoop, 50);
+            animate();
+
+        });
+
+        function sendLoop() {
+            if(!myId) return;
+            update(ref(db, `players/${myId}`), {
+                x: me.x,
+                y: me.y,
+                z: me.z,
+                inVehicle: me.inVehicle,
+                hp: me.hp
+            });
+        }
+        
+        function updateHUD() {
+            document.getElementById('hp-val').innerText = Math.floor(me.hp);
+            document.getElementById('hp-bar').style.width = Math.max(0, me.hp) + '%';
+            if(me.hp <= 0) {
+                // Respawn
+                me.hp = 100;
+                me.inVehicle = false;
+                me.y = 100; // Parachute spawn
+                yawObject.position.y = 100;
+                me.slot = 1;
+                INVENTORY.forEach(i => { if(i.ammo !== Infinity) i.ammo = 5; }); // Reset ammo
+                updateInventoryUI();
+            }
+        }
+
+        // --- INPUTS ---
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'KeyW') keys.w = true;
+            if (e.code === 'KeyA') keys.a = true;
+            if (e.code === 'KeyS') keys.s = true;
+            if (e.code === 'KeyD') keys.d = true;
+            if (e.code === 'Space') keys.space = true;
+            if (e.code === 'KeyF') handleInteract();
+            
+            // Inventory 1-9
+            const num = parseInt(e.key);
+            if (!isNaN(num) && num >= 1 && num <= 9) {
+                if (INVENTORY[num-1]) {
+                    me.slot = num-1;
+                    updateInventoryUI();
+                }
+            }
+        });
+        document.addEventListener('keyup', (e) => {
+            if (e.code === 'KeyW') keys.w = false;
+            if (e.code === 'KeyA') keys.a = false;
+            if (e.code === 'KeyS') keys.s = false;
+            if (e.code === 'KeyD') keys.d = false;
+            if (e.code === 'Space') keys.space = false;
+        });
+        document.addEventListener('mousedown', () => {
+             if (controls.isLocked) shoot();
+        });
+
+        function handleInteract() {
+            if (me.inVehicle) {
+                // Exit
+                me.inVehicle = false;
+                me.vType = null;
+                yawObject.position.x += 10; // Décaler pour pas être bloqué dedans
+            } else {
+                // Enter ?
+                vehicles.forEach(v => {
+                    if (yawObject.position.distanceTo(v.mesh.position) < 30) {
+                        me.inVehicle = true;
+                        me.vType = v.type;
+                        // Teleport player visual inside (camera reste attachée à yawObject qui va bouger comme un vehicule)
+                        yawObject.position.copy(v.mesh.position);
+                        yawObject.position.y += v.type === 'plane' ? 10 : 5;
+                    }
+                });
+            }
+        }
+
+        // UI START
+        document.getElementById('start-btn').addEventListener('click', () => {
+            controls.lock();
+            document.getElementById('start-screen').style.display = 'none';
+            document.getElementById('ui-layer').style.display = 'flex';
+            updateInventoryUI();
+        });
+        
+        controls.addEventListener('unlock', () => {
+            document.getElementById('start-screen').style.display = 'flex';
+            document.getElementById('ui-layer').style.display = 'none';
+        });
+
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
-
     </script>
 </body>
 </html>
