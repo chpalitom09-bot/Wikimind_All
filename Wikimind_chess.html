@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>WikiMind Chess - Mobile & Online</title>
+    <title>WikiMind Chess - Stable</title>
 
     <!-- 1. JQUERY -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -47,6 +47,11 @@
 </head>
 <body class="flex flex-col h-screen overflow-hidden">
 
+    <!-- AUDIO (Bruitages simples) -->
+    <audio id="snd-move" src="https://images.chesscomfiles.com/chess-themes/sounds/_common/move-self.mp3"></audio>
+    <audio id="snd-capture" src="https://images.chesscomfiles.com/chess-themes/sounds/_common/capture.mp3"></audio>
+    <audio id="snd-notify" src="https://images.chesscomfiles.com/chess-themes/sounds/_common/notify.mp3"></audio>
+
     <!-- HEADER COMPACT -->
     <header class="h-14 border-b border-border bg-[#0a0a0a] flex items-center justify-between px-4 z-20 shrink-0">
         <div class="flex items-center gap-3 cursor-pointer" onclick="window.location.href='index.html'">
@@ -56,9 +61,9 @@
         
         <!-- PROFIL JOUEUR -->
         <div class="flex items-center gap-3 bg-zinc-900 px-3 py-1 rounded-full border border-zinc-800">
-            <div class="w-2 h-2 rounded-full bg-red-500" id="conn-status"></div>
+            <div class="w-2 h-2 rounded-full bg-red-500 animate-pulse" id="conn-status"></div>
             <div class="flex flex-col text-right">
-                <span id="user-name" class="text-xs font-bold text-white max-w-[100px] truncate">Connexion...</span>
+                <span id="user-name" class="text-xs font-bold text-white max-w-[100px] truncate">Chargement...</span>
                 <span id="user-elo" class="text-[10px] font-mono text-blue-400">---</span>
             </div>
         </div>
@@ -67,30 +72,29 @@
     <!-- LAYOUT PRINCIPAL -->
     <div class="flex-grow flex flex-col lg:flex-row h-full overflow-hidden relative">
 
-        <!-- ZONE DE JEU (PLATEAU) - En premier sur mobile -->
+        <!-- ZONE DE JEU (PLATEAU) -->
         <div class="flex-grow bg-[#050505] relative flex flex-col items-center justify-start lg:justify-center p-2 lg:p-4 order-1 lg:order-2">
             
-            <!-- INFO ADVERSAIRE (MOBILE) -->
-            <div id="top-hud" class="w-full max-w-[500px] flex justify-between items-end mb-2 px-2 h-10">
+            <!-- INFO ADVERSAIRE -->
+            <div id="top-hud" class="w-full max-w-[500px] flex justify-between items-end mb-2 px-2 h-10 transition-opacity duration-300 opacity-50">
                 <div class="flex items-center gap-2">
                     <div class="w-8 h-8 rounded bg-zinc-800 flex items-center justify-center text-lg">👤</div>
                     <div>
-                        <div id="opponent-name-hud" class="text-xs font-bold text-gray-400">Adversaire</div>
+                        <div id="opponent-name-hud" class="text-xs font-bold text-gray-400">En attente...</div>
                         <div id="opponent-elo-hud" class="text-[10px] text-gray-600">---</div>
                     </div>
                 </div>
                 <div id="turn-indicator" class="px-3 py-1 bg-zinc-900 rounded text-[10px] font-bold uppercase text-gray-500 border border-zinc-800">
-                    En attente
+                    ...
                 </div>
             </div>
 
-            <!-- CONTENEUR PLATEAU RESPONSIVE -->
-            <!-- aspect-square assure que c'est toujours un carré -->
+            <!-- CONTENEUR PLATEAU -->
             <div id="board-wrapper" class="w-full max-w-[90vw] lg:max-w-[550px] aspect-square relative shadow-2xl shadow-black">
                 <div id="myBoard" class="w-full h-full"></div>
             </div>
 
-            <!-- INFO JOUEUR (MOBILE) -->
+            <!-- INFO JOUEUR -->
             <div class="w-full max-w-[500px] flex justify-between items-start mt-2 px-2">
                 <div class="flex items-center gap-2">
                     <div class="w-8 h-8 rounded bg-zinc-800 flex items-center justify-center text-lg border border-blue-900/50">ME</div>
@@ -102,13 +106,13 @@
             </div>
         </div>
 
-        <!-- SIDEBAR CONTROLES - En bas sur mobile (Scrollable) -->
+        <!-- SIDEBAR CONTROLES -->
         <div class="w-full lg:w-96 border-t lg:border-t-0 lg:border-r border-border bg-[#0a0a0a] flex flex-col z-10 order-2 lg:order-1 h-[40vh] lg:h-auto shrink-0">
             
             <!-- ONGLETS -->
             <div class="flex border-b border-border text-xs font-bold uppercase tracking-widest text-center shrink-0">
-                <button onclick="switchTab('online')" id="tab-online" class="flex-1 py-3 bg-zinc-900 text-white border-b-2 border-blue-500">En Ligne</button>
-                <button onclick="switchTab('local')" id="tab-local" class="flex-1 py-3 hover:bg-zinc-900 text-gray-500">Solo / Bot</button>
+                <button onclick="switchTab('online')" id="tab-online" class="flex-1 py-3 bg-zinc-900 text-white border-b-2 border-blue-500 transition-colors">En Ligne</button>
+                <button onclick="switchTab('local')" id="tab-local" class="flex-1 py-3 hover:bg-zinc-900 text-gray-500 transition-colors">Solo / Bot</button>
             </div>
 
             <div class="flex-grow overflow-y-auto p-4 relative">
@@ -117,13 +121,13 @@
                 <div id="panel-online" class="space-y-4">
                     <div class="bg-blue-900/10 p-4 rounded-xl border border-blue-900/30">
                         <h3 class="text-xs font-bold uppercase text-blue-400 mb-2">1. Créer une partie</h3>
-                        <button id="btn-create" class="w-full py-3 bg-blue-600 text-white font-bold rounded-lg text-xs uppercase tracking-widest shadow-lg active:scale-95 transition">
+                        <button id="btn-create" class="w-full py-3 bg-blue-600 text-white font-bold rounded-lg text-xs uppercase tracking-widest shadow-lg active:scale-95 transition hover:bg-blue-500">
                             Générer Code
                         </button>
                         
                         <div id="lobby-wait" class="hidden mt-3 text-center animate-fade-in">
                             <p class="text-[10px] text-gray-400 mb-1">CODE À PARTAGER :</p>
-                            <div id="display-code" class="text-2xl font-mono font-black text-white bg-black p-2 rounded select-all border border-blue-500/50">----</div>
+                            <div id="display-code" class="text-2xl font-mono font-black text-white bg-black p-2 rounded select-all border border-blue-500/50 cursor-pointer" onclick="copyCode()">----</div>
                             <div class="mt-2 text-[10px] text-blue-300 animate-pulse">En attente d'un joueur...</div>
                         </div>
                     </div>
@@ -133,19 +137,19 @@
                     <div class="bg-zinc-900/50 p-4 rounded-xl border border-zinc-800">
                         <h3 class="text-xs font-bold uppercase text-green-400 mb-2">2. Rejoindre</h3>
                         <div class="flex gap-2">
-                            <input type="text" id="input-code" placeholder="CODE ICI" class="flex-1 bg-black border border-zinc-700 rounded-lg px-3 text-center uppercase font-mono text-white focus:border-green-500 outline-none">
-                            <button id="btn-join" class="px-4 bg-green-600 text-white font-bold rounded-lg text-xs uppercase active:scale-95 transition">GO</button>
+                            <input type="text" id="input-code" placeholder="CODE ICI" class="flex-1 bg-black border border-zinc-700 rounded-lg px-3 text-center uppercase font-mono text-white focus:border-green-500 outline-none transition">
+                            <button id="btn-join" class="px-4 bg-green-600 text-white font-bold rounded-lg text-xs uppercase active:scale-95 transition hover:bg-green-500">GO</button>
                         </div>
                     </div>
                 </div>
 
                 <!-- CONTENU: LOCAL -->
                 <div id="panel-local" class="hidden space-y-4">
-                    <button onclick="startBotGame()" class="w-full p-4 rounded-xl bg-zinc-800 border border-zinc-700 text-left active:scale-95 transition">
+                    <button onclick="startBotGame()" class="w-full p-4 rounded-xl bg-zinc-800 border border-zinc-700 text-left active:scale-95 transition hover:bg-zinc-700">
                         <div class="font-bold text-sm text-white">🤖 Vs Mistral AI</div>
-                        <div class="text-xs text-gray-400">Entraînement intelligent</div>
+                        <div class="text-xs text-gray-400">Mode expérimental (peut être lent)</div>
                     </button>
-                    <button onclick="startLocalGame()" class="w-full p-4 rounded-xl bg-black border border-zinc-800 text-left active:scale-95 transition">
+                    <button onclick="startLocalGame()" class="w-full p-4 rounded-xl bg-black border border-zinc-800 text-left active:scale-95 transition hover:bg-zinc-900">
                         <div class="font-bold text-sm text-white">👥 1 vs 1 Local</div>
                         <div class="text-xs text-gray-400">Sur le même écran</div>
                     </button>
@@ -153,7 +157,7 @@
 
                 <!-- LOGS -->
                 <div id="logs-container" class="mt-4 p-3 bg-black rounded border border-zinc-800 h-32 overflow-y-auto text-[10px] font-mono text-gray-400">
-                    <div>> Système prêt.</div>
+                    <div>> Initialisation système...</div>
                 </div>
             </div>
         </div>
@@ -161,12 +165,12 @@
 
     <!-- MODAL FIN DE PARTIE -->
     <div id="game-over-modal" class="hidden fixed inset-0 bg-black/90 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-zinc-900 border border-zinc-700 p-6 rounded-2xl text-center max-w-sm w-full">
+        <div class="bg-zinc-900 border border-zinc-700 p-6 rounded-2xl text-center max-w-sm w-full transform scale-100 transition-transform">
             <div class="text-4xl mb-2">🏁</div>
             <h2 id="result-title" class="text-2xl font-black uppercase text-white mb-2">FIN</h2>
             <p id="result-desc" class="text-sm text-gray-400 mb-4">Résultat de la partie</p>
             <div id="elo-change" class="text-lg font-bold font-mono mb-6"></div>
-            <button onclick="location.reload()" class="w-full bg-white text-black font-bold py-3 rounded-xl uppercase text-xs tracking-widest">Nouvelle Partie</button>
+            <button onclick="location.reload()" class="w-full bg-white text-black font-bold py-3 rounded-xl uppercase text-xs tracking-widest hover:bg-gray-200">Nouvelle Partie</button>
         </div>
     </div>
 
@@ -174,7 +178,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getDatabase, ref, set, onValue, update, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getDatabase, ref, set, onValue, update, get, off } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
         // CONFIG FIREBASE
         const firebaseConfig = {
@@ -196,31 +200,40 @@
         let game = new Chess();
         let board = null;
         let myUid = null;
-        let myName = "Guest_" + Math.floor(Math.random()*1000);
+        let myName = "Joueur_" + Math.floor(Math.random()*1000);
         let myElo = 1200;
         let gameId = null;
         let playerColor = 'w'; // 'w' (créateur) ou 'b' (rejoignant)
         let gameMode = 'local'; // 'local', 'bot', 'online'
-        let isEngineThinking = false;
+        let currentGameRef = null; // Pour pouvoir désactiver les listeners
+
+        // SONS
+        const sndMove = document.getElementById('snd-move');
+        const sndCapture = document.getElementById('snd-capture');
+        const sndNotify = document.getElementById('snd-notify');
 
         // AUTHENTIFICATION
         signInAnonymously(auth);
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 myUid = user.uid;
-                document.getElementById('conn-status').classList.replace('bg-red-500', 'bg-green-500');
+                document.getElementById('conn-status').classList.remove('bg-red-500', 'animate-pulse');
+                document.getElementById('conn-status').classList.add('bg-green-500');
                 
                 // Récupérer ELO ou créer profil
                 const userRef = ref(db, 'users/' + myUid);
                 const snapshot = await get(userRef);
                 if(snapshot.exists()) {
-                    myElo = snapshot.val().elo || 1200;
+                    const data = snapshot.val();
+                    myElo = data.elo || 1200;
+                    if(data.name) myName = data.name; // Garder le nom si existant
+                    else set(userRef, { name: myName, elo: 1200 }); // Sinon set
                 } else {
                     set(userRef, { name: myName, elo: 1200 });
                 }
                 
                 updateHud();
-                log("Connecté: " + myName);
+                log("Connecté en tant que " + myName);
             }
         });
 
@@ -234,10 +247,15 @@
 
         function log(msg) {
             const div = document.createElement('div');
-            div.innerText = "> " + msg;
+            div.innerHTML = `<span class="text-gray-500">[${new Date().toLocaleTimeString().slice(0,5)}]</span> ${msg}`;
             const container = document.getElementById('logs-container');
             container.appendChild(div);
             container.scrollTop = container.scrollHeight;
+        }
+
+        window.copyCode = function() {
+            const code = document.getElementById('display-code').innerText;
+            navigator.clipboard.writeText(code).then(() => log("Code copié !"));
         }
 
         function updateTurnIndicator() {
@@ -246,11 +264,13 @@
             
             if (gameMode === 'online') {
                 if (game.turn() === playerColor) {
-                    el.innerText = "À TOI DE JOUER";
-                    el.className = "px-3 py-1 bg-green-600 rounded text-[10px] font-bold uppercase text-white animate-pulse";
+                    el.innerText = "C'EST À VOUS !";
+                    el.className = "px-3 py-1 bg-green-600 rounded text-[10px] font-bold uppercase text-white animate-pulse shadow-lg shadow-green-900";
+                    document.title = "À vous de jouer ! - WikiMind Chess";
                 } else {
                     el.innerText = "ADVERSAIRE...";
                     el.className = "px-3 py-1 bg-zinc-800 rounded text-[10px] font-bold uppercase text-gray-500";
+                    document.title = "WikiMind Chess";
                 }
             } else {
                 el.innerText = `Tour : ${turn}`;
@@ -260,67 +280,72 @@
 
         // --- GESTION DU PLATEAU (RESPONSIVE) ---
         function initBoard() {
-            // Configuration de base
             const config = {
                 draggable: true,
                 position: 'start',
                 onDragStart: onDragStart,
                 onDrop: onDrop,
-                onSnapEnd: () => board.position(game.fen()),
+                onSnapEnd: () => board.position(game.fen()), // Animation fluide
                 pieceTheme: 'https://chessboardjs.com/img/chesspieces/wikipedia/{piece}.png'
             };
             
             board = Chessboard('myBoard', config);
             
-            // MAGIC FIX MOBILE: Observer la taille du conteneur et redimensionner le plateau
-            const resizeObserver = new ResizeObserver(() => {
-                board.resize();
-            });
+            // Fixe pour la taille responsive
+            window.addEventListener('resize', board.resize);
+            const resizeObserver = new ResizeObserver(() => board.resize());
             resizeObserver.observe(document.getElementById('board-wrapper'));
             
-            // Double sécurité
-            window.addEventListener('resize', board.resize);
-            setTimeout(board.resize, 200);
+            setTimeout(board.resize, 500); // Assurance chargement
         }
 
         // --- LOGIQUE DE JEU ---
         function onDragStart(source, piece) {
             if (game.game_over()) return false;
             
-            // ONLINE RULES
+            // ONLINE RULES (C'est souvent ici que ça bloque sur PC si les couleurs sont mal set)
             if (gameMode === 'online') {
-                // Je ne peux bouger que mes pièces
-                if ((playerColor === 'w' && piece.search(/^b/) !== -1) ||
-                    (playerColor === 'b' && piece.search(/^w/) !== -1)) {
+                // Si ce n'est pas mon tour
+                if (game.turn() !== playerColor) {
+                    log("Pas votre tour.");
                     return false;
                 }
-                // Je ne peux bouger que si c'est mon tour
-                if ((game.turn() === 'w' && playerColor !== 'w') ||
-                    (game.turn() === 'b' && playerColor !== 'b')) {
+                // Si je tente de bouger les pièces adverses
+                if ((playerColor === 'w' && piece.search(/^b/) !== -1) ||
+                    (playerColor === 'b' && piece.search(/^w/) !== -1)) {
                     return false;
                 }
             }
             // BOT RULES
             if (gameMode === 'bot' && piece.search(/^b/) !== -1) return false;
+            
+            return true;
         }
 
         function onDrop(source, target) {
+            // Vérifier le coup légal
             const move = game.move({
                 from: source,
                 to: target,
-                promotion: 'q'
+                promotion: 'q' // Toujours dame pour simplifier
             });
 
+            // Si coup illégal, snapback
             if (move === null) return 'snapback';
+
+            // Jouer son
+            if(move.captured) sndCapture.play();
+            else sndMove.play();
 
             updateTurnIndicator();
 
             // ACTIONS SELON MODE
             if (gameMode === 'online') {
+                if(!gameId) return;
                 // Envoyer coup à Firebase
                 update(ref(db, 'games/' + gameId), {
                     fen: game.fen(),
-                    turn: game.turn()
+                    lastMove: { from: source, to: target } // Aide au debug
                 });
             } else if (gameMode === 'bot') {
                 makeBotMove();
@@ -331,6 +356,9 @@
         
         // 1. Créer
         document.getElementById('btn-create').addEventListener('click', () => {
+            // Nettoyage ancien listener si on recrée
+            if(currentGameRef) off(currentGameRef);
+
             gameId = Math.random().toString(36).substring(2, 6).toUpperCase();
             playerColor = 'w';
             gameMode = 'online';
@@ -339,7 +367,9 @@
             board.start();
             board.orientation('white');
 
-            set(ref(db, 'games/' + gameId), {
+            // Création DB
+            const newGameRef = ref(db, 'games/' + gameId);
+            set(newGameRef, {
                 white: myUid,
                 whiteName: myName,
                 whiteElo: myElo,
@@ -350,7 +380,9 @@
             document.getElementById('btn-create').classList.add('hidden');
             document.getElementById('lobby-wait').classList.remove('hidden');
             document.getElementById('display-code').innerText = gameId;
-            log(`Partie créée: ${gameId}`);
+            document.getElementById('top-hud').classList.remove('opacity-50');
+            
+            log(`Partie créée: ${gameId}. En attente...`);
 
             listenGame(gameId);
         });
@@ -359,30 +391,40 @@
         document.getElementById('btn-join').addEventListener('click', async () => {
             const code = document.getElementById('input-code').value.toUpperCase().trim();
             if(!code) return;
+            
+            if(currentGameRef) off(currentGameRef);
 
             const gRef = ref(db, 'games/' + code);
             const snap = await get(gRef);
 
-            if(snap.exists() && snap.val().status === 'waiting') {
+            if(snap.exists() && (snap.val().status === 'waiting' || snap.val().black === myUid)) {
                 gameId = code;
                 playerColor = 'b';
                 gameMode = 'online';
 
-                update(gRef, {
-                    black: myUid,
-                    blackName: myName,
-                    blackElo: myElo,
-                    status: 'active'
-                });
+                // Si je suis le premier à rejoindre
+                if(snap.val().status === 'waiting') {
+                     update(gRef, {
+                        black: myUid,
+                        blackName: myName,
+                        blackElo: myElo,
+                        status: 'active'
+                    });
+                }
 
                 game.reset();
-                board.start();
+                if(snap.val().fen && snap.val().fen !== 'start') game.load(snap.val().fen);
+                
+                board.position(game.fen());
                 board.orientation('black');
+                
                 log("Partie rejointe !");
+                sndNotify.play();
                 
                 // Mettre à jour HUD adversaire
-                document.getElementById('opponent-name-hud').innerText = snap.val().whiteName;
-                document.getElementById('opponent-elo-hud').innerText = snap.val().whiteElo;
+                document.getElementById('opponent-name-hud').innerText = snap.val().whiteName || "Adversaire";
+                document.getElementById('opponent-elo-hud').innerText = snap.val().whiteElo || "---";
+                document.getElementById('top-hud').classList.remove('opacity-50');
 
                 listenGame(code);
             } else {
@@ -392,29 +434,40 @@
 
         // 3. Écouter (Sync)
         function listenGame(id) {
-            const gRef = ref(db, 'games/' + id);
+            currentGameRef = ref(db, 'games/' + id);
             
-            onValue(gRef, (snapshot) => {
+            onValue(currentGameRef, (snapshot) => {
                 const data = snapshot.val();
                 if(!data) return;
 
-                // Si l'adversaire arrive (pour le créateur)
+                // Si je suis créateur et que qqn rejoint
                 if(data.status === 'active' && playerColor === 'w' && !document.getElementById('lobby-wait').classList.contains('hidden')) {
                      document.getElementById('lobby-wait').classList.add('hidden');
                      document.getElementById('btn-create').innerText = "PARTIE EN COURS";
                      document.getElementById('opponent-name-hud').innerText = data.blackName;
                      document.getElementById('opponent-elo-hud').innerText = data.blackElo;
+                     sndNotify.play();
                      log("Adversaire connecté !");
                 }
 
-                // Synchronisation du plateau
-                // Si le FEN reçu est différent de mon jeu actuel
-                if (data.fen && data.fen !== game.fen()) {
+                // IMPORTANT : Synchronisation du plateau
+                // On ne met à jour QUE si le FEN est différent de mon état local
+                // Cela empêche le plateau de "sauter" si c'est moi qui viens de jouer
+                if (data.fen && data.fen !== 'start' && data.fen !== game.fen()) {
+                    console.log("Sync update received");
                     game.load(data.fen);
-                    board.position(data.fen); // Animation fluide
-                    updateTurnIndicator();
-                    checkGameOverOnline();
+                    board.position(data.fen); 
+                    
+                    // Son de coup adverse
+                    const turn = game.turn();
+                    // Si c'est à moi de jouer maintenant, c'est que l'autre a joué
+                    if(turn === playerColor) {
+                        sndMove.play();
+                    }
                 }
+                
+                updateTurnIndicator();
+                checkGameOverOnline();
             });
         }
         
@@ -422,45 +475,53 @@
             if(game.game_over()) {
                 let title = "Match Nul";
                 let desc = "Pat ou matériel insuffisant";
+                let win = false;
                 
                 if (game.in_checkmate()) {
                     // Si c'est à moi de jouer et je suis mat, j'ai perdu
                     if (game.turn() === playerColor) {
                         title = "DÉFAITE";
                         desc = "Vous avez perdu.";
-                        updateElo(false);
+                        win = false;
                     } else {
                         title = "VICTOIRE";
-                        desc = "Bien joué !";
-                        updateElo(true);
+                        desc = "Echec et Mat !";
+                        win = true;
                     }
+                    updateElo(win);
+                } else {
+                     showEndScreen(title, desc);
                 }
-                showEndScreen(title, desc);
             }
         }
 
         async function updateElo(isWin) {
             if(!gameId) return;
-            // Calcul simple pour la démo (+10 ou -10)
-            // Dans une vraie app, on ferait le calcul serveur ou plus complexe ici
+            // Simple update simulé
             const change = isWin ? 10 : -10;
-            const newElo = myElo + change;
+            const newElo = Math.max(0, parseInt(myElo) + change);
             
-            // Mise à jour locale
+            // Mise à jour locale DB
             myElo = newElo;
             update(ref(db, 'users/' + myUid), { elo: newElo });
             
             const color = isWin ? "text-green-500" : "text-red-500";
             const sign = isWin ? "+" : "";
             document.getElementById('elo-change').innerHTML = `<span class="${color}">${sign}${change} ELO</span> (${newElo})`;
+            
+            showEndScreen(isWin ? "VICTOIRE" : "DÉFAITE", isWin ? "Bien joué !" : "Dommage...");
         }
 
         // --- BOT ---
         window.startBotGame = function() {
+            if(currentGameRef) off(currentGameRef);
             gameMode = 'bot';
-            game.reset(); board.start(); board.orientation('white');
+            game.reset(); 
+            board.start(); 
+            board.orientation('white');
             document.getElementById('opponent-name-hud').innerText = "Mistral AI";
             document.getElementById('opponent-elo-hud').innerText = "3000";
+            document.getElementById('top-hud').classList.remove('opacity-50');
             log("Mode Bot activé.");
             updateTurnIndicator();
         }
@@ -474,26 +535,47 @@
                     headers: { "Content-Type": "application/json", "Authorization": `Bearer ${MISTRAL_API_KEY}` },
                     body: JSON.stringify({
                         model: "mistral-tiny",
-                        messages: [{role: "user", content: `Chess FEN: ${fen}. Return best move in SAN only.`}]
+                        messages: [{role: "user", content: `You are a chess engine. The FEN is: ${fen}. Reply ONLY with the next best move in SAN format (Standard Algebraic Notation, e.g., e5, Nf3, O-O). Do not add any explanation.`}]
                     })
                 });
                 const data = await res.json();
-                let move = data.choices[0].message.content.trim().split(' ')[0].replace('.', '');
-                game.move(move);
-                board.position(game.fen());
+                let content = data.choices[0].message.content;
+                // Nettoyage violent de la réponse pour éviter les phrases
+                let moveSan = content.trim().split(' ')[0].replace(/[^a-zA-Z0-9+#=-]/g, '');
+                
+                const move = game.move(moveSan);
+                if(move) {
+                    board.position(game.fen());
+                    sndMove.play();
+                } else {
+                    log("Bot a tenté un coup illégal : " + moveSan);
+                    // Fallback random
+                    makeRandomMove();
+                }
                 updateTurnIndicator();
             } catch(e) {
-                // Fallback random
-                const moves = game.moves();
-                game.move(moves[Math.floor(Math.random() * moves.length)]);
-                board.position(game.fen());
+                log("Erreur Bot (API). Fallback Random.");
+                makeRandomMove();
                 updateTurnIndicator();
             }
         }
+
+        function makeRandomMove() {
+            const moves = game.moves();
+            if(moves.length === 0) return;
+            const randomMove = moves[Math.floor(Math.random() * moves.length)];
+            game.move(randomMove);
+            board.position(game.fen());
+            sndMove.play();
+        }
         
         window.startLocalGame = function() {
+            if(currentGameRef) off(currentGameRef);
             gameMode = 'local';
-            game.reset(); board.start();
+            game.reset(); board.start(); board.orientation('white');
+            document.getElementById('opponent-name-hud').innerText = "Joueur 2";
+            document.getElementById('opponent-elo-hud').innerText = "Local";
+            document.getElementById('top-hud').classList.remove('opacity-50');
             log("Mode local.");
         }
 
@@ -502,10 +584,13 @@
             document.getElementById('panel-online').classList.toggle('hidden', tab !== 'online');
             document.getElementById('panel-local').classList.toggle('hidden', tab !== 'local');
             
-            document.getElementById('tab-online').className = tab === 'online' ? "flex-1 py-3 bg-zinc-900 text-white border-b-2 border-blue-500" : "flex-1 py-3 hover:bg-zinc-900 text-gray-500";
-            document.getElementById('tab-local').className = tab === 'local' ? "flex-1 py-3 bg-zinc-900 text-white border-b-2 border-blue-500" : "flex-1 py-3 hover:bg-zinc-900 text-gray-500";
+            // Style onglets
+            const activeClass = "flex-1 py-3 bg-zinc-900 text-white border-b-2 border-blue-500 transition-colors";
+            const inactiveClass = "flex-1 py-3 hover:bg-zinc-900 text-gray-500 transition-colors";
             
-            // Important: Redimensionner le plateau car le layout peut changer
+            document.getElementById('tab-online').className = tab === 'online' ? activeClass : inactiveClass;
+            document.getElementById('tab-local').className = tab === 'local' ? activeClass : inactiveClass;
+            
             setTimeout(board.resize, 100);
         }
 
@@ -516,7 +601,10 @@
         }
 
         // INIT
-        $(document).ready(initBoard);
+        $(document).ready(() => {
+            initBoard();
+            log("WikiMind Chess v2.0 Ready");
+        });
 
     </script>
 </body>
