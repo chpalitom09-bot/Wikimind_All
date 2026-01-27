@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>WikiMind GTW - Online</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { margin: 0; overflow: hidden; background: #1a1a1a; font-family: 'Courier New', monospace; }
+        canvas { display: block; }
+        .ui-layer { position: absolute; pointer-events: none; width: 100%; height: 100%; top: 0; left: 0; }
+        .hud-panel { background: rgba(0,0,0,0.7); border: 2px solid rgba(255,255,255,0.2); backdrop-filter: blur(4px); }
+        
+        /* Chat et Killfeed */
+        #killfeed { position: absolute; top: 20px; right: 20px; text-align: right; display: flex; flex-direction: column; gap: 5px; }
+        .kill-msg { background: rgba(255,0,0,0.2); padding: 5px 10px; border-radius: 4px; color: white; font-size: 12px; animation: fadeOut 5s forwards; }
+        
+        @keyframes fadeOut { 0% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; } }
+
+        /* Crosshair */
+        body { cursor: crosshair; }
+    </style>
+</head>
+<body>
+
+    <!-- UI LAYER -->
+    <div class="ui-layer flex flex-col justify-between p-6">
+        
+        <!-- Top Bar -->
+        <div class="flex justify-between items-start">
+            <div class="hud-panel p-4 rounded-xl text-white">
+                <h1 class="text-2xl font-black italic tracking-tighter text-yellow-400">WIKIMIND <span class="text-white">GTW</span></h1>
+                <div class="text-xs text-gray-400 flex items-center gap-2">
+                    <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                    <span id="player-count">0</span> Joueurs en ligne
+                </div>
+            </div>
+            
+            <div id="killfeed"></div>
+        </div>
+
+        <!-- Bottom Bar (Stats) -->
+        <div class="flex justify-between items-end">
+            <div class="hud-panel p-4 rounded-xl text-white w-64">
+                <div class="flex justify-between mb-1">
+                    <span class="text-xs font-bold uppercase text-gray-400">Santé</span>
+                    <span id="hp-text" class="font-bold text-red-500">100%</span>
+                </div>
+                <div class="w-full bg-gray-800 h-2 rounded-full overflow-hidden mb-4">
+                    <div id="hp-bar" class="h-full bg-red-600 w-full transition-all duration-200"></div>
+                </div>
+
+                <div class="flex justify-between mb-1">
+                    <span class="text-xs font-bold uppercase text-gray-400">Arme</span>
+                    <span id="weapon-text" class="font-bold text-yellow-400">PISTOLET</span>
+                </div>
+                <p class="text-[10px] text-gray-500 mt-2">WASD: Bouger | CLICK: Tirer | F: Véhicule | 1/2: Armes</p>
+            </div>
+
+            <!-- Wanted Stars (Décoratif) -->
+            <div class="flex gap-1 text-2xl text-gray-800" id="stars">
+                ★ ★ ★ ★ ★
+            </div>
+        </div>
+    </div>
+
+    <!-- GAME CANVAS -->
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- FIREBASE & GAME LOGIC -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
+        import { getDatabase, ref, set, onValue, onDisconnect, push, remove, update, get } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-database.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-auth.js";
+
+        // --- CONFIGURATION FIREBASE (La tienne) ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyCuozxRg0t1MyzaoMwYDdWK6nyE3Btd--o",
+            authDomain: "wikimind-gtw.firebaseapp.com",
+            databaseURL: "https://wikimind-gtw-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "wikimind-gtw",
+            storageBucket: "wikimind-gtw.firebasestorage.app",
+            messagingSenderId: "576444288903",
+            appId: "1:576444288903:web:e8568ba12fab086c794d22"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const auth = getAuth(app);
+
+        // --- CONSTANTES JEU ---
+        const CANVAS = document.getElementById('gameCanvas');
+        const CTX = CANVAS.getContext('2d');
+        const TILE_SIZE = 50;
+        const MAP_WIDTH = 60; // Tuiles
+        const MAP_HEIGHT = 40; // Tuiles
+        const WORLD_W = MAP_WIDTH * TILE_SIZE;
+        const WORLD_H = MAP_HEIGHT * TILE_SIZE;
+
+        // Génération de map procédurale simple (Statique pour tous grâce à un seed simulé)
+        // 0: Route, 1: Batiment, 2: Herbe/Parc
+        const MAP_DATA = [];
+        
+        // Pseudo-random déterministe simple pour que tout le monde ait la même map
+        let seed = 1234;
+        function random() {
+            var x = Math.sin(seed++) * 10000;
+            return x - Math.floor(x);
+        }
+
+        // Générer une ville type grille
+        for(let y=0; y<MAP_HEIGHT; y++) {
+            let row = [];
+            for(let x=0; x<MAP_WIDTH; x++) {
+                if (x === 0 || x === MAP_WIDTH-1 || y === 0 || y === MAP_HEIGHT-1) {
+                    row.push(1); // Murs extérieurs
+                } else if (x % 4 === 0 || y % 4 === 0) {
+                    row.push(0); // Routes tous les 4 blocs
+                } else {
+                    row.push(random() > 0.8 ? 2 : 1); // Batiments ou parcs
+                }
+            }
+            MAP_DATA.push(row);
+        }
+
+        // Liste des voitures statiques (pour l'instant, on peut les "voler")
+        const STATIC_CARS = [];
+        for(let i=0; i<15; i++) {
+            // Trouver une position sur la route
+            let found = false;
+            while(!found) {
+                let rx = Math.floor(random() * MAP_WIDTH);
+                let ry = Math.floor(random() * MAP_HEIGHT);
+                if(MAP_DATA[ry][rx] === 0) {
+                    STATIC_CARS.push({
+                        id: `car_${i}`,
+                        x: rx * TILE_SIZE + TILE_SIZE/2,
+                        y: ry * TILE_SIZE + TILE_SIZE/2,
+                        color: `hsl(${random()*360}, 70%, 50%)`,
+                        angle: (Math.floor(random()*4) * 90) * (Math.PI/180)
+                    });
+                    found = true;
+                }
+            }
+        }
+
+        // --- ETAT LOCAL ---
+        let me = null; // Mon objet joueur
+        let myId = null;
+        let players = {}; // Tous les joueurs
+        let bullets = {}; // Toutes les balles
+        
+        // Input
+        const keys = { w:false, a:false, s:false, d:false };
+        const mouse = { x:0, y:0, worldX: 0, worldY: 0 };
+        
+        // Camera
+        const cam = { x:0, y:0 };
+
+        // --- GAMEPLAY LOGIC ---
+        
+        function resize() {
+            CANVAS.width = window.innerWidth;
+            CANVAS.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // Contrôles
+        window.addEventListener('keydown', e => {
+            if(e.key.toLowerCase() === 'z' || e.key.toLowerCase() === 'w') keys.w = true;
+            if(e.key.toLowerCase() === 'q' || e.key.toLowerCase() === 'a') keys.a = true;
+            if(e.key.toLowerCase() === 's') keys.s = true;
+            if(e.key.toLowerCase() === 'd') keys.d = true;
+            
+            if(e.key === '1') changeWeapon('gun');
+            if(e.key === '2') changeWeapon('knife');
+            if(e.key.toLowerCase() === 'f') tryEnterExitCar();
+        });
+
+        window.addEventListener('keyup', e => {
+            if(e.key.toLowerCase() === 'z' || e.key.toLowerCase() === 'w') keys.w = false;
+            if(e.key.toLowerCase() === 'q' || e.key.toLowerCase() === 'a') keys.a = false;
+            if(e.key.toLowerCase() === 's') keys.s = false;
+            if(e.key.toLowerCase() === 'd') keys.d = false;
+        });
+
+        window.addEventListener('mousemove', e => {
+            mouse.x = e.clientX;
+            mouse.y = e.clientY;
+        });
+
+        window.addEventListener('mousedown', e => {
+            if(!me || me.hp <= 0) return;
+            shoot();
+        });
+
+        // --- AUTH & NETWORK ---
+
+        signInAnonymously(auth).then((cred) => {
+            myId = cred.user.uid;
+            
+            // Spawn initial
+            spawnMe();
+
+            // Handle disconnect
+            const userRef = ref(db, `players/${myId}`);
+            onDisconnect(userRef).remove();
+
+            // Listen to other players
+            onValue(ref(db, 'players'), (snapshot) => {
+                players = snapshot.val() || {};
+                // Mettre à jour le compteur
+                document.getElementById('player-count').innerText = Object.keys(players).length;
+                
+                // Sync locale si besoin (correction de lag pour les autres)
+                // Ici on fait confiance à l'état global pour la simplicité
+            });
+
+            // Listen to bullets
+            onValue(ref(db, 'bullets'), (snapshot) => {
+                bullets = snapshot.val() || {};
+            });
+
+            // Boucle de jeu
+            requestAnimationFrame(gameLoop);
+            
+            // Sync Loop (Envoi de ma position 20 fois par seconde)
+            setInterval(sendUpdate, 50);
+
+        }).catch((error) => {
+            console.error("Auth error:", error);
+        });
+
+        function spawnMe() {
+            // Trouver point de spawn (route)
+            let sx, sy;
+            do {
+                let tx = Math.floor(Math.random() * MAP_WIDTH);
+                let ty = Math.floor(Math.random() * MAP_HEIGHT);
+                if (MAP_DATA[ty][tx] === 0) {
+                    sx = tx * TILE_SIZE + TILE_SIZE/2;
+                    sy = ty * TILE_SIZE + TILE_SIZE/2;
+                }
+            } while (!sx);
+
+            me = {
+                id: myId,
+                x: sx,
+                y: sy,
+                angle: 0,
+                hp: 100,
+                skinColor: `hsl(${Math.random()*360}, 80%, 60%)`,
+                weapon: 'gun', // gun, knife
+                inCar: false,
+                carColor: null,
+                name: `Gangster-${Math.floor(Math.random()*1000)}`
+            };
+            
+            updateHUD();
+        }
+
+        function changeWeapon(w) {
+            if(!me || me.inCar) return;
+            me.weapon = w;
+            document.getElementById('weapon-text').innerText = w === 'gun' ? 'PISTOLET' : 'COUTEAU';
+        }
+
+        function tryEnterExitCar() {
+            if (!me) return;
+
+            if (me.inCar) {
+                // Sortir
+                me.inCar = false;
+                me.carColor = null;
+            } else {
+                // Chercher voiture proche
+                for (let car of STATIC_CARS) {
+                    let dist = Math.hypot(car.x - me.x, car.y - me.y);
+                    if (dist < 40) {
+                        me.inCar = true;
+                        me.carColor = car.color;
+                        me.x = car.x;
+                        me.y = car.y;
+                        break;
+                    }
+                }
+            }
+        }
+
+        function shoot() {
+            if (me.weapon === 'gun') {
+                const bulletId = push(ref(db, 'bullets')).key;
+                const bData = {
+                    id: bulletId,
+                    owner: myId,
+                    x: me.x,
+                    y: me.y,
+                    angle: me.angle,
+                    speed: 15,
+                    damage: 20,
+                    timestamp: Date.now()
+                };
+                // Optimiste
+                bullets[bulletId] = bData;
+                set(ref(db, `bullets/${bulletId}`), bData);
+                
+                // Suppression auto après 2 sec
+                setTimeout(() => { remove(ref(db, `bullets/${bulletId}`)); }, 2000);
+            } else {
+                // Couteau (Raycast court)
+                const knifeRange = 40;
+                const hitX = me.x + Math.cos(me.angle) * knifeRange;
+                const hitY = me.y + Math.sin(me.angle) * knifeRange;
+                
+                // Vérifier si on touche quelqu'un
+                for(let pid in players) {
+                    if(pid === myId) continue;
+                    let p = players[pid];
+                    let dist = Math.hypot(p.x - hitX, p.y - hitY);
+                    if(dist < 20) {
+                        // HIT !
+                        damagePlayer(pid, 50); // Couteau fait mal
+                    }
+                }
+            }
+        }
+
+        function damagePlayer(targetId, dmg) {
+            // Seul le client qui tire calcule les dégâts pour simplifier (pas sécurisé mais ok pour proto)
+            // L'idéal serait d'envoyer "J'ai touché X" et le client X vérifie ou le serveur.
+            // Ici, on va tricher : on met à jour la DB de l'autre joueur.
+            // Note: Les règles Firebase doivent permettre d'écrire sur les autres joueurs.
+            
+            get(ref(db, `players/${targetId}/hp`)).then((snap) => {
+                if(snap.exists()) {
+                    let newHp = snap.val() - dmg;
+                    if (newHp <= 0) {
+                        newHp = 0;
+                        killFeed(me.name, players[targetId].name);
+                        // Reset player (respawn géré par le client victime normalement, mais on force ici)
+                    }
+                    update(ref(db, `players/${targetId}`), { hp: newHp });
+                }
+            });
+        }
+        
+        function killFeed(killer, victim) {
+            const el = document.createElement('div');
+            el.className = 'kill-msg';
+            el.innerHTML = `<span class="font-bold text-yellow-400">${killer}</span> 🔫 ${victim}`;
+            document.getElementById('killfeed').prepend(el);
+            setTimeout(() => el.remove(), 5000);
+        }
+
+        function sendUpdate() {
+            if(!me) return;
+            set(ref(db, `players/${myId}`), me);
+        }
+
+        function checkCollision(x, y) {
+            // Map boundaries
+            if (x < 0 || x > WORLD_W || y < 0 || y > WORLD_H) return true;
+
+            // Buildings
+            let tx = Math.floor(x / TILE_SIZE);
+            let ty = Math.floor(y / TILE_SIZE);
+            
+            if (MAP_DATA[ty] && MAP_DATA[ty][tx] === 1) return true; // Mur
+            
+            return false;
+        }
+
+        function updateHUD() {
+            if(!me) return;
+            const hpBar = document.getElementById('hp-bar');
+            const hpText = document.getElementById('hp-text');
+            
+            hpBar.style.width = me.hp + '%';
+            hpText.innerText = me.hp + '%';
+
+            if(me.hp <= 30) hpBar.className = "h-full bg-red-600 w-full animate-pulse";
+            else hpBar.className = "h-full bg-green-500 w-full transition-all";
+
+            // Si mort
+            if(me.hp <= 0) {
+                spawnMe(); // Respawn immédiat
+            }
+        }
+
+        // --- MOTEUR PHYSIQUE & RENDU ---
+
+        function gameLoop() {
+            // 1. UPDATE LOCAL PLAYER
+            if (me && me.hp > 0) {
+                let speed = me.inCar ? 6 : 3;
+                let dx = 0;
+                let dy = 0;
+
+                if (keys.w) dy -= speed;
+                if (keys.s) dy += speed;
+                if (keys.a) dx -= speed;
+                if (keys.d) dx += speed;
+
+                // Normaliser diagonale
+                if (dx !== 0 && dy !== 0) {
+                    dx *= 0.707;
+                    dy *= 0.707;
+                }
+
+                if (!checkCollision(me.x + dx, me.y)) me.x += dx;
+                if (!checkCollision(me.x, me.y + dy)) me.y += dy;
+
+                // Rotation vers souris
+                // Convertir souris écran -> monde
+                mouse.worldX = mouse.x + cam.x;
+                mouse.worldY = mouse.y + cam.y;
+
+                // Si en voiture, rotation suit le mouvement (type GTA 1/2), sinon souris
+                if (me.inCar) {
+                    if (dx !== 0 || dy !== 0) me.angle = Math.atan2(dy, dx);
+                } else {
+                    me.angle = Math.atan2(mouse.worldY - me.y, mouse.worldX - me.x);
+                }
+
+                updateHUD();
+            }
+
+            // 2. UPDATE BULLETS LOCALLY (Prediction)
+            for(let bid in bullets) {
+                let b = bullets[bid];
+                b.x += Math.cos(b.angle) * b.speed;
+                b.y += Math.sin(b.angle) * b.speed;
+                
+                // Collision balle/mur
+                if(checkCollision(b.x, b.y)) {
+                    delete bullets[bid]; // Visuel seulement
+                }
+            }
+
+            // 3. CAMERA
+            if (me) {
+                cam.x = me.x - CANVAS.width / 2;
+                cam.y = me.y - CANVAS.height / 2;
+                // Clamp camera
+                cam.x = Math.max(0, Math.min(cam.x, WORLD_W - CANVAS.width));
+                cam.y = Math.max(0, Math.min(cam.y, WORLD_H - CANVAS.height));
+            }
+
+            // 4. DRAW
+            CTX.fillStyle = '#1a1a1a'; // Asphalte fond
+            CTX.fillRect(0, 0, CANVAS.width, CANVAS.height);
+
+            CTX.save();
+            CTX.translate(-cam.x, -cam.y);
+
+            // Draw Map
+            for(let y=0; y<MAP_HEIGHT; y++) {
+                for(let x=0; x<MAP_WIDTH; x++) {
+                    let type = MAP_DATA[y][x];
+                    let posX = x * TILE_SIZE;
+                    let posY = y * TILE_SIZE;
+
+                    // Culling simple (ne pas dessiner hors écran)
+                    if (posX + TILE_SIZE < cam.x || posX > cam.x + CANVAS.width ||
+                        posY + TILE_SIZE < cam.y || posY > cam.y + CANVAS.height) continue;
+
+                    if (type === 1) { // Batiment
+                        // Ombre
+                        CTX.fillStyle = 'rgba(0,0,0,0.5)';
+                        CTX.fillRect(posX+5, posY+5, TILE_SIZE, TILE_SIZE);
+                        // Toit
+                        CTX.fillStyle = '#4a4a4a';
+                        CTX.fillRect(posX, posY, TILE_SIZE, TILE_SIZE);
+                        // Bordure
+                        CTX.strokeStyle = '#333';
+                        CTX.strokeRect(posX, posY, TILE_SIZE, TILE_SIZE);
+                    } else if (type === 2) { // Parc
+                        CTX.fillStyle = '#2d4a2d';
+                        CTX.fillRect(posX, posY, TILE_SIZE, TILE_SIZE);
+                    } else {
+                        // Route (déjà couleur fond)
+                        // Lignes jaunes
+                        if (x%2===0 && y%2!==0) {
+                            CTX.fillStyle = '#d4af37';
+                            CTX.fillRect(posX + TILE_SIZE/2 - 2, posY + 10, 4, 30);
+                        }
+                    }
+                }
+            }
+
+            // Draw Static Cars (non utilisés)
+            for(let car of STATIC_CARS) {
+                drawCar(car.x, car.y, car.angle, car.color, false);
+            }
+
+            // Draw Players
+            for (let pid in players) {
+                let p = players[pid];
+                if (p.inCar) {
+                    drawCar(p.x, p.y, p.angle, p.carColor, true, p.name);
+                } else {
+                    drawHuman(p.x, p.y, p.angle, p.skinColor, p.weapon, p.name);
+                }
+            }
+
+            // Draw Bullets
+            CTX.fillStyle = '#ffaa00';
+            for (let bid in bullets) {
+                let b = bullets[bid];
+                CTX.beginPath();
+                CTX.arc(b.x, b.y, 3, 0, Math.PI * 2);
+                CTX.fill();
+            }
+
+            CTX.restore();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function drawHuman(x, y, angle, color, weapon, name) {
+            CTX.save();
+            CTX.translate(x, y);
+            
+            // Name tag
+            CTX.fillStyle = 'white';
+            CTX.font = '10px Arial';
+            CTX.textAlign = 'center';
+            CTX.fillText(name, 0, -20);
+
+            CTX.rotate(angle);
+
+            // Corps
+            CTX.fillStyle = color;
+            CTX.beginPath();
+            CTX.arc(0, 0, 12, 0, Math.PI * 2);
+            CTX.fill();
+            
+            // Epaules
+            CTX.fillStyle = 'rgba(0,0,0,0.3)';
+            CTX.fillRect(-8, -8, 16, 4);
+
+            // Bras / Arme
+            if (weapon === 'gun') {
+                CTX.fillStyle = '#000';
+                CTX.fillRect(5, -3, 15, 6); // Bras tendu
+            } else {
+                CTX.fillStyle = '#888'; // Couteau
+                CTX.beginPath();
+                CTX.moveTo(10, 0);
+                CTX.lineTo(25, 0);
+                CTX.lineWidth = 3;
+                CTX.strokeStyle = '#ccc';
+                CTX.stroke();
+            }
+
+            CTX.restore();
+        }
+
+        function drawCar(x, y, angle, color, isOccupied, name) {
+            CTX.save();
+            CTX.translate(x, y);
+            
+            if(name) {
+                CTX.fillStyle = 'white';
+                CTX.font = '10px Arial';
+                CTX.textAlign = 'center';
+                CTX.fillText(name, 0, -25);
+            }
+
+            CTX.rotate(angle);
+            
+            // Ombre
+            CTX.fillStyle = 'rgba(0,0,0,0.4)';
+            CTX.fillRect(-22, -12, 44, 24);
+
+            // Car body
+            CTX.fillStyle = color;
+            CTX.beginPath();
+            CTX.roundRect(-20, -10, 40, 20, 3);
+            CTX.fill();
+
+            // Pare-brise
+            CTX.fillStyle = '#111';
+            CTX.fillRect(0, -8, 8, 16); // Arrière
+            CTX.fillStyle = '#87ceeb';
+            CTX.fillRect(10, -8, 5, 16); // Avant
+
+            // Phares
+            if (isOccupied) {
+                CTX.fillStyle = 'rgba(255, 255, 200, 0.5)';
+                CTX.beginPath();
+                CTX.moveTo(20, -8);
+                CTX.lineTo(100, -30);
+                CTX.lineTo(100, 30);
+                CTX.lineTo(20, 8);
+                CTX.fill();
+            }
+
+            CTX.restore();
+        }
+
+    </script>
+</body>
+</html>
