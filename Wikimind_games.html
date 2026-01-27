@@ -9,13 +9,14 @@
     <style>
         body { font-family: 'Inter', sans-serif; }
         .glass { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
+        .card-zoom:hover .bg-image { transform: scale(1.1); }
     </style>
 </head>
 <body class="bg-black text-white min-h-screen flex flex-col">
 
     <!-- NAVBAR -->
     <header class="border-b border-gray-800 p-6 flex justify-between items-center bg-black/50 backdrop-blur-md sticky top-0 z-50">
-        <div class="flex items-center gap-3">
+        <div class="flex items-center gap-3 cursor-pointer" onclick="window.location.href='index.html'">
             <div class="w-10 h-10 bg-white text-black rounded-xl flex items-center justify-center font-black text-xl">G</div>
             <h1 class="text-xl font-black uppercase tracking-tighter italic">WikiMind Games</h1>
         </div>
@@ -76,18 +77,18 @@
             <h2 class="text-4xl font-black uppercase tracking-tighter mb-8">Catalogue</h2>
             
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                
                 <!-- CARTE ECHECS -->
-                <div class="group relative bg-zinc-900 rounded-3xl overflow-hidden border border-zinc-800 hover:border-white transition-all duration-300 cursor-pointer h-80" onclick="window.location.href='Wikimind_chess.html'">
+                <div class="group card-zoom relative bg-zinc-900 rounded-3xl overflow-hidden border border-zinc-800 hover:border-white transition-all duration-300 cursor-pointer h-80" onclick="window.location.href='Wikimind_chess.html'">
                     <div class="absolute inset-0 bg-gradient-to-b from-transparent to-black z-10"></div>
-                    <!-- Image placeholder stylée -->
-                    <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1529699211952-734e80c4d42b?q=80&w=2071&auto=format&fit=crop')] bg-cover bg-center transition-transform duration-700 group-hover:scale-110 opacity-60"></div>
+                    <div class="bg-image absolute inset-0 bg-[url('https://images.unsplash.com/photo-1529699211952-734e80c4d42b?q=80&w=2071&auto=format&fit=crop')] bg-cover bg-center transition-transform duration-700 opacity-60"></div>
                     
                     <div class="absolute bottom-0 left-0 p-8 z-20 w-full">
                         <div class="flex justify-between items-end">
                             <div>
-                                <span class="bg-blue-600 text-white text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider mb-2 inline-block">Populaire</span>
+                                <span class="bg-blue-600 text-white text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider mb-2 inline-block">Stratégie</span>
                                 <h3 class="text-3xl font-black uppercase italic">WikiMind Chess</h3>
-                                <p class="text-gray-300 text-sm mt-2 line-clamp-2">Affrontez l'IA Mistral ou défiez d'autres joueurs en temps réel. Système de classement ELO intégré.</p>
+                                <p class="text-gray-300 text-sm mt-2 line-clamp-2">Le grand classique. Affrontez l'IA Mistral ou défiez d'autres joueurs.</p>
                             </div>
                             <div class="w-10 h-10 rounded-full bg-white text-black flex items-center justify-center transform group-hover:translate-x-2 transition-transform">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
@@ -96,15 +97,26 @@
                     </div>
                 </div>
 
-                <!-- CARTE SOON -->
-                <div class="group relative bg-zinc-900 rounded-3xl overflow-hidden border border-zinc-800 opacity-50 h-80">
-                    <div class="absolute inset-0 flex items-center justify-center">
-                        <span class="bg-zinc-800 text-gray-400 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest border border-zinc-700">Bientôt</span>
-                    </div>
-                    <div class="absolute bottom-0 left-0 p-8 w-full">
-                        <h3 class="text-2xl font-black uppercase text-gray-500">WikiMind Trivia</h3>
+                <!-- CARTE PUISSANCE 4 (NOUVEAU) -->
+                <div class="group card-zoom relative bg-zinc-900 rounded-3xl overflow-hidden border border-zinc-800 hover:border-red-500 transition-all duration-300 cursor-pointer h-80" onclick="window.location.href='Wikimind_P4.html'">
+                    <div class="absolute inset-0 bg-gradient-to-b from-transparent to-black z-10"></div>
+                    <!-- Image abstraite rouge/jaune -->
+                    <div class="bg-image absolute inset-0 bg-[url('https://images.unsplash.com/photo-1611371805429-02c98a531639?q=80&w=2070&auto=format&fit=crop')] bg-cover bg-center transition-transform duration-700 opacity-60"></div>
+                    
+                    <div class="absolute bottom-0 left-0 p-8 z-20 w-full">
+                        <div class="flex justify-between items-end">
+                            <div>
+                                <span class="bg-red-600 text-white text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider mb-2 inline-block">Arcade</span>
+                                <h3 class="text-3xl font-black uppercase italic">WikiMind P4</h3>
+                                <p class="text-gray-300 text-sm mt-2 line-clamp-2">Alignez 4 jetons avant votre adversaire. Rapide, intense et multijoueur.</p>
+                            </div>
+                            <div class="w-10 h-10 rounded-full bg-white text-black flex items-center justify-center transform group-hover:translate-x-2 transition-transform">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                            </div>
+                        </div>
                     </div>
                 </div>
+
             </div>
         </div>
     </main>
@@ -134,7 +146,6 @@
             const pass = document.getElementById('password').value;
             try {
                 const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
-                // Créer l'entrée utilisateur dans la DB
                 await set(ref(db, 'users/' + userCredential.user.uid), {
                     email: email,
                     elo: 1200,
@@ -172,7 +183,6 @@
                 userDisplay.classList.remove('hidden');
                 document.getElementById('username-span').innerText = user.email.split('@')[0];
 
-                // Charger les données du profil
                 const snapshot = await get(ref(db, 'users/' + user.uid));
                 if (snapshot.exists()) {
                     const data = snapshot.val();
@@ -200,7 +210,6 @@
                 snapshot.forEach(child => {
                     users.push(child.val());
                 });
-                // Firebase renvoie ascendant, on veut descendant
                 users.reverse().forEach((u, index) => {
                     const rankColor = index === 0 ? "text-yellow-400" : index === 1 ? "text-gray-300" : index === 2 ? "text-orange-400" : "text-gray-500";
                     const html = `
@@ -219,5 +228,4 @@
         loadLeaderboard();
     </script>
 </body>
-
 </html>
