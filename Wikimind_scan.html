@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-29XYBNJ2CB"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-29XYBNJ2CB');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>WikiMind Scan - Analyse d'Objets</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- Markdown Parser -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <style>
+        :root {
+            --bg: #ffffff;
+            --text: #111111;
+            --accent: #000000;
+        }
+
+        .dark-mode {
+            --bg: #0f0f0f;
+            --text: #eeeeee;
+            --accent: #ffffff;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            transition: background-color 0.4s ease;
+            overflow-x: hidden;
+            overscroll-behavior: none; /* Empêche le refresh sur mobile quand on dessine */
+        }
+
+        /* Grain Texture */
+        .bg-grain {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E");
+            pointer-events: none; z-index: 0;
+        }
+
+        /* View Management */
+        .view-container { display: none; opacity: 0; transition: opacity 0.4s ease; }
+        .view-container.active { display: block; opacity: 1; }
+
+        /* Canvas Editor */
+        .editor-container {
+            position: relative;
+            width: 100%;
+            max-height: 60vh;
+            overflow: hidden;
+            border-radius: 24px;
+            background: #1a1a1a;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            touch-action: none; /* Crucial pour dessiner sur mobile */
+        }
+        
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        /* Scan Line Animation */
+        .scan-line {
+            position: absolute; top: 0; left: 0; width: 100%; height: 2px;
+            background: #00ff00;
+            box-shadow: 0 0 10px #00ff00;
+            animation: scan 2s linear infinite;
+            display: none;
+            z-index: 20;
+        }
+        @keyframes scan { 0% { top: 0; opacity: 0; } 50% { opacity: 1; } 100% { top: 100%; opacity: 0; } }
+
+        /* Rarity Gauge */
+        .rarity-bar {
+            height: 8px; border-radius: 4px; background: #333;
+            overflow: hidden; position: relative;
+        }
+        .rarity-fill {
+            height: 100%; width: 0%;
+            background: linear-gradient(90deg, #4ade80 0%, #facc15 50%, #ef4444 100%);
+            transition: width 1s ease-out;
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen relative p-4 md:p-6">
+    <div class="bg-grain"></div>
+
+    <!-- HEADER -->
+    <header class="fixed top-0 left-0 w-full z-50 p-6 flex justify-between items-center bg-gradient-to-b from-[var(--bg)] to-transparent">
+        <a href="index.html" class="flex items-center gap-3 text-xs font-bold uppercase tracking-widest text-gray-500 hover:text-[var(--text)] transition">
+            <div class="w-8 h-8 bg-[var(--text)] text-[var(--bg)] rounded-lg flex items-center justify-center font-black">←</div>
+            <span class="hidden md:inline">Retour Accueil</span>
+        </a>
+        <div class="flex items-center gap-2">
+            <h1 class="text-xl font-black uppercase tracking-tighter italic">WikiMind <span class="text-blue-500">Scan</span></h1>
+        </div>
+        <button onclick="toggleTheme()" class="w-8 h-8 rounded-full border border-gray-300 dark:border-gray-700 flex items-center justify-center">
+            <svg id="theme-icon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+        </button>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-grow pt-24 pb-10 w-full max-w-2xl mx-auto z-10">
+
+        <!-- VIEW 1: UPLOAD -->
+        <div id="view-upload" class="view-container active text-center">
+            <h2 class="text-3xl md:text-5xl font-black tracking-tight mb-4">Analysez le monde.</h2>
+            <p class="text-gray-500 mb-12">Prenez une photo ou importez une image. L'IA détectera l'objet, son prix et sa rareté.</p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Camera Input -->
+                <label class="cursor-pointer group relative overflow-hidden rounded-3xl bg-gray-50 dark:bg-[#161616] border border-gray-200 dark:border-[#252525] p-8 h-64 flex flex-col items-center justify-center hover:border-black dark:hover:border-white transition-all">
+                    <input type="file" accept="image/*" capture="environment" class="hidden" onchange="handleImageUpload(this)">
+                    <div class="w-16 h-16 mb-4 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-3xl group-hover:scale-110 transition-transform">📸</div>
+                    <span class="font-bold text-lg">Prendre Photo</span>
+                    <span class="text-xs text-gray-500 mt-2 uppercase tracking-widest">Mobile</span>
+                </label>
+
+                <!-- Gallery Input -->
+                <label class="cursor-pointer group relative overflow-hidden rounded-3xl bg-gray-50 dark:bg-[#161616] border border-gray-200 dark:border-[#252525] p-8 h-64 flex flex-col items-center justify-center hover:border-black dark:hover:border-white transition-all">
+                    <input type="file" accept="image/*" class="hidden" onchange="handleImageUpload(this)">
+                    <div class="w-16 h-16 mb-4 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center text-3xl group-hover:scale-110 transition-transform">🖼️</div>
+                    <span class="font-bold text-lg">Importer</span>
+                    <span class="text-xs text-gray-500 mt-2 uppercase tracking-widest">Galerie / Fichiers</span>
+                </label>
+            </div>
+        </div>
+
+        <!-- VIEW 2: EDITOR (CANVAS) -->
+        <div id="view-editor" class="view-container">
+            <div class="flex justify-between items-end mb-4">
+                <div>
+                    <h3 class="text-xl font-bold">Affinez la détection</h3>
+                    <p class="text-xs text-gray-500">Coloriez l'objet en rouge pour aider l'IA.</p>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="clearCanvas()" class="px-3 py-1 text-xs font-bold uppercase border border-gray-300 rounded-lg hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-zinc-800">Effacer</button>
+                    <button onclick="resetUpload()" class="px-3 py-1 text-xs font-bold uppercase text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg">Annuler</button>
+                </div>
+            </div>
+
+            <div class="editor-container relative bg-black" id="canvas-wrapper">
+                <canvas id="image-canvas"></canvas>
+                <div id="scan-overlay" class="scan-line"></div>
+                <div id="loading-overlay" class="absolute inset-0 bg-black/80 backdrop-blur-sm z-30 hidden flex-col items-center justify-center text-white">
+                    <div class="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+                    <div class="font-bold animate-pulse">Analyse Mistral Vision...</div>
+                </div>
+            </div>
+
+            <div class="mt-6 flex justify-center">
+                <button onclick="analyzeImage()" class="w-full md:w-auto px-12 py-4 bg-black dark:bg-white text-white dark:text-black rounded-full font-bold text-sm uppercase tracking-widest hover:scale-105 transition-transform flex items-center justify-center gap-3 shadow-xl shadow-blue-500/20">
+                    <span class="text-lg">✨</span> Lancer l'Analyse
+                </button>
+            </div>
+        </div>
+
+        <!-- VIEW 3: RESULTS -->
+        <div id="view-result" class="view-container">
+            <div class="bg-white dark:bg-[#161616] border border-gray-200 dark:border-[#252525] rounded-3xl overflow-hidden shadow-2xl">
+                <!-- Image Preview (Small) -->
+                <div class="h-48 w-full bg-gray-100 dark:bg-black relative overflow-hidden">
+                    <img id="result-img" class="w-full h-full object-cover opacity-80" />
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items-end p-6">
+                        <h2 id="res-title" class="text-3xl font-black text-white leading-none">Objet Détecté</h2>
+                    </div>
+                </div>
+
+                <div class="p-8">
+                    <!-- Stats Grid -->
+                    <div class="grid grid-cols-2 gap-4 mb-8">
+                        <div class="p-4 rounded-2xl bg-gray-50 dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800">
+                            <div class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Prix Estimé</div>
+                            <div id="res-price" class="text-2xl font-black text-green-500">--- €</div>
+                        </div>
+                        <div class="p-4 rounded-2xl bg-gray-50 dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800">
+                            <div class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Rareté</div>
+                            <div class="flex items-center gap-2">
+                                <span id="res-rarity-score" class="text-2xl font-black">-/10</span>
+                            </div>
+                            <div class="rarity-bar mt-2">
+                                <div id="res-rarity-fill" class="rarity-fill" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- AI Analysis -->
+                    <div class="mb-8">
+                        <h3 class="font-bold uppercase tracking-widest text-xs mb-3 text-gray-400">Analyse Détaillée</h3>
+                        <div id="res-desc" class="prose prose-sm dark:prose-invert text-gray-600 dark:text-gray-300 leading-relaxed">
+                            Chargement...
+                        </div>
+                    </div>
+
+                    <!-- Fun Stats -->
+                    <div class="mb-8">
+                         <h3 class="font-bold uppercase tracking-widest text-xs mb-3 text-gray-400">Statistiques</h3>
+                         <ul id="res-stats" class="space-y-3 text-sm">
+                             <!-- JS injected -->
+                         </ul>
+                    </div>
+
+                    <button onclick="resetUpload()" class="w-full py-4 border border-gray-200 dark:border-gray-700 rounded-xl font-bold uppercase tracking-widest hover:bg-gray-100 dark:hover:bg-zinc-800 transition">
+                        Scanner un autre objet
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        // CONFIG
+        const MISTRAL_API_KEY = "krrl5zWdZwHBj8Cy9mtc1oOSBcqv61l2"; // Note: En prod, pas de clé côté client !
+        
+        let canvas, ctx;
+        let originalImage = new Image();
+        let isDrawing = false;
+        let lastX = 0;
+        let lastY = 0;
+
+        // --- INIT ---
+        window.addEventListener('DOMContentLoaded', () => {
+            canvas = document.getElementById('image-canvas');
+            ctx = canvas.getContext('2d');
+            
+            // Mouse Events
+            canvas.addEventListener('mousedown', startDrawing);
+            canvas.addEventListener('mousemove', draw);
+            canvas.addEventListener('mouseup', stopDrawing);
+            canvas.addEventListener('mouseout', stopDrawing);
+            
+            // Touch Events (Mobile)
+            canvas.addEventListener('touchstart', (e) => {
+                e.preventDefault(); // Stop scroll
+                const touch = e.touches[0];
+                const rect = canvas.getBoundingClientRect();
+                lastX = (touch.clientX - rect.left) * (canvas.width / rect.width);
+                lastY = (touch.clientY - rect.top) * (canvas.height / rect.height);
+                isDrawing = true;
+            }, { passive: false });
+
+            canvas.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                if(!isDrawing) return;
+                const touch = e.touches[0];
+                const rect = canvas.getBoundingClientRect();
+                const x = (touch.clientX - rect.left) * (canvas.width / rect.width);
+                const y = (touch.clientY - rect.top) * (canvas.height / rect.height);
+                
+                ctx.beginPath();
+                ctx.moveTo(lastX, lastY);
+                ctx.lineTo(x, y);
+                ctx.strokeStyle = 'rgba(255, 0, 0, 0.6)'; // RED HIGHLIGHT
+                ctx.lineWidth = canvas.width / 15; // Dynamic brush size
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.stroke();
+                
+                lastX = x;
+                lastY = y;
+            }, { passive: false });
+
+            canvas.addEventListener('touchend', stopDrawing);
+            
+            // Theme check
+            if (localStorage.getItem('wikimind_landing_theme') === 'dark') {
+                document.body.classList.add('dark-mode');
+            }
+        });
+
+        // --- FUNCTIONS ---
+
+        function switchView(id) {
+            document.querySelectorAll('.view-container').forEach(el => {
+                el.classList.remove('active');
+                setTimeout(() => { if(!el.classList.contains('active')) el.style.display = 'none'; }, 400);
+            });
+            const target = document.getElementById(id);
+            target.style.display = 'block';
+            setTimeout(() => target.classList.add('active'), 10);
+            window.scrollTo({top:0, behavior:'smooth'});
+        }
+
+        function handleImageUpload(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    originalImage.src = e.target.result;
+                    originalImage.onload = () => {
+                        setupCanvas();
+                        switchView('view-editor');
+                    }
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function setupCanvas() {
+            // Resize canvas to fit image aspect ratio but limit max size for performance
+            const maxWidth = 1024;
+            const scale = Math.min(1, maxWidth / originalImage.width);
+            
+            canvas.width = originalImage.width * scale;
+            canvas.height = originalImage.height * scale;
+            
+            ctx.drawImage(originalImage, 0, 0, canvas.width, canvas.height);
+        }
+
+        function clearCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(originalImage, 0, 0, canvas.width, canvas.height);
+        }
+
+        function startDrawing(e) {
+            isDrawing = true;
+            const rect = canvas.getBoundingClientRect();
+            lastX = (e.clientX - rect.left) * (canvas.width / rect.width);
+            lastY = (e.clientY - rect.top) * (canvas.height / rect.height);
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+            const rect = canvas.getBoundingClientRect();
+            const x = (e.clientX - rect.left) * (canvas.width / rect.width);
+            const y = (e.clientY - rect.top) * (canvas.height / rect.height);
+            
+            ctx.beginPath();
+            ctx.moveTo(lastX, lastY);
+            ctx.lineTo(x, y);
+            ctx.strokeStyle = 'rgba(255, 0, 0, 0.6)'; // RED HIGHLIGHT
+            ctx.lineWidth = canvas.width / 20; 
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.stroke();
+            
+            lastX = x;
+            lastY = y;
+        }
+
+        function stopDrawing() {
+            isDrawing = false;
+        }
+
+        function resetUpload() {
+            switchView('view-upload');
+            // Reset input values
+            document.querySelectorAll('input[type="file"]').forEach(i => i.value = '');
+        }
+
+        // --- AI LOGIC ---
+
+        async function analyzeImage() {
+            const overlay = document.getElementById('loading-overlay');
+            const scanLine = document.getElementById('scan-overlay');
+            overlay.classList.remove('hidden');
+            overlay.classList.add('flex');
+            scanLine.style.display = 'block';
+
+            // Get Base64 image from canvas (includes the red drawing)
+            const base64Image = canvas.toDataURL('image/jpeg', 0.8);
+
+            try {
+                const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${MISTRAL_API_KEY}`
+                    },
+                    body: JSON.stringify({
+                        model: "pixtral-12b-2409",
+                        messages: [
+                            {
+                                role: "user",
+                                content: [
+                                    { 
+                                        type: "text", 
+                                        text: `Analyse cette image. J'ai potentiellement entouré ou colorié en ROUGE l'objet spécifique que je veux que tu analyses. Si il n'y a pas de rouge, analyse l'objet principal.
+                                        
+                                        Tu dois agir comme un expert en antiquités, technologie et objets divers.
+                                        
+                                        Retourne UNIQUEMENT un objet JSON (sans markdown ```json) avec cette structure exacte :
+                                        {
+                                            "name": "Nom court de l'objet",
+                                            "price_min": "Prix minimum estimé (nombre)",
+                                            "price_max": "Prix maximum estimé (nombre)",
+                                            "currency": "€",
+                                            "rarity_score": "Score de rareté de 1 à 10 (nombre)",
+                                            "description": "Une description concise mais détaillée de l'objet, son usage et son histoire si pertinent.",
+                                            "stats": [
+                                                "Statistique amusante 1 (ex: 1 foyer sur 3 en possède)",
+                                                "Statistique technique ou historique",
+                                                "Autre fait intéressant"
+                                            ]
+                                        }`
+                                    },
+                                    {
+                                        type: "image_url",
+                                        image_url: base64Image
+                                    }
+                                ]
+                            }
+                        ],
+                        response_format: { type: "json_object" }
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.choices && data.choices.length > 0) {
+                    const content = data.choices[0].message.content;
+                    const result = JSON.parse(content); // Parsing JSON
+                    
+                    displayResults(result);
+                } else {
+                    throw new Error("Pas de réponse de l'IA");
+                }
+
+            } catch (error) {
+                console.error(error);
+                alert("Erreur lors de l'analyse : " + error.message);
+                overlay.classList.add('hidden');
+                scanLine.style.display = 'none';
+            }
+        }
+
+        function displayResults(data) {
+            // Fill Data
+            document.getElementById('res-title').innerText = data.name;
+            document.getElementById('res-price').innerText = `${data.price_min} - ${data.price_max} ${data.currency}`;
+            
+            // Rarity Animation
+            document.getElementById('res-rarity-score').innerText = `${data.rarity_score}/10`;
+            setTimeout(() => {
+                document.getElementById('res-rarity-fill').style.width = `${data.rarity_score * 10}%`;
+            }, 500);
+
+            // Description
+            document.getElementById('res-desc').innerHTML = marked.parse(data.description);
+
+            // Stats
+            const statsList = document.getElementById('res-stats');
+            statsList.innerHTML = data.stats.map(s => `
+                <li class="flex items-start gap-3 bg-gray-50 dark:bg-zinc-900 p-3 rounded-lg">
+                    <span class="text-blue-500 font-bold">ℹ️</span>
+                    <span class="text-gray-600 dark:text-gray-400">${s}</span>
+                </li>
+            `).join('');
+
+            // Image Thumbnail
+            document.getElementById('result-img').src = canvas.toDataURL();
+
+            // Transition
+            document.getElementById('loading-overlay').classList.add('hidden');
+            document.getElementById('scan-overlay').style.display = 'none';
+            switchView('view-result');
+        }
+
+        function toggleTheme() {
+            document.body.classList.toggle('dark-mode');
+            const isDark = document.body.classList.contains('dark-mode');
+            localStorage.setItem('wikimind_landing_theme', isDark ? 'dark' : 'light');
+        }
+    </script>
+</body>
+</html>
