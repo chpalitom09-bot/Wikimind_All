@@ -43,14 +43,14 @@
             box-shadow: inset 0 3px 6px rgba(0,0,0,0.8);
             cursor: pointer;
             position: relative;
-            overflow: hidden; /* Important pour masquer le jeton avant la chute */
+            overflow: hidden;
         }
         
         .chip {
             width: 100%; height: 100%;
             border-radius: 50%;
             position: absolute; top: 0; left: 0;
-            transform: translateY(-600%); /* Départ hors champ */
+            transform: translateY(-600%);
             animation: dropBounce 0.6s cubic-bezier(0.5, 0, 0.75, 0) forwards;
             box-shadow: inset 0 -4px 4px rgba(0,0,0,0.3), 0 4px 8px rgba(0,0,0,0.4);
         }
@@ -58,7 +58,6 @@
         .chip.red { background: radial-gradient(circle at 30% 30%, #ff6b6b, #c0392b); }
         .chip.yellow { background: radial-gradient(circle at 30% 30%, #f1c40f, #f39c12); }
 
-        /* Animation améliorée avec rebond */
         @keyframes dropBounce { 
             0% { transform: translateY(-600%); animation-timing-function: ease-in; }
             60% { transform: translateY(0); animation-timing-function: ease-out; }
@@ -173,17 +172,15 @@
                 <div id="panel-local" class="hidden space-y-4">
                     <button onclick="window.startBotGame()" class="w-full p-4 rounded-xl bg-zinc-800 border border-zinc-700 text-left active:scale-95 transition hover:border-blue-400 group">
                         <div class="font-bold text-sm text-white group-hover:text-blue-400">🤖 Vs WikiMind AI</div>
-                        <div class="text-[10px] text-gray-500">Entraînement solo</div>
                     </button>
                     <button onclick="window.startLocalGame()" class="w-full p-4 rounded-xl bg-black border border-zinc-800 text-left active:scale-95 transition hover:border-white group">
                         <div class="font-bold text-sm text-white group-hover:text-gray-300">👥 1 vs 1 Local</div>
-                        <div class="text-[10px] text-gray-500">Sur le même écran</div>
                     </button>
                 </div>
 
                 <!-- LOGS -->
                 <div id="logs-container" class="mt-4 p-3 bg-black rounded border border-zinc-800 h-24 overflow-y-auto text-[10px] font-mono text-gray-400 scrollbar-hide">
-                    <div class="text-green-500">> WikiMind P4 Ready.</div>
+                    <div class="text-green-500">> Système prêt.</div>
                 </div>
             </div>
         </div>
@@ -195,25 +192,25 @@
             <div class="text-6xl mb-4 animate-bounce" id="result-emoji">🏆</div>
             <h2 id="result-title" class="text-2xl font-black uppercase text-white mb-6">FIN</h2>
             <button onclick="location.reload()" class="w-full bg-white text-black font-bold py-3 rounded-xl uppercase text-xs tracking-widest hover:bg-gray-200 transition mb-2">Menu Principal</button>
-            <button onclick="document.getElementById('game-over-modal').classList.add('hidden')" class="w-full bg-transparent text-gray-500 font-bold py-2 rounded-xl uppercase text-[10px] tracking-widest hover:text-white transition">Fermer et voir le plateau</button>
         </div>
     </div>
 
+    <!-- SCRIPT FIREBASE & JEU -->
     <script type="module">
-        // Importation des SDK Firebase (Version 10.8.0 Stable)
+        // J'utilise la version 10.8.0 qui est très stable et fonctionne partout
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getDatabase, ref, set, onValue, update, get, push, child } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-        // CONFIGURATION DU PROJET
+        // VOTRE CONFIGURATION (Mise à jour pour wikimind-p4)
         const firebaseConfig = {
-            apiKey: "AIzaSyCy5oWMLf1hQmFgAqZDeNPJmfQj71u6Wio",
-            authDomain: "wikimindchess.firebaseapp.com",
-            databaseURL: "https://wikimindchess-default-rtdb.europe-west1.firebasedatabase.app",
-            projectId: "wikimindchess",
-            storageBucket: "wikimindchess.firebasestorage.app",
-            messagingSenderId: "78126540427",
-            appId: "1:78126540427:web:a49673fd3148988e02d68e"
+            apiKey: "AIzaSyDhxNCqvo77f9yRBPqSt4gyBOwD-2JO1fw",
+            authDomain: "wikimind-p4.firebaseapp.com",
+            databaseURL: "https://wikimind-p4-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "wikimind-p4",
+            storageBucket: "wikimind-p4.firebasestorage.app",
+            messagingSenderId: "802648340205",
+            appId: "1:802648340205:web:ebbf16a57c365f76023ee4"
         };
 
         // Initialisation
@@ -225,17 +222,19 @@
         const ROWS = 6;
         const COLS = 7;
         let board = [];
-        let currentPlayer = 1; // 1 = Rouge, 2 = Jaune
+        let currentPlayer = 1; 
         let gameActive = false;
-        let gameMode = 'online'; // 'local', 'bot', 'online'
-        let myPlayerColor = 0; // 0 = Spectateur, 1 = Rouge, 2 = Jaune
+        let gameMode = 'online'; 
+        let myPlayerColor = 0; 
         let gameId = null;
         let myUid = null;
         let myName = "Invité";
 
         // --- AUTHENTIFICATION ---
+        // Essentiel : Activez "Anonymous Auth" dans la console Firebase
         signInAnonymously(auth).catch((error) => {
             log("Erreur Auth: " + error.message);
+            console.error(error);
         });
 
         onAuthStateChanged(auth, async (user) => {
@@ -244,13 +243,14 @@
                 document.getElementById('conn-status').classList.replace('bg-red-500', 'bg-green-500');
                 document.getElementById('conn-status').classList.remove('animate-pulse');
                 
-                // Simuler un nom court basé sur l'UID
                 myName = "J-" + user.uid.substring(0, 4).toUpperCase();
                 
                 document.getElementById('user-name').innerText = myName;
                 document.getElementById('user-elo').innerText = "ID: " + user.uid.substring(0, 6);
                 document.getElementById('my-name-hud').innerText = myName;
-                log(`Connecté en tant que ${myName}`);
+                log(`Connecté : ${myName}`);
+            } else {
+                log("Déconnecté");
             }
         });
 
@@ -265,8 +265,6 @@
                 for (let c = 0; c < COLS; c++) {
                     const cell = document.createElement('div');
                     cell.className = 'cell';
-                    cell.dataset.c = c; // Stocker l'index de colonne
-                    // Création de l'écouteur de clic
                     cell.onclick = () => window.handleColumnClick(c);
                     container.appendChild(cell);
                 }
@@ -274,34 +272,28 @@
             updateUI();
         }
 
-        // Exposé globalement pour le HTML
+        // Fonction attachée à Window pour être accessible par HTML
         window.handleColumnClick = function(col) {
             if (!gameActive) {
                 if(gameMode === 'online' && !gameId) {
-                    log("Veuillez créer ou rejoindre une partie.");
-                    // Animation visuelle pour dire "Non"
-                    document.getElementById('online-controls').classList.add('animate-pulse');
-                    setTimeout(() => document.getElementById('online-controls').classList.remove('animate-pulse'), 500);
+                    log("Créez ou rejoignez une partie !");
                 }
                 return;
             }
 
-            // Vérification stricte en ligne
             if (gameMode === 'online') {
                 if (myPlayerColor !== currentPlayer) {
-                    log("Ce n'est pas votre tour !");
+                    log("Attendez votre tour.");
                     return;
                 }
             }
 
-            // Vérification tour Bot
             if (gameMode === 'bot' && currentPlayer !== 1) return;
 
             makeMove(col);
         };
 
         function makeMove(col) {
-            // Trouver la première case vide en partant du bas
             let row = -1;
             for (let r = ROWS - 1; r >= 0; r--) {
                 if (board[r][col] === 0) {
@@ -315,34 +307,32 @@
                 return;
             }
 
-            // 1. Mise à jour locale (Optimiste)
+            // Mise à jour locale
             board[row][col] = currentPlayer;
             animateDrop(row, col, currentPlayer);
 
-            // 2. Vérification Victoire
+            // Vérification Victoire
             if (checkWin(row, col, currentPlayer)) {
                 handleGameOver(currentPlayer);
-                // Synchroniser le coup final avant de finir
                 if (gameMode === 'online') {
                     update(ref(db, 'games_p4/' + gameId), {
                         board: JSON.stringify(board),
-                        lastMove: {r, c, p: currentPlayer} // Aide pour l'anim adverse
+                        winner: currentPlayer
                     });
                 }
                 return;
             }
 
-            // 3. Changement de joueur
+            // Changement joueur
             const nextPlayer = currentPlayer === 1 ? 2 : 1;
             currentPlayer = nextPlayer;
             updateUI();
 
-            // 4. Synchronisation
+            // Sync Firebase
             if (gameMode === 'online') {
                 update(ref(db, 'games_p4/' + gameId), {
                     board: JSON.stringify(board),
-                    turn: nextPlayer,
-                    lastMove: {r, c, p: (nextPlayer === 1 ? 2 : 1)}
+                    turn: nextPlayer
                 });
             } else if (gameMode === 'bot' && nextPlayer === 2) {
                 setTimeout(playBot, 600);
@@ -354,7 +344,6 @@
             const container = document.getElementById('game-board');
             if (!container.children[index]) return;
 
-            // Eviter doublons visuels
             if(container.children[index].querySelector('.chip')) return;
 
             const chip = document.createElement('div');
@@ -367,13 +356,12 @@
             const p2 = document.getElementById('p2-avatar');
             const badge = document.getElementById('game-status-badge');
 
-            // Gestion visuelle des avatars
             if(currentPlayer === 1) {
-                p1.style.opacity = '1'; p1.style.transform = 'scale(1.1)'; p1.style.borderColor = 'white';
-                p2.style.opacity = '0.3'; p2.style.transform = 'scale(0.9)'; p2.style.borderColor = 'transparent';
+                p1.style.opacity = '1'; p1.style.transform = 'scale(1.1)'; 
+                p2.style.opacity = '0.3'; p2.style.transform = 'scale(0.9)'; 
             } else {
-                p2.style.opacity = '1'; p2.style.transform = 'scale(1.1)'; p2.style.borderColor = 'white';
-                p1.style.opacity = '0.3'; p1.style.transform = 'scale(0.9)'; p1.style.borderColor = 'transparent';
+                p2.style.opacity = '1'; p2.style.transform = 'scale(1.1)'; 
+                p1.style.opacity = '0.3'; p1.style.transform = 'scale(0.9)'; 
             }
 
             if (gameMode === 'online') {
@@ -382,70 +370,42 @@
                     badge.className = "px-3 py-1 bg-zinc-800 rounded text-[10px] font-bold uppercase text-gray-500";
                 } else if (currentPlayer === myPlayerColor) {
                     badge.innerText = "À TOI DE JOUER";
-                    badge.className = "px-3 py-1 bg-green-600 rounded text-[10px] font-bold uppercase text-white shadow-lg shadow-green-900/50 animate-pulse";
+                    badge.className = "px-3 py-1 bg-green-600 rounded text-[10px] font-bold uppercase text-white shadow-lg animate-pulse";
                 } else {
                     badge.innerText = "TOUR ADVERSAIRE";
                     badge.className = "px-3 py-1 bg-red-900 rounded text-[10px] font-bold uppercase text-red-200";
                 }
             } else {
-                if(!gameActive) {
-                    badge.innerText = "TERMINE";
+                if(!gameActive && badge.innerText !== "TERMINE") {
+                     // Pas de changement
                 } else {
                     badge.innerText = currentPlayer === 1 ? "TOUR ROUGE" : "TOUR JAUNE";
-                    badge.className = currentPlayer === 1 
-                        ? "px-3 py-1 bg-red-600 rounded text-[10px] font-bold uppercase text-white" 
-                        : "px-3 py-1 bg-yellow-600 rounded text-[10px] font-bold uppercase text-black";
+                    badge.className = "px-3 py-1 bg-zinc-700 rounded text-[10px] font-bold uppercase text-white";
                 }
             }
         }
 
-        // --- BOT (IA SIMPLE) ---
+        // --- BOT ---
         function playBot() {
             if(!gameActive) return;
-            
-            // 1. Essayer de gagner
-            for(let c=0; c<COLS; c++) {
-                if(canWin(c, 2)) { makeMove(c); return; }
-            }
-
-            // 2. Bloquer l'adversaire
-            for(let c=0; c<COLS; c++) {
-                if(canWin(c, 1)) { makeMove(c); return; }
-            }
-
-            // 3. Coup aléatoire
             let validCols = [];
             for(let c=0; c<COLS; c++) if(board[0][c] === 0) validCols.push(c);
             
             if(validCols.length > 0) {
-                // Préférer le centre
-                if(validCols.includes(3)) validCols.push(3,3); 
                 const randomCol = validCols[Math.floor(Math.random() * validCols.length)];
                 makeMove(randomCol);
             }
         }
 
-        // Simulation pour l'IA
-        function canWin(col, player) {
-            let r = -1;
-            for (let i = ROWS - 1; i >= 0; i--) {
-                if (board[i][col] === 0) { r = i; break; }
-            }
-            if(r === -1) return false;
-            
-            board[r][col] = player;
-            const win = checkWin(r, col, player);
-            board[r][col] = 0; // Backtrack
-            return win;
-        }
+        // --- MULTIJOUEUR ---
 
-        // --- MULTIJOUEUR EN LIGNE ---
-
-        // Création
+        // Créer
         document.getElementById('btn-create').addEventListener('click', () => {
+            if(!myUid) { log("Connexion en cours, patientez..."); return; }
+            
             gameId = Math.random().toString(36).substring(2, 6).toUpperCase();
             gameMode = 'online';
-            myPlayerColor = 1; // Host = Red
+            myPlayerColor = 1; 
             currentPlayer = 1;
             gameActive = false;
 
@@ -461,15 +421,17 @@
                 document.getElementById('btn-create').classList.add('hidden');
                 document.getElementById('lobby-wait').classList.remove('hidden');
                 document.getElementById('display-code').innerText = gameId;
-                log(`Code généré : ${gameId}`);
+                log(`Code créé : ${gameId}`);
                 listenGame(gameId);
-            });
+            }).catch(e => log("Erreur création DB: " + e.message));
         });
 
         // Rejoindre
         document.getElementById('btn-join').addEventListener('click', async () => {
+            if(!myUid) { log("Connexion en cours, patientez..."); return; }
+
             const code = document.getElementById('input-code').value.toUpperCase().trim();
-            if(!code || code.length < 3) return;
+            if(!code) return;
 
             const gRef = ref(db, 'games_p4/' + code);
             const snap = await get(gRef);
@@ -477,7 +439,7 @@
             if(snap.exists() && snap.val().status === 'waiting') {
                 gameId = code;
                 gameMode = 'online';
-                myPlayerColor = 2; // Guest = Yellow
+                myPlayerColor = 2; 
                 
                 update(gRef, {
                     guest: myName,
@@ -485,23 +447,19 @@
                 });
 
                 initBoard();
-                
                 if(snap.val().board) board = JSON.parse(snap.val().board);
                 
                 document.getElementById('my-role-display').innerText = "JOUEUR 2 (JAUNE)";
                 document.getElementById('opponent-name-hud').innerText = snap.val().host;
-                document.getElementById('p1-avatar').innerText = "🔴"; // Host
-                document.getElementById('p2-avatar').innerText = "🟡"; // Moi
                 
                 document.getElementById('online-controls').classList.add('hidden');
                 document.getElementById('online-active-ui').classList.remove('hidden');
 
                 gameActive = true;
-                log("Partie rejointe avec succès !");
+                log("Rejoint !");
                 listenGame(code);
             } else {
-                log("Code introuvable ou partie complète.");
-                document.getElementById('input-code').classList.add('border-red-500');
+                log("Code invalide ou partie pleine.");
             }
         });
 
@@ -512,70 +470,58 @@
                 const data = snap.val();
                 if(!data) return;
 
-                // Début de partie
+                // Adversaire arrive
                 if(data.status === 'active' && !gameActive && myPlayerColor === 1) {
                     gameActive = true;
                     document.getElementById('lobby-wait').classList.add('hidden');
                     document.getElementById('opponent-name-hud').innerText = data.guest || "Adversaire";
                     document.getElementById('online-active-ui').classList.remove('hidden');
                     document.getElementById('online-controls').classList.add('hidden');
-                    log("Un adversaire a rejoint !");
+                    log("Adversaire connecté !");
                     updateUI();
-                }
-
-                // Sync du tour
-                if(data.turn && data.turn !== currentPlayer) {
-                    // C'est potentiellement à moi de jouer maintenant
-                    // Mais on attend la sync du plateau ci-dessous
                 }
 
                 // Sync du plateau
                 if(data.board) {
                     const serverBoard = JSON.parse(data.board);
-                    
-                    // On cherche les différences pour animer
                     for(let r=0; r<ROWS; r++){
                         for(let c=0; c<COLS; c++){
                             if(board[r][c] === 0 && serverBoard[r][c] !== 0) {
-                                // C'est un nouveau coup reçu du serveur
                                 board[r][c] = serverBoard[r][c];
                                 animateDrop(r, c, serverBoard[r][c]);
                             }
                         }
                     }
-                    
-                    // Mise à jour finale du tour après animation
-                    if(data.turn) {
-                        currentPlayer = data.turn;
-                        updateUI();
-                    }
                 }
 
-                // Fin de partie
+                // Sync du tour
+                if(data.turn) {
+                    currentPlayer = data.turn;
+                    updateUI();
+                }
+
+                // Gagnant
                 if(data.winner) {
-                    if(gameActive) {
-                        gameActive = false;
-                        const winMsg = data.winner === myPlayerColor ? "VOUS AVEZ GAGNÉ !" : "PERDU...";
+                    gameActive = false;
+                    setTimeout(() => {
+                        const winnerText = data.winner === myPlayerColor ? "VOUS GAGNEZ !" : "PERDU...";
                         const emoji = data.winner === myPlayerColor ? "🏆" : "💀";
-                        setTimeout(() => showEndModal(winMsg, emoji), 800);
-                    }
+                        showEndModal(winnerText, emoji);
+                    }, 500);
                 }
             });
         }
 
         // --- VICTOIRE ---
         function checkWin(r, c, player) {
-            const dirs = [[0,1], [1,0], [1,1], [1,-1]]; // Horizontal, Vertical, Diagonales
-            
+            const dirs = [[0,1], [1,0], [1,1], [1,-1]];
             for(let d of dirs) {
                 let count = 1;
-                // Vérifier dans une direction
                 for(let i=1; i<4; i++) {
                     const nr = r + d[0]*i, nc = c + d[1]*i;
                     if(nr<0||nr>=ROWS||nc<0||nc>=COLS||board[nr][nc]!==player) break;
                     count++;
                 }
-                // Vérifier dans la direction opposée
                 for(let i=1; i<4; i++) {
                     const nr = r - d[0]*i, nc = c - d[1]*i;
                     if(nr<0||nr>=ROWS||nc<0||nc>=COLS||board[nr][nc]!==player) break;
@@ -588,14 +534,9 @@
 
         function handleGameOver(winner) {
             gameActive = false;
-            updateUI(); // Pour afficher "Terminé"
-            
-            if(gameMode === 'online') {
-                update(ref(db, 'games_p4/' + gameId), { winner: winner });
-            } else {
-                const msg = winner === 1 ? "ROUGE GAGNE !" : "JAUNE GAGNE !";
-                const emoji = "🎉";
-                setTimeout(() => showEndModal(msg, emoji), 800);
+            const msg = winner === 1 ? "Rouge gagne" : "Jaune gagne";
+            if(gameMode !== 'online') {
+                setTimeout(() => showEndModal(msg, "🏆"), 600);
             }
         }
 
@@ -603,34 +544,27 @@
             document.getElementById('game-over-modal').classList.remove('hidden');
             document.getElementById('result-title').innerText = title;
             document.getElementById('result-emoji').innerText = emoji;
-            
-            // Effet confetti simple dans la console
-            log("--- FIN DE PARTIE : " + title + " ---");
         }
 
         function log(msg) {
             const div = document.createElement('div');
             div.innerText = "> " + msg;
-            const container = document.getElementById('logs-container');
-            container.prepend(div);
+            document.getElementById('logs-container').prepend(div);
         }
 
-        // --- EXPORT GLOBAL (IMPORTANT POUR L'HTML) ---
+        // --- EXPORT GLOBAL POUR HTML ---
         
         window.switchTab = (tab) => {
             document.getElementById('panel-online').classList.toggle('hidden', tab !== 'online');
             document.getElementById('panel-local').classList.toggle('hidden', tab !== 'local');
             
-            const tabOnline = document.getElementById('tab-online');
-            const tabLocal = document.getElementById('tab-local');
-
             if (tab === 'online') {
-                tabOnline.className = "flex-1 py-3 bg-zinc-900 text-white border-b-2 border-red-500 transition-colors";
-                tabLocal.className = "flex-1 py-3 hover:bg-zinc-900 text-gray-500 transition-colors";
+                document.getElementById('tab-online').className = "flex-1 py-3 bg-zinc-900 text-white border-b-2 border-red-500 transition-colors";
+                document.getElementById('tab-local').className = "flex-1 py-3 hover:bg-zinc-900 text-gray-500 transition-colors";
                 gameMode = 'online';
             } else {
-                tabLocal.className = "flex-1 py-3 bg-zinc-900 text-white border-b-2 border-red-500 transition-colors";
-                tabOnline.className = "flex-1 py-3 hover:bg-zinc-900 text-gray-500 transition-colors";
+                document.getElementById('tab-local').className = "flex-1 py-3 bg-zinc-900 text-white border-b-2 border-red-500 transition-colors";
+                document.getElementById('tab-online').className = "flex-1 py-3 hover:bg-zinc-900 text-gray-500 transition-colors";
             }
         };
 
@@ -640,11 +574,10 @@
             currentPlayer = 1;
             initBoard();
             document.getElementById('my-role-display').innerText = "LOCAL (1 vs 1)";
-            document.getElementById('btn-restart').classList.remove('hidden');
             document.getElementById('opponent-name-hud').innerText = "Joueur 2";
             document.getElementById('p2-avatar').innerText = "🟡";
-            document.getElementById('game-status-badge').innerText = "EN COURS";
-            log("Nouvelle partie Locale démarrée");
+            document.getElementById('btn-restart').classList.remove('hidden');
+            log("Mode Local activé");
         };
 
         window.startBotGame = () => {
@@ -652,12 +585,11 @@
             gameActive = true;
             currentPlayer = 1;
             initBoard();
-            document.getElementById('my-role-display').innerText = "HUMAIN (ROUGE)";
+            document.getElementById('my-role-display').innerText = "VS IA";
             document.getElementById('opponent-name-hud').innerText = "WikiMind AI";
             document.getElementById('p2-avatar').innerText = "🤖";
             document.getElementById('btn-restart').classList.remove('hidden');
-            document.getElementById('game-status-badge').innerText = "VS IA";
-            log("Duel contre l'IA démarré");
+            log("Mode IA activé");
         };
 
         window.resetGame = () => {
@@ -666,9 +598,8 @@
             if(gameMode === 'bot') window.startBotGame();
         };
 
-        // Lancement initial
+        // Lancement
         initBoard();
-
     </script>
 </body>
 </html>
