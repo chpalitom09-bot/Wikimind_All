@@ -1,19 +1,17 @@
-<!-- START OF FILE user.html -->
 <!DOCTYPE html>
-<html lang="fr" class="dark">
+<html lang="fr">
 <head>
     <!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-29XYBNJ2CB"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-
-  gtag('config', 'G-29XYBNJ2CB');
-</script>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-29XYBNJ2CB"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-29XYBNJ2CB');
+    </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mon Compte - WikiMind</title>
+    <title>WikiMind ID - Connexion</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -21,163 +19,200 @@
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    fontFamily: { sans: ['Inter', 'sans-serif'] },
-                }
-            }
-        }
-    </script>
-
     <style>
-        body { background-color: #0f0f0f; color: #eee; }
+        :root {
+            --bg: #ffffff;
+            --text: #111111;
+            --input-bg: #f3f4f6;
+            --accent: #000000;
+        }
+
+        .dark-mode {
+            --bg: #0f0f0f;
+            --text: #eeeeee;
+            --input-bg: #1a1a1a;
+            --accent: #ffffff;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            transition: background-color 0.4s ease, color 0.4s ease;
+            overflow-x: hidden;
+        }
+
+        /* Grain Texture (comme index.html) */
+        .bg-grain {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E");
+            pointer-events: none; z-index: 0;
+        }
+
+        /* Animations */
+        @keyframes slideInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-card { animation: slideInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+        /* Input Style Google-like */
+        .input-group { position: relative; margin-bottom: 1.5rem; }
         .input-field {
-            width: 100%; padding: 12px 16px; border-radius: 12px;
-            background-color: #1a1a1a; border: 1px solid #333;
-            color: white; outline: none; transition: all 0.3s;
+            width: 100%; padding: 16px 16px 16px 16px; border-radius: 12px;
+            background-color: var(--input-bg); border: 1px solid transparent;
+            color: var(--text); outline: none; transition: all 0.3s;
+            font-size: 15px; font-weight: 500;
         }
-        .input-field:focus { border-color: #666; box-shadow: 0 0 0 4px rgba(255,255,255,0.05); }
-        .btn-primary {
-            background: white; color: black;
-            font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
-            padding: 12px; border-radius: 12px; width: 100%;
-            transition: transform 0.2s;
+        .input-field:focus {
+            background-color: transparent; border-color: var(--text);
+            box-shadow: 0 0 0 4px rgba(128, 128, 128, 0.1);
         }
-        .btn-primary:hover { transform: scale(1.02); }
-        .tab-btn {
-            padding: 10px; flex: 1; text-align: center; cursor: pointer;
-            font-weight: 600; font-size: 0.875rem; color: #666;
-            border-bottom: 2px solid transparent; transition: all 0.3s;
+        .input-label {
+            position: absolute; left: 16px; top: 16px;
+            color: #888; font-size: 15px; pointer-events: none;
+            transition: all 0.2s ease;
         }
-        .tab-btn.active { color: white; border-bottom-color: white; }
+        /* Floating label logic */
+        .input-field:focus ~ .input-label,
+        .input-field:not(:placeholder-shown) ~ .input-label {
+            top: -10px; left: 12px; font-size: 11px;
+            background-color: var(--bg); padding: 0 6px;
+            font-weight: 700; color: var(--text);
+            border-radius: 4px;
+        }
+
+        /* Button Loader */
+        .loader {
+            border: 2px solid rgba(255,255,255,0.3); border-left-color: #fff;
+            border-radius: 50%; width: 20px; height: 20px;
+            animation: spin 1s linear infinite; display: none;
+        }
+        .dark-mode .loader { border-color: rgba(0,0,0,0.3); border-left-color: #000; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* Transitions de vues */
+        .auth-view { display: none; opacity: 0; transition: opacity 0.3s ease; }
+        .auth-view.active { display: block; opacity: 1; }
     </style>
 </head>
-<body class="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
-    
-    <!-- Background Decor -->
-    <div class="absolute top-0 left-0 w-full h-full z-0 opacity-20 pointer-events-none">
-        <div class="absolute top-[-20%] right-[-10%] w-[500px] h-[500px] bg-blue-900 rounded-full blur-[120px]"></div>
-        <div class="absolute bottom-[-20%] left-[-10%] w-[500px] h-[500px] bg-purple-900 rounded-full blur-[120px]"></div>
-    </div>
+<body class="flex flex-col min-h-screen relative justify-center items-center p-4">
+    <div class="bg-grain"></div>
+
+    <!-- THEME TOGGLE (Top Right) -->
+    <button onclick="toggleTheme()" class="absolute top-6 right-6 w-10 h-10 rounded-full border border-gray-200 dark:border-gray-800 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-zinc-800 transition z-50">
+        <svg id="theme-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+    </button>
+
+    <!-- BACK BUTTON -->
+    <a href="index.html" class="absolute top-6 left-6 text-xs font-bold uppercase tracking-widest text-gray-400 hover:text-black dark:hover:text-white transition z-50 flex items-center gap-2">
+        <span>← Retour</span>
+    </a>
 
     <!-- MAIN CARD -->
-    <div class="relative z-10 w-full max-w-md bg-[#161616] border border-[#252525] rounded-3xl p-8 shadow-2xl">
+    <div class="w-full max-w-[450px] bg-white dark:bg-[#161616] border border-gray-200 dark:border-[#252525] rounded-3xl p-8 md:p-10 shadow-2xl relative z-10 animate-card">
         
-        <!-- Header -->
-        <div class="text-center mb-8">
-            <a href="index.html" class="inline-block mb-4 text-xs font-bold text-gray-500 hover:text-white transition">← RETOUR ACCUEIL</a>
-            <h1 class="text-3xl font-black tracking-tighter mb-2">WikiMind ID</h1>
-            <p class="text-gray-500 text-sm">Une identité unique pour tout l'écosystème.</p>
+        <!-- Logo Header -->
+        <div class="text-center mb-10">
+            <div class="w-12 h-12 bg-black dark:bg-white text-white dark:text-black rounded-xl flex items-center justify-center font-black text-xl mx-auto mb-4 hover:rotate-12 transition-transform duration-500">W</div>
+            <h1 class="text-2xl font-black tracking-tight mb-1">WikiMind ID</h1>
+            <p class="text-sm text-gray-500 font-medium">Une seule identité pour tout l'écosystème.</p>
         </div>
 
-        <!-- LOADING STATE -->
-        <div id="loading-view" class="text-center py-10 hidden">
-            <div class="animate-spin w-8 h-8 border-4 border-white border-t-transparent rounded-full mx-auto mb-4"></div>
-            <p class="text-sm text-gray-400">Chargement...</p>
-        </div>
+        <!-- NOTIFICATIONS (Error/Success) -->
+        <div id="notification-area" class="hidden mb-6 p-4 rounded-xl text-xs font-bold text-center"></div>
 
-        <!-- AUTH FORMS (Login/Register) -->
-        <div id="auth-view" class="block">
-            <!-- Tabs -->
-            <div class="flex border-b border-[#333] mb-6">
-                <div onclick="switchTab('login')" id="tab-login" class="tab-btn active">Connexion</div>
-                <div onclick="switchTab('register')" id="tab-register" class="tab-btn">Créer un compte</div>
-            </div>
-
-            <!-- LOGIN FORM -->
-            <form id="login-form" class="space-y-4">
-                <div>
-                    <label class="block text-xs font-bold text-gray-400 mb-1 ml-1">EMAIL</label>
-                    <input type="email" id="login-email" class="input-field" placeholder="utilisateur@exemple.com" required>
+        <!-- --- VIEW: LOGIN --- -->
+        <div id="view-login" class="auth-view active">
+            <form id="form-login">
+                <div class="input-group">
+                    <input type="email" id="login-email" class="input-field" placeholder=" " required>
+                    <label class="input-label">Email</label>
                 </div>
-                <div>
-                    <label class="block text-xs font-bold text-gray-400 mb-1 ml-1">MOT DE PASSE</label>
-                    <input type="password" id="login-password" class="input-field" placeholder="••••••••" required>
-                </div>
-                <div id="login-error" class="text-red-500 text-xs hidden">Erreur de connexion</div>
-                <button type="submit" class="btn-primary mt-4">Se Connecter</button>
-            </form>
-
-            <!-- REGISTER FORM -->
-            <form id="register-form" class="space-y-4 hidden">
-                <div>
-                    <label class="block text-xs font-bold text-gray-400 mb-1 ml-1">EMAIL</label>
-                    <input type="email" id="reg-email" class="input-field" placeholder="utilisateur@exemple.com" required>
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-gray-400 mb-1 ml-1">MOT DE PASSE</label>
-                    <input type="password" id="reg-password" class="input-field" placeholder="••••••••" required>
+                <div class="input-group">
+                    <input type="password" id="login-password" class="input-field" placeholder=" " required>
+                    <label class="input-label">Mot de passe</label>
                 </div>
                 
-                <!-- Personalization Fields -->
-                <div class="pt-4 border-t border-[#333]">
-                    <p class="text-[10px] text-gray-500 uppercase font-bold tracking-widest mb-3">Personnalisation de l'IA</p>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-xs font-bold text-gray-400 mb-1 ml-1">PRÉNOM</label>
-                            <input type="text" id="reg-name" class="input-field" placeholder="Votre prénom">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-gray-400 mb-1 ml-1">ÂGE</label>
-                            <input type="number" id="reg-age" class="input-field" placeholder="Ex: 18">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-gray-400 mb-1 ml-1">POIDS (kg)</label>
-                            <input type="number" id="reg-weight" class="input-field" placeholder="Ex: 70">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-gray-400 mb-1 ml-1">TAILLE (cm)</label>
-                            <input type="number" id="reg-height" class="input-field" placeholder="Ex: 175">
-                        </div>
-                    </div>
+                <div class="flex justify-end mb-6">
+                    <button type="button" onclick="resetPassword()" class="text-xs font-bold text-gray-400 hover:text-black dark:hover:text-white transition">Mot de passe oublié ?</button>
                 </div>
 
-                <div id="reg-error" class="text-red-500 text-xs hidden">Erreur d'inscription</div>
-                <button type="submit" class="btn-primary mt-4">Créer Compte Pro</button>
+                <button type="submit" class="w-full py-4 rounded-xl bg-black dark:bg-white text-white dark:text-black font-bold text-xs uppercase tracking-widest hover:opacity-90 transition transform active:scale-95 flex justify-center items-center gap-2 group">
+                    <span>Se Connecter</span>
+                    <div class="loader group-hover:block"></div>
+                </button>
             </form>
+            
+            <div class="mt-8 text-center">
+                <p class="text-xs text-gray-500">Pas encore de compte ?</p>
+                <button onclick="switchAuthView('register')" class="mt-2 text-sm font-bold underline hover:no-underline">Créer un compte</button>
+            </div>
         </div>
 
-        <!-- DASHBOARD VIEW (Logged In) -->
-        <div id="dashboard-view" class="hidden">
-            <div class="bg-[#1a1a1a] p-4 rounded-xl border border-[#333] mb-6 flex items-center gap-4">
-                <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-xl font-bold">
-                    <span id="user-initial">U</span>
-                </div>
-                <div>
-                    <h2 class="font-bold text-lg" id="display-name">Utilisateur</h2>
-                    <div class="flex items-center gap-2">
-                        <span class="inline-block w-2 h-2 rounded-full bg-green-500"></span>
-                        <span class="text-xs text-green-500 font-bold uppercase tracking-widest">Membre Pro</span>
+        <!-- --- VIEW: REGISTER --- -->
+        <div id="view-register" class="auth-view">
+            <form id="form-register">
+                <div class="flex gap-4 mb-2">
+                    <div class="input-group w-1/2">
+                        <input type="text" id="reg-firstname" class="input-field" placeholder=" " required>
+                        <label class="input-label">Prénom</label>
                     </div>
+                    <div class="input-group w-1/2">
+                        <input type="text" id="reg-lastname" class="input-field" placeholder=" " required>
+                        <label class="input-label">Nom</label>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <input type="email" id="reg-email" class="input-field" placeholder=" " required>
+                    <label class="input-label">Email</label>
+                </div>
+                
+                <div class="input-group">
+                    <input type="password" id="reg-password" class="input-field" placeholder=" " required minlength="6">
+                    <label class="input-label">Mot de passe (6+ chars)</label>
+                </div>
+                
+                <div class="input-group">
+                    <input type="password" id="reg-confirm" class="input-field" placeholder=" " required>
+                    <label class="input-label">Confirmer le mot de passe</label>
+                </div>
+
+                <button type="submit" class="w-full py-4 rounded-xl bg-black dark:bg-white text-white dark:text-black font-bold text-xs uppercase tracking-widest hover:opacity-90 transition transform active:scale-95 flex justify-center items-center gap-2">
+                    <span>Créer mon compte</span>
+                    <div class="loader"></div>
+                </button>
+            </form>
+            
+            <div class="mt-8 text-center">
+                <p class="text-xs text-gray-500">Déjà membre ?</p>
+                <button onclick="switchAuthView('login')" class="mt-2 text-sm font-bold underline hover:no-underline">Se connecter</button>
+            </div>
+        </div>
+
+        <!-- --- VIEW: DASHBOARD (Logged In) --- -->
+        <div id="view-dashboard" class="auth-view">
+            <div class="flex flex-col items-center mb-8">
+                <div class="w-20 h-20 rounded-full bg-gradient-to-tr from-gray-200 to-gray-400 dark:from-zinc-800 dark:to-zinc-700 flex items-center justify-center text-3xl font-black mb-4 shadow-inner">
+                    <span id="dash-initials">U</span>
+                </div>
+                <h2 class="text-xl font-bold" id="dash-name">Utilisateur</h2>
+                <div id="status-badge" class="mt-2 px-3 py-1 rounded-full bg-gray-100 dark:bg-zinc-800 text-[10px] font-bold uppercase tracking-widest text-gray-500">
+                    Vérification en attente
                 </div>
             </div>
 
             <div class="space-y-4">
-                <h3 class="text-xs font-bold text-gray-500 uppercase tracking-widest border-b border-[#333] pb-2">Mes Données Physio</h3>
-                <form id="update-form" class="grid grid-cols-3 gap-3">
-                    <div>
-                        <label class="block text-[10px] text-gray-400 mb-1">ÂGE</label>
-                        <input type="number" id="dash-age" class="input-field text-center p-2">
+                <div class="p-4 rounded-xl bg-gray-50 dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800">
+                    <h3 class="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-3">Mon Profil</h3>
+                    <div class="space-y-3">
+                         <div class="input-group mb-0">
+                            <input type="text" id="dash-bio" class="input-field text-sm" placeholder=" ">
+                            <label class="input-label">Bio / Poste</label>
+                        </div>
                     </div>
-                    <div>
-                        <label class="block text-[10px] text-gray-400 mb-1">POIDS</label>
-                        <input type="number" id="dash-weight" class="input-field text-center p-2">
-                    </div>
-                    <div>
-                        <label class="block text-[10px] text-gray-400 mb-1">TAILLE</label>
-                        <input type="number" id="dash-height" class="input-field text-center p-2">
-                    </div>
-                </form>
-                <button id="btn-save-data" class="w-full text-xs font-bold text-blue-500 hover:text-white transition uppercase tracking-widest text-right">
-                    Mettre à jour
-                </button>
-            </div>
+                    <button id="btn-save-profile" class="mt-3 w-full py-2 bg-black dark:bg-white text-white dark:text-black rounded-lg text-xs font-bold uppercase">Mettre à jour</button>
+                </div>
 
-            <div class="mt-8 pt-6 border-t border-[#333]">
-                <button onclick="handleLogout()" class="w-full py-3 rounded-xl border border-red-900/50 text-red-500 hover:bg-red-900/20 font-bold text-xs uppercase tracking-widest transition">
+                <button onclick="handleLogout()" class="w-full py-3 rounded-xl border border-red-500/20 text-red-500 hover:bg-red-500/10 font-bold text-xs uppercase tracking-widest transition">
                     Déconnexion
                 </button>
             </div>
@@ -187,184 +222,250 @@
 
     <!-- FIREBASE LOGIC -->
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
-        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, sendPasswordResetEmail, sendEmailVerification } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-auth.js";
+        import { getDatabase, ref, set, get, child } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-database.js";
 
+        // CONFIG WIKIMIND PRO
         const firebaseConfig = {
             apiKey: "AIzaSyAsV27OD4bARFOSDlZN1MAARSv9q2WBkdo",
             authDomain: "wikimind-pro.firebaseapp.com",
+            databaseURL: "https://wikimind-pro-default-rtdb.europe-west1.firebasedatabase.app",
             projectId: "wikimind-pro",
             storageBucket: "wikimind-pro.firebasestorage.app",
             messagingSenderId: "154490257518",
             appId: "1:154490257518:web:3276b1e64f2db9894be67f"
         };
 
-        // Init Firebase
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
-        const db = getFirestore(app);
+        const db = getDatabase(app);
 
-        // --- DOM ELEMENTS ---
-        const authView = document.getElementById('auth-view');
-        const dashView = document.getElementById('dashboard-view');
-        const loadingView = document.getElementById('loading-view');
-        
-        // Forms
-        const loginForm = document.getElementById('login-form');
-        const regForm = document.getElementById('register-form');
+        // --- UI FUNCTIONS ---
 
-        // --- STATE MANAGEMENT ---
-        onAuthStateChanged(auth, async (user) => {
-            loadingView.style.display = 'block';
-            authView.style.display = 'none';
-            dashView.style.display = 'none';
-
-            if (user) {
-                // User is signed in, fetch data
-                await loadUserData(user.uid);
-            } else {
-                // User is signed out
-                loadingView.style.display = 'none';
-                authView.style.display = 'block';
-            }
-        });
-
-        async function loadUserData(uid) {
-            try {
-                const docRef = doc(db, "users", uid);
-                const docSnap = await getDoc(docRef);
-
-                if (docSnap.exists()) {
-                    const data = docSnap.data();
-                    renderDashboard(data);
-                } else {
-                    console.log("No such document!");
-                }
-            } catch (error) {
-                console.error("Error getting document:", error);
-            } finally {
-                loadingView.style.display = 'none';
-                dashView.style.display = 'block';
-            }
-        }
-
-        function renderDashboard(data) {
-            document.getElementById('display-name').innerText = data.name || "Utilisateur";
-            document.getElementById('user-initial').innerText = (data.name || "U")[0].toUpperCase();
+        // Notification System
+        window.showNotif = (msg, type = 'error') => {
+            const el = document.getElementById('notification-area');
+            el.innerText = msg;
+            el.classList.remove('hidden', 'bg-red-100', 'text-red-600', 'bg-green-100', 'text-green-600');
             
-            // Populate Inputs
-            document.getElementById('dash-age').value = data.age || "";
-            document.getElementById('dash-weight').value = data.weight || "";
-            document.getElementById('dash-height').value = data.height || "";
-        }
+            if (type === 'error') {
+                el.classList.add('bg-red-100', 'text-red-600', 'dark:bg-red-900/30', 'dark:text-red-400');
+            } else {
+                el.classList.add('bg-green-100', 'text-green-600', 'dark:bg-green-900/30', 'dark:text-green-400');
+            }
+            el.style.display = 'block';
+            setTimeout(() => { el.style.display = 'none'; }, 5000);
+        };
 
-        // --- ACTIONS ---
+        // View Switching with Animation
+        window.switchAuthView = (viewName) => {
+            document.querySelectorAll('.auth-view').forEach(el => {
+                el.style.opacity = '0';
+                setTimeout(() => el.style.display = 'none', 300);
+            });
+            
+            setTimeout(() => {
+                const target = document.getElementById(`view-${viewName}`);
+                target.style.display = 'block';
+                // Trigger reflow
+                target.offsetHeight; 
+                target.style.opacity = '1';
+            }, 300);
+            
+            // Clear notifications
+            document.getElementById('notification-area').style.display = 'none';
+        };
 
-        // Login
-        loginForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = document.getElementById('login-email').value;
-            const pass = document.getElementById('login-password').value;
-            const errorMsg = document.getElementById('login-error');
+        // --- AUTH LOGIC ---
 
-            try {
-                await signInWithEmailAndPassword(auth, email, pass);
-                // onAuthStateChanged will handle redirection
-            } catch (error) {
-                errorMsg.innerText = error.message;
-                errorMsg.classList.remove('hidden');
+        // State Monitor
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                // User logged in -> Load Data from Realtime DB
+                const dbRef = ref(db);
+                try {
+                    const snapshot = await get(child(dbRef, `users/${user.uid}`));
+                    if (snapshot.exists()) {
+                        const data = snapshot.val();
+                        renderDashboard(user, data);
+                    } else {
+                        renderDashboard(user, {}); // No data yet
+                    }
+                    switchAuthView('dashboard');
+                } catch (error) {
+                    console.error(error);
+                    showNotif("Erreur de chargement du profil");
+                }
+            } else {
+                // User logged out
+                switchAuthView('login');
             }
         });
 
         // Register
-        regForm.addEventListener('submit', async (e) => {
+        document.getElementById('form-register').addEventListener('submit', async (e) => {
             e.preventDefault();
+            const btn = e.target.querySelector('button');
+            const loader = btn.querySelector('.loader');
+            
             const email = document.getElementById('reg-email').value;
             const pass = document.getElementById('reg-password').value;
-            
-            // Info
-            const name = document.getElementById('reg-name').value;
-            const age = document.getElementById('reg-age').value;
-            const weight = document.getElementById('reg-weight').value;
-            const height = document.getElementById('reg-height').value;
+            const confirm = document.getElementById('reg-confirm').value;
+            const prenom = document.getElementById('reg-firstname').value;
+            const nom = document.getElementById('reg-lastname').value;
+
+            if (pass !== confirm) {
+                showNotif("Les mots de passe ne correspondent pas.");
+                return;
+            }
+
+            // UI Loading
+            btn.disabled = true;
+            loader.style.display = 'inline-block';
 
             try {
                 const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
                 const user = userCredential.user;
 
-                // Create Firestore Doc
-                await setDoc(doc(db, "users", user.uid), {
+                // 1. Send Verification Email
+                await sendEmailVerification(user);
+
+                // 2. Save User Data to Realtime DB
+                await set(ref(db, 'users/' + user.uid), {
+                    firstName: prenom,
+                    lastName: nom,
                     email: email,
-                    name: name || "Utilisateur",
-                    age: age,
-                    weight: weight,
-                    height: height,
-                    isPremium: true, // AUTO PREMIUM
-                    createdAt: new Date()
+                    bio: "Nouveau membre WikiMind",
+                    createdAt: new Date().toISOString()
                 });
+
+                showNotif("Compte créé ! Vérifiez vos emails pour valider.", "success");
                 
-                // onAuthStateChanged will handle UI
             } catch (error) {
-                const errorMsg = document.getElementById('reg-error');
-                errorMsg.innerText = error.message;
-                errorMsg.classList.remove('hidden');
+                let msg = "Erreur d'inscription.";
+                if (error.code === 'auth/email-already-in-use') msg = "Cet email est déjà utilisé.";
+                if (error.code === 'auth/weak-password') msg = "Mot de passe trop faible.";
+                showNotif(msg);
+                btn.disabled = false;
+                loader.style.display = 'none';
             }
         });
+
+        // Login
+        document.getElementById('form-login').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector('button');
+            const loader = btn.querySelector('.loader');
+
+            const email = document.getElementById('login-email').value;
+            const pass = document.getElementById('login-password').value;
+
+            btn.disabled = true;
+            loader.style.display = 'inline-block';
+
+            try {
+                await signInWithEmailAndPassword(auth, email, pass);
+                // onAuthStateChanged will handle transition
+            } catch (error) {
+                showNotif("Email ou mot de passe incorrect.");
+                btn.disabled = false;
+                loader.style.display = 'none';
+            }
+        });
+
+        // Password Reset
+        window.resetPassword = async () => {
+            const email = document.getElementById('login-email').value;
+            if (!email) {
+                showNotif("Entrez votre email dans le champ ci-dessus d'abord.");
+                return;
+            }
+            try {
+                await sendPasswordResetEmail(auth, email);
+                showNotif("Email de réinitialisation envoyé !", "success");
+            } catch (error) {
+                showNotif("Erreur: Vérifiez l'email.");
+            }
+        };
 
         // Logout
         window.handleLogout = async () => {
             await signOut(auth);
-            location.reload();
+            window.location.reload();
         };
 
-        // Update Data
-        document.getElementById('btn-save-data').addEventListener('click', async () => {
+        // --- DASHBOARD LOGIC ---
+
+        function renderDashboard(user, data) {
+            const fname = data.firstName || "Utilisateur";
+            const lname = data.lastName || "";
+            
+            // Set Name
+            document.getElementById('dash-name').innerText = `${fname} ${lname}`;
+            
+            // Set Initials
+            const initials = (fname[0] || "") + (lname[0] || "");
+            document.getElementById('dash-initials').innerText = initials.toUpperCase();
+
+            // Set Bio
+            document.getElementById('dash-bio').value = data.bio || "";
+
+            // Check Email Verification
+            const statusBadge = document.getElementById('status-badge');
+            if (user.emailVerified) {
+                statusBadge.innerHTML = "✅ Compte Vérifié";
+                statusBadge.className = "mt-2 px-3 py-1 rounded-full bg-green-100 dark:bg-green-900/30 text-[10px] font-bold uppercase tracking-widest text-green-600 dark:text-green-400";
+            } else {
+                statusBadge.innerHTML = "⏳ Email non vérifié";
+                statusBadge.className = "mt-2 px-3 py-1 rounded-full bg-yellow-100 dark:bg-yellow-900/30 text-[10px] font-bold uppercase tracking-widest text-yellow-600 dark:text-yellow-400 cursor-pointer";
+                statusBadge.onclick = async () => {
+                    await sendEmailVerification(user);
+                    showNotif("Email de vérification renvoyé !", "success");
+                };
+            }
+        }
+
+        // Save Profile Update
+        document.getElementById('btn-save-profile').addEventListener('click', async () => {
             const user = auth.currentUser;
             if(!user) return;
-
-            const age = document.getElementById('dash-age').value;
-            const weight = document.getElementById('dash-weight').value;
-            const height = document.getElementById('dash-height').value;
-
-            const btn = document.getElementById('btn-save-data');
-            const originalText = btn.innerText;
-            btn.innerText = "...";
-
+            
+            const bio = document.getElementById('dash-bio').value;
+            const btn = document.getElementById('btn-save-profile');
+            
+            btn.innerText = "Sauvegarde...";
+            
             try {
-                const docRef = doc(db, "users", user.uid);
-                await updateDoc(docRef, {
-                    age: age,
-                    weight: weight,
-                    height: height
-                });
+                // Update specific field in RTDB
+                await set(ref(db, `users/${user.uid}/bio`), bio);
+                
                 btn.innerText = "Enregistré !";
-                setTimeout(() => btn.innerText = originalText, 2000);
+                setTimeout(() => btn.innerText = "Mettre à jour", 2000);
             } catch (e) {
                 console.error(e);
                 btn.innerText = "Erreur";
             }
         });
 
-        // UI Tabs Logic
-        window.switchTab = (tab) => {
-            const loginForm = document.getElementById('login-form');
-            const regForm = document.getElementById('register-form');
-            const tabLogin = document.getElementById('tab-login');
-            const tabReg = document.getElementById('tab-register');
+        // --- THEME ---
+        window.toggleTheme = () => {
+            document.body.classList.toggle('dark-mode');
+            const isDark = document.body.classList.contains('dark-mode');
+            localStorage.setItem('wikimind_landing_theme', isDark ? 'dark' : 'light');
+            
+            // Update Icon
+            const path = document.querySelector('#theme-icon path');
+            if(isDark) path.setAttribute('d', 'M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z');
+            else path.setAttribute('d', 'M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z');
+        }
 
-            if(tab === 'login') {
-                loginForm.classList.remove('hidden');
-                regForm.classList.add('hidden');
-                tabLogin.classList.add('active');
-                tabReg.classList.remove('active');
-            } else {
-                loginForm.classList.add('hidden');
-                regForm.classList.remove('hidden');
-                tabLogin.classList.remove('active');
-                tabReg.classList.add('active');
-            }
-        };
+        // Load saved theme
+        const savedTheme = localStorage.getItem('wikimind_landing_theme');
+        if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            toggleTheme(); // Apply logic
+        }
+
     </script>
 </body>
 </html>
