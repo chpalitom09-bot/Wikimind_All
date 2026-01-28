@@ -3,182 +3,180 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WikiMind Ressources - Open Source Finder</title>
+    <title>WikiMind Ressources | L'Alternative Intelligente</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-    
-    <!-- Markdown Parser for descriptions if needed -->
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
 
     <style>
         :root {
-            --bg: #ffffff;
-            --text: #111111;
-            --card-bg: #f9fafb;
-            --border: #e5e7eb;
-            --accent: #000000;
-            --accent-text: #ffffff;
+            --bg-light: #ffffff;
+            --bg-dark: #050505;
+            --text-light: #111111;
+            --text-dark: #eeeeee;
+            --accent: #2563eb; /* Royal Blue */
         }
 
-        .dark-mode {
-            --bg: #0f0f0f;
-            --text: #eeeeee;
-            --card-bg: #161616;
-            --border: #252525;
-            --accent: #ffffff;
-            --accent-text: #000000;
+        /* --- DARK MODE CORE --- */
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg-light); color: var(--text-light); transition: background-color 0.5s cubic-bezier(0.4, 0, 0.2, 1), color 0.5s; }
+        body.dark-mode { background-color: var(--bg-dark); color: var(--text-dark); }
+
+        /* --- GLASSMORPHISM & CARDS --- */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+        .dark-mode .glass-panel {
+            background: rgba(20, 20, 20, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.08);
         }
 
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--bg);
-            color: var(--text);
-            transition: background-color 0.4s ease, color 0.4s ease;
-            overflow-x: hidden;
+        .card-hover { transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); }
+        .card-hover:hover { transform: translateY(-8px) scale(1.02); box-shadow: 0 20px 40px -10px rgba(0,0,0,0.15); }
+        .dark-mode .card-hover:hover { box-shadow: 0 20px 40px -10px rgba(0,0,0,0.5); border-color: rgba(255,255,255,0.2); }
+
+        /* --- ANIMATIONS --- */
+        @keyframes shockwave {
+            0% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.7); }
+            70% { box-shadow: 0 0 0 20px rgba(37, 99, 235, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0); }
+        }
+        .animate-shockwave { animation: shockwave 0.6s ease-out; }
+
+        @keyframes shimmer { 0% { background-position: -1000px 0; } 100% { background-position: 1000px 0; } }
+        .skeleton {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 1000px 100%;
+            animation: shimmer 2s infinite linear;
+        }
+        .dark-mode .skeleton {
+            background: linear-gradient(90deg, #1a1a1a 25%, #2a2a2a 50%, #1a1a1a 75%);
         }
 
-        /* Animations */
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes pulse-ring { 0% { box-shadow: 0 0 0 0 rgba(0, 0, 0, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(0, 0, 0, 0); } 100% { box-shadow: 0 0 0 0 rgba(0, 0, 0, 0); } }
-        .dark-mode @keyframes pulse-ring { 0% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.3); } 70% { box-shadow: 0 0 0 10px rgba(255, 255, 255, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); } }
+        /* Staggered Fade In Class (Added via JS) */
+        .fade-in-up { opacity: 0; transform: translateY(20px); transition: opacity 0.6s ease, transform 0.6s ease; }
+        .fade-in-up.visible { opacity: 1; transform: translateY(0); }
 
-        .animate-fade { animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; }
-        .delay-100 { animation-delay: 0.1s; }
-        
-        .resource-card {
-            background: var(--card-bg);
-            border: 1px solid var(--border);
-            border-radius: 20px;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .resource-card:hover {
-            transform: translateY(-4px);
-            border-color: var(--text);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
-        }
-        .dark-mode .resource-card:hover {
-            box-shadow: 0 10px 30px rgba(255,255,255,0.03);
-        }
-
+        /* Background Noise */
         .bg-grain {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E");
-            pointer-events: none; z-index: 0;
-        }
-
-        /* Loader */
-        .loader {
-            border: 3px solid var(--border);
-            border-top: 3px solid var(--text);
-            border-radius: 50%;
-            width: 24px;
-            height: 24px;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-        .search-focused {
-            border-color: var(--text) !important;
-            box-shadow: 0 0 0 4px rgba(100,100,100,0.1);
+            position: fixed; inset: 0; pointer-events: none; z-index: 0; opacity: 0.04;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
         }
     </style>
 </head>
-<body class="flex flex-col min-h-screen relative">
+<body class="flex flex-col min-h-screen relative overflow-x-hidden selection:bg-black selection:text-white dark:selection:bg-white dark:selection:text-black">
     <div class="bg-grain"></div>
 
     <!-- NAVBAR -->
-    <header class="fixed top-0 w-full z-50 border-b border-gray-200/50 dark:border-gray-800/50 backdrop-blur-md transition-colors duration-500">
+    <header class="fixed top-0 w-full z-50 border-b border-gray-200/50 dark:border-gray-800/50 glass-panel transition-colors duration-500">
         <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-            <div class="flex items-center gap-3 cursor-pointer" onclick="window.location.href='index.html'">
-                <div class="w-10 h-10 bg-black dark:bg-white text-white dark:text-black rounded-xl flex items-center justify-center font-black text-xl hover:rotate-12 transition-transform duration-300">W</div>
-                <h1 class="text-xl font-black uppercase tracking-tighter italic">WikiMind <span class="not-italic text-gray-400 font-medium text-sm ml-2 normal-case tracking-normal">| Ressources</span></h1>
+            <div class="flex items-center gap-3 cursor-pointer group" onclick="window.location.href='index.html'">
+                <div class="w-10 h-10 bg-black dark:bg-white text-white dark:text-black rounded-xl flex items-center justify-center font-black text-xl group-hover:scale-110 transition-transform duration-300">W</div>
+                <h1 class="text-xl font-black uppercase tracking-tighter italic">WikiMind <span class="not-italic text-gray-400 font-medium text-sm ml-2 normal-case tracking-normal">| Alternatives</span></h1>
             </div>
             
             <div class="flex items-center gap-4">
-                <a href="index.html" class="hidden md:block text-xs font-bold uppercase tracking-widest hover:text-gray-500 transition">Retour</a>
-                <button onclick="toggleTheme()" class="w-10 h-10 rounded-full border border-gray-200 dark:border-gray-700 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-zinc-800 transition">
-                    <svg id="theme-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+                <button onclick="toggleTheme()" class="w-10 h-10 rounded-full border border-gray-200 dark:border-gray-700 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-zinc-800 transition text-gray-600 dark:text-gray-300">
+                    <span class="material-icons-round" id="theme-icon">dark_mode</span>
                 </button>
             </div>
         </div>
     </header>
 
-    <!-- MAIN -->
-    <main class="flex-grow pt-32 pb-20 px-6 max-w-7xl mx-auto w-full z-10 flex flex-col items-center">
-
-        <!-- Header Section -->
-        <div class="text-center max-w-2xl mx-auto mb-16 animate-fade">
-            <div class="inline-block mb-4 px-4 py-1.5 rounded-full border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-zinc-900 text-[10px] font-bold uppercase tracking-widest text-gray-500">
-                L'Annuaire Intelligent
-            </div>
-            <h2 class="text-4xl md:text-6xl font-black tracking-tighter mb-6 leading-tight">
-                LIBÉREZ-VOUS<br>
-                <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-teal-400">DE L'ABONNEMENT.</span>
+    <!-- MAIN CONTAINER -->
+    <main class="flex-grow pt-32 pb-24 px-6 max-w-7xl mx-auto w-full z-10 flex flex-col items-center relative">
+        
+        <!-- HERO SECTION -->
+        <div class="text-center max-w-3xl mx-auto mb-16 relative">
+            <div class="absolute -top-20 -left-20 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl animate-pulse"></div>
+            <div class="absolute -bottom-10 -right-20 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl animate-pulse" style="animation-delay: 1s;"></div>
+            
+            <h2 class="text-5xl md:text-7xl font-black tracking-tighter mb-6 leading-tight relative z-10">
+                L'Alternative <br>
+                <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-purple-500 to-indigo-500 animate-gradient">Open Source.</span>
             </h2>
-            <p class="text-gray-500 text-lg">Trouvez instantanément la meilleure alternative Open Source à vos logiciels propriétaires.</p>
+            <p class="text-gray-500 dark:text-gray-400 text-lg md:text-xl font-medium max-w-xl mx-auto leading-relaxed relative z-10">
+                Ne payez plus pour ce qui est gratuit. L'IA compare et trouve les meilleures solutions pour vous.
+            </p>
         </div>
 
-        <!-- Search Bar -->
-        <div class="w-full max-w-xl mb-12 relative z-20 animate-fade delay-100">
-            <div class="relative group">
+        <!-- SEARCH INTERFACE -->
+        <div class="w-full max-w-2xl mb-12 relative z-20 group">
+            <div class="relative transition-all duration-300 transform group-hover:-translate-y-1">
+                <div class="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl blur opacity-20 group-hover:opacity-40 transition-opacity duration-500"></div>
                 <input type="text" id="searchInput" 
-                    placeholder="Quel logiciel voulez-vous remplacer ? (ex: Photoshop, Notion...)" 
-                    class="w-full px-6 py-5 rounded-2xl bg-white dark:bg-[#111] border border-gray-200 dark:border-gray-800 text-lg font-medium placeholder-gray-400 outline-none transition-all focus:border-black dark:focus:border-white shadow-xl hover:shadow-2xl"
+                    placeholder="Ex: Photoshop, Premiere Pro, Notion..." 
+                    class="w-full pl-8 pr-16 py-6 rounded-2xl bg-white dark:bg-[#111] border border-gray-200 dark:border-gray-800 text-xl font-bold placeholder-gray-400 outline-none shadow-2xl relative z-10 focus:ring-2 focus:ring-blue-500/50 transition-all dark:text-white"
                 >
-                <div class="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
-                    <div id="loadingIndicator" class="hidden">
-                        <div class="loader"></div>
-                    </div>
-                    <button onclick="triggerSearch()" class="w-10 h-10 bg-black dark:bg-white text-white dark:text-black rounded-xl flex items-center justify-center hover:scale-105 transition-transform">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                    </button>
-                </div>
+                <button id="searchBtn" onclick="initiateSearch()" class="absolute right-3 top-3 bottom-3 w-14 bg-black dark:bg-white text-white dark:text-black rounded-xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all z-20 shadow-lg">
+                    <span class="material-icons-round text-2xl">search</span>
+                </button>
             </div>
-            <div class="flex justify-center gap-4 mt-4 text-xs font-bold uppercase tracking-widest text-gray-400">
-                <button onclick="toggleFilter('all')" class="hover:text-black dark:hover:text-white transition filter-btn active" data-filter="all">Tout</button>
-                <button onclick="toggleFilter('graphisme')" class="hover:text-black dark:hover:text-white transition filter-btn" data-filter="graphisme">Graphisme</button>
-                <button onclick="toggleFilter('dev')" class="hover:text-black dark:hover:text-white transition filter-btn" data-filter="dev">Développement</button>
-                <button onclick="toggleFilter('productivite')" class="hover:text-black dark:hover:text-white transition filter-btn" data-filter="productivite">Productivité</button>
+
+            <!-- FILTERS -->
+            <div id="filterContainer" class="flex flex-wrap justify-center gap-3 mt-6 opacity-0 translate-y-4 transition-all duration-500 pointer-events-none">
+                <button onclick="filterResults('all')" class="filter-btn active px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest bg-black text-white dark:bg-white dark:text-black transition-all hover:scale-105">Tout</button>
+                <button onclick="filterResults('Open Source')" class="filter-btn px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest bg-gray-100 dark:bg-zinc-800 text-gray-500 dark:text-gray-400 transition-all hover:scale-105 hover:bg-green-100 hover:text-green-700">Open Source</button>
+                <button onclick="filterResults('Freemium')" class="filter-btn px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest bg-gray-100 dark:bg-zinc-800 text-gray-500 dark:text-gray-400 transition-all hover:scale-105 hover:bg-blue-100 hover:text-blue-700">Freemium</button>
             </div>
         </div>
 
-        <!-- AI Notification Area -->
-        <div id="aiStatus" class="hidden mb-8 px-6 py-3 rounded-full bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 text-xs font-bold uppercase tracking-wider animate-fade">
-            ✨ Mistral AI recherche la meilleure alternative...
-        </div>
-
-        <!-- Grid -->
-        <div id="resourceGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full animate-fade delay-100">
-            <!-- Cards will be injected here via JS -->
-            <!-- Skeleton Loader Example -->
-            <div id="skeleton" class="hidden col-span-full text-center py-12 text-gray-400">
-                Chargement des ressources...
+        <!-- RESULTS AREA -->
+        <div class="w-full">
+            <!-- Loading Skeletons -->
+            <div id="skeletonLoader" class="hidden grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 w-full">
+                <!-- Generates 3 skeletons -->
+                <script>
+                    for(let i=0; i<3; i++) {
+                        document.write(`
+                        <div class="h-80 rounded-3xl bg-white dark:bg-[#161616] border border-gray-100 dark:border-gray-800 p-8 flex flex-col justify-between">
+                            <div>
+                                <div class="flex justify-between mb-6">
+                                    <div class="w-20 h-6 rounded-full skeleton"></div>
+                                    <div class="w-8 h-8 rounded-full skeleton"></div>
+                                </div>
+                                <div class="w-3/4 h-8 rounded-lg skeleton mb-4"></div>
+                                <div class="w-full h-4 rounded skeleton mb-2"></div>
+                                <div class="w-2/3 h-4 rounded skeleton"></div>
+                            </div>
+                            <div class="flex items-center gap-4 mt-8">
+                                <div class="w-full h-12 rounded-xl skeleton"></div>
+                            </div>
+                        </div>
+                        `);
+                    }
+                </script>
             </div>
-        </div>
 
+            <!-- Real Grid -->
+            <div id="resultsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 w-full"></div>
+        </div>
     </main>
 
     <!-- FOOTER -->
-    <footer class="border-t border-gray-200 dark:border-gray-800 py-10 z-10 bg-white/50 dark:bg-black/50 backdrop-blur-sm">
-        <div class="max-w-7xl mx-auto px-6 text-center">
-            <div class="font-black uppercase tracking-tight text-sm">WikiMind Project</div>
-            <div class="text-xs text-gray-500 mt-1">Propulsé par Mistral AI & Firebase</div>
+    <footer class="border-t border-gray-200 dark:border-gray-800 py-10 z-10 glass-panel mt-auto">
+        <div class="max-w-7xl mx-auto px-6 flex justify-between items-center text-xs font-bold uppercase tracking-widest text-gray-400">
+            <div>WikiMind 2026</div>
+            <div class="flex gap-4">
+                <span>Mistral AI</span>
+                <span>•</span>
+                <span>Firebase Realtime</span>
+            </div>
         </div>
     </footer>
 
     <!-- LOGIC -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-        import { getDatabase, ref, set, push, onValue, get, child } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
+        import { getDatabase, ref, set, get, child, update, onValue, increment } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
 
-        // --- 1. CONFIGURATION ---
+        // --- CONFIGURATION ---
         const firebaseConfig = {
             apiKey: "AIzaSyBhlNhB8yPNWXzok_STHG5q8hI4Kk_z7Ow",
             authDomain: "wikimind-c3cef.firebaseapp.com",
@@ -188,84 +186,81 @@
             messagingSenderId: "5176412102",
             appId: "1:5176412102:web:2069dc70dfe70b402594c7"
         };
-
         const MISTRAL_API_KEY = "krrl5zWdZwHBj8Cy9mtc1oOSBcqv61l2";
 
-        // Initialize Firebase
+        // --- INIT FIREBASE ---
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
-        const dbRef = ref(db, 'ressources');
 
-        // State
-        let allResources = [];
-
-        // --- 2. DOM ELEMENTS ---
+        // --- DOM ELEMENTS ---
         const searchInput = document.getElementById('searchInput');
-        const grid = document.getElementById('resourceGrid');
-        const loader = document.getElementById('loadingIndicator');
-        const aiStatus = document.getElementById('aiStatus');
+        const searchBtn = document.getElementById('searchBtn');
+        const resultsGrid = document.getElementById('resultsGrid');
+        const skeletonLoader = document.getElementById('skeletonLoader');
+        const filterContainer = document.getElementById('filterContainer');
 
-        // --- 3. INIT & LISTENERS ---
-        document.addEventListener('DOMContentLoaded', () => {
-            loadFromFirebase();
-            
-            // Search Input Logic
-            searchInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') triggerSearch();
-            });
-        });
+        // --- GLOBAL STATE ---
+        let currentResults = [];
+        let voteListeners = {}; // To manage listeners and avoid duplicates
 
-        window.triggerSearch = async () => {
-            const query = searchInput.value.trim();
+        // --- SEARCH LOGIC ---
+        window.initiateSearch = async () => {
+            const query = searchInput.value.trim().toLowerCase();
             if (!query) return;
 
-            // 1. Check Local/Firebase Data first
-            const exists = allResources.find(r => r.nom_logiciel.toLowerCase() === query.toLowerCase());
+            // UI Feedback
+            searchBtn.classList.add('animate-shockwave');
+            setTimeout(() => searchBtn.classList.remove('animate-shockwave'), 600);
+            
+            showSkeleton(true);
+            resultsGrid.innerHTML = '';
+            filterContainer.classList.remove('opacity-0', 'translate-y-4', 'pointer-events-none');
 
-            if (exists) {
-                // Highlight existing
-                renderGrid([exists]); // Show only the found one
-                aiStatus.style.display = 'none';
-            } else {
-                // 2. Call AI
-                await fetchFromMistral(query);
+            // 1. Sanitize DB Key (remove invalid chars for Firebase)
+            const dbKey = query.replace(/[.#$/[\]]/g, "_");
+            const cachedRef = ref(db, `software_searches/${dbKey}`);
+
+            try {
+                // 2. Check Cache
+                const snapshot = await get(cachedRef);
+                
+                if (snapshot.exists()) {
+                    console.log("Loaded from Cache");
+                    currentResults = snapshot.val();
+                    await renderResults(currentResults);
+                } else {
+                    // 3. Fetch AI
+                    console.log("Fetching AI...");
+                    const aiResults = await fetchAlternativesFromMistral(query);
+                    if (aiResults && aiResults.length > 0) {
+                        currentResults = aiResults;
+                        // Save to DB
+                        await set(cachedRef, aiResults);
+                        await renderResults(aiResults);
+                    } else {
+                        resultsGrid.innerHTML = `<div class="col-span-full text-center text-gray-500">Aucun résultat trouvé pour "${query}". Réessayez.</div>`;
+                    }
+                }
+            } catch (error) {
+                console.error("Error:", error);
+                resultsGrid.innerHTML = `<div class="col-span-full text-center text-red-500">Erreur de connexion.</div>`;
+            } finally {
+                showSkeleton(false);
             }
         };
 
-        // --- 4. FIREBASE LOGIC ---
-        function loadFromFirebase() {
-            onValue(dbRef, (snapshot) => {
-                const data = snapshot.val();
-                if (data) {
-                    allResources = Object.values(data);
-                    renderGrid(allResources.reverse()); // Show newest first
-                } else {
-                    grid.innerHTML = `<div class="col-span-full text-center text-gray-500 py-10">La base de données est vide. Cherchez un logiciel pour commencer !</div>`;
-                }
-            });
-        }
-
-        function saveToFirebase(data) {
-            // Use push to create a unique ID, or sanitize name for key
-            // Ideally check duplicate before push, but onValue handles display update
-            const newRef = push(dbRef);
-            set(newRef, data);
-        }
-
-        // --- 5. MISTRAL AI LOGIC ---
-        async function fetchFromMistral(softwareName) {
-            startLoading();
-            aiStatus.innerHTML = `✨ Recherche de l'alternative à <strong>${softwareName}</strong>...`;
-            aiStatus.style.display = 'block';
-
-            const prompt = `Trouve la meilleure alternative Open Source pour "${softwareName}". 
-            Réponds UNIQUEMENT avec un JSON valide sans markdown, strictement sous ce format :
+        // --- MISTRAL AI API ---
+        async function fetchAlternativesFromMistral(softwareName) {
+            const prompt = `Agis comme un expert logiciel. Je veux remplacer "${softwareName}".
+            Donne-moi 3 à 5 meilleures alternatives (mélange Open Source et Freemium si pertinent).
+            Réponds UNIQUEMENT avec un tableau JSON strict, sans Markdown.
+            Format de chaque objet :
             {
-                "nom_logiciel": "${softwareName}",
-                "alternative_os": "Nom de l'alternative",
-                "description_courte": "Explication en 1 phrase pourquoi c'est bien (max 20 mots)",
-                "lien_officiel": "URL du site officiel",
-                "prix_mensuel_economise": "Montant estimé (ex: 24€)"
+                "name": "Nom de l'alternative",
+                "description": "Pourquoi c'est mieux ? (Max 15 mots)",
+                "price_model": "Open Source" ou "Freemium" ou "Gratuit",
+                "score": Note sur 100 (entier),
+                "link": "URL officielle"
             }`;
 
             try {
@@ -276,109 +271,155 @@
                         'Authorization': `Bearer ${MISTRAL_API_KEY}`
                     },
                     body: JSON.stringify({
-                        model: "mistral-tiny",
-                        messages: [{role: "user", content: prompt}],
-                        temperature: 0.3
+                        model: "mistral-tiny", // Fast & Good enough
+                        messages: [{ role: "user", content: prompt }],
+                        temperature: 0.4
                     })
                 });
 
                 const data = await response.json();
-                const content = data.choices[0].message.content;
-                
-                // Clean content if it contains markdown code blocks
-                const cleanJson = content.replace(/```json/g, '').replace(/```/g, '').trim();
-                const resourceData = JSON.parse(cleanJson);
+                let content = data.choices[0].message.content;
+                // Cleanup Markdown if Mistral adds it
+                content = content.replace(/```json/g, '').replace(/```/g, '').trim();
+                return JSON.parse(content);
 
-                // Add timestamp or tag
-                resourceData.date = new Date().toISOString();
-
-                // Save & Display
-                saveToFirebase(resourceData);
-                searchInput.value = ''; // Reset input
-                stopLoading();
-                aiStatus.innerHTML = `✅ Alternative trouvée et ajoutée !`;
-                setTimeout(() => { aiStatus.style.display = 'none'; }, 3000);
-
-            } catch (error) {
-                console.error("Erreur Mistral:", error);
-                aiStatus.innerHTML = `❌ Erreur : Impossible de trouver une alternative.`;
-                aiStatus.className = "mb-8 px-6 py-3 rounded-full bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-xs font-bold uppercase tracking-wider animate-fade";
-                stopLoading();
+            } catch (e) {
+                console.error("AI Error", e);
+                return null;
             }
         }
 
-        // --- 6. RENDER LOGIC ---
-        function renderGrid(items) {
-            grid.innerHTML = '';
+        // --- RENDER LOGIC ---
+        async function renderResults(items) {
+            resultsGrid.innerHTML = '';
             
-            items.forEach(item => {
+            // Loop through items
+            for (let i = 0; i < items.length; i++) {
+                const item = items[i];
+                const safeName = item.name.replace(/[.#$/[\]]/g, "_").toLowerCase(); // Slug for voting
+                
+                // Create Card Element
                 const card = document.createElement('div');
-                card.className = "resource-card p-8 flex flex-col justify-between h-full";
-                
-                // Colors for savings
-                const savings = item.prix_mensuel_economise.replace(/[^0-9,]/g, '');
-                
+                card.className = "glass-panel p-8 rounded-3xl border border-gray-100 dark:border-gray-800 flex flex-col justify-between card-hover fade-in-up h-full";
+                card.style.transitionDelay = `${i * 150}ms`; // Stagger effect
+                card.dataset.type = item.price_model; // For filtering
+
+                // Colors based on score
+                const scoreColor = item.score >= 90 ? 'text-green-500' : (item.score >= 80 ? 'text-blue-500' : 'text-yellow-500');
+                const badgeColor = item.price_model.toLowerCase().includes('open') ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400';
+
                 card.innerHTML = `
-                    <div class="mb-6">
-                        <div class="flex justify-between items-start mb-4">
-                            <div class="px-3 py-1 rounded-full bg-red-50 dark:bg-red-900/20 text-red-500 text-[10px] font-bold uppercase tracking-wider line-through">
-                                ${item.nom_logiciel}
+                    <div>
+                        <div class="flex justify-between items-start mb-6">
+                            <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${badgeColor}">
+                                ${item.price_model}
+                            </span>
+                            <button class="group flex items-center gap-1.5 text-gray-400 hover:text-red-500 transition-colors" onclick="handleVote('${safeName}')">
+                                <span class="material-icons-round text-lg group-hover:scale-125 transition-transform" id="icon-${safeName}">favorite_border</span>
+                                <span class="text-xs font-bold" id="votes-${safeName}">...</span>
+                            </button>
+                        </div>
+
+                        <h3 class="text-3xl font-black mb-2 tracking-tight">${item.name}</h3>
+                        <p class="text-gray-500 dark:text-gray-400 font-medium leading-relaxed mb-6">
+                            ${item.description}
+                        </p>
+
+                        <div class="mb-6">
+                            <div class="flex justify-between text-xs font-bold uppercase tracking-widest mb-2 text-gray-400">
+                                <span>Popularité</span>
+                                <span class="${scoreColor}">${item.score}/100</span>
                             </div>
-                            <div class="px-3 py-1 rounded-full bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 text-[10px] font-bold uppercase tracking-wider">
-                                Économie : ${item.prix_mensuel_economise}
+                            <div class="w-full h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                                <div class="h-full bg-gradient-to-r from-blue-500 to-purple-600 rounded-full" style="width: ${item.score}%"></div>
                             </div>
                         </div>
-                        
-                        <h3 class="text-2xl font-black mb-1">${item.alternative_os}</h3>
-                        <div class="w-10 h-1 bg-gradient-to-r from-blue-500 to-teal-400 rounded-full mb-4"></div>
-                        
-                        <p class="text-sm text-gray-500 font-medium leading-relaxed">
-                            ${item.description_courte}
-                        </p>
                     </div>
 
-                    <div class="mt-4 pt-6 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
-                         <div class="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Open Source</div>
-                         <a href="${item.lien_officiel}" target="_blank" class="w-8 h-8 rounded-full border border-gray-200 dark:border-gray-700 flex items-center justify-center hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors">
-                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
-                         </a>
-                    </div>
+                    <a href="${item.link}" target="_blank" class="w-full py-4 rounded-xl bg-black dark:bg-white text-white dark:text-black font-bold text-sm uppercase tracking-widest hover:opacity-90 transition-opacity text-center flex items-center justify-center gap-2">
+                        Visiter le site <span class="material-icons-round text-base">arrow_outward</span>
+                    </a>
                 `;
-                grid.appendChild(card);
+
+                resultsGrid.appendChild(card);
+                
+                // Trigger animation after append
+                setTimeout(() => card.classList.add('visible'), 50);
+
+                // Listen to Realtime Votes for this item
+                setupVoteListener(safeName);
+            }
+        }
+
+        // --- VOTE SYSTEM (REALTIME) ---
+        function setupVoteListener(id) {
+            const voteRef = ref(db, `votes/${id}`);
+            
+            // Unsubscribe previous if exists (simplified for this demo)
+            onValue(voteRef, (snapshot) => {
+                const count = snapshot.val() || 0;
+                const countEl = document.getElementById(`votes-${id}`);
+                if (countEl) countEl.innerText = count;
             });
         }
 
-        function startLoading() {
-            loader.parentElement.classList.remove('hidden');
-            searchInput.disabled = true;
-        }
-
-        function stopLoading() {
-            loader.parentElement.classList.add('hidden');
-            searchInput.disabled = false;
-            searchInput.focus();
-        }
-
-        // Filter Logic (Simple client-side for now)
-        window.toggleFilter = (category) => {
-            // Visual Update
-            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('text-black', 'dark:text-white', 'underline'));
-            event.target.classList.add('text-black', 'dark:text-white', 'underline');
+        window.handleVote = (id) => {
+            const voteRef = ref(db, `votes/${id}`);
+            // Simple atomic increment
+            update(ref(db), {
+                [`votes/${id}`]: increment(1)
+            });
             
-            if(category === 'all') {
-                renderGrid(allResources.reverse());
-            } else {
-                // Here we would filter if we had categories in JSON. 
-                // Since Mistral generates data, we'd need to ask for category in prompt.
-                // For MVP, just show all or shuffle.
-                // Let's rely on search for now.
-                renderGrid(allResources.reverse());
+            // Visual feedback
+            const icon = document.getElementById(`icon-${id}`);
+            icon.innerText = "favorite";
+            icon.classList.add('text-red-500');
+            icon.classList.add('animate-bounce');
+        };
+
+        // --- FILTERS ---
+        window.filterResults = (filter) => {
+            // Button Styles
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                if(btn.innerText.toLowerCase() === filter.toLowerCase() || (filter === 'all' && btn.innerText === 'TOUT')) {
+                    btn.className = "filter-btn px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest bg-black text-white dark:bg-white dark:text-black transition-all transform scale-105 shadow-lg";
+                } else {
+                    btn.className = "filter-btn px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest bg-gray-100 dark:bg-zinc-800 text-gray-500 dark:text-gray-400 transition-all hover:scale-105";
+                }
+            });
+
+            // Card Filtering
+            const cards = resultsGrid.children;
+            for (let card of cards) {
+                const type = card.dataset.type;
+                if (filter === 'all' || type.includes(filter)) {
+                    card.style.display = 'flex';
+                    setTimeout(() => card.classList.add('visible'), 50); // Re-trigger fade
+                } else {
+                    card.style.display = 'none';
+                    card.classList.remove('visible');
+                }
             }
         };
 
+        // --- UI UTILS ---
+        function showSkeleton(show) {
+            if (show) {
+                skeletonLoader.classList.remove('hidden');
+                resultsGrid.classList.add('hidden');
+            } else {
+                skeletonLoader.classList.add('hidden');
+                resultsGrid.classList.remove('hidden');
+            }
+        }
+
+        // Enter key support
+        searchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') initiateSearch();
+        });
     </script>
 
-    <!-- Theme Logic (Copied from Index) -->
+    <!-- THEME MANAGEMENT (UNCHANGED) -->
     <script>
         function toggleTheme() {
             const body = document.body;
@@ -389,12 +430,8 @@
         }
 
         function updateThemeIcon(isDark) {
-            const path = document.querySelector('#theme-icon path');
-            if(isDark) {
-                path.setAttribute('d', 'M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z');
-            } else {
-                path.setAttribute('d', 'M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z');
-            }
+            const icon = document.getElementById('theme-icon');
+            icon.innerText = isDark ? 'light_mode' : 'dark_mode';
         }
 
         const savedTheme = localStorage.getItem('wikimind_theme');
