@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WikiMind - Sequence d'Initialisation</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #000000;
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        #canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+        }
+
+        #ui-layer {
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            z-index: 20;
+            opacity: 0;
+        }
+
+        .skip-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: rgba(255, 255, 255, 0.6);
+            padding: 10px 20px;
+            border-radius: 2px;
+            cursor: pointer;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+        }
+
+        .skip-btn:hover {
+            background: rgba(255, 255, 255, 0.9);
+            color: #000;
+        }
+
+        #start-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            font-size: 14px;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: opacity 0.5s;
+        }
+
+        #site-reveal {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: white;
+            z-index: 30;
+            opacity: 0;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="canvas-container"></div>
+    
+    <div id="start-overlay" onclick="startExperience()">
+        [ CLIQUER POUR INITIALISER LE SYSTÈME ]
+    </div>
+
+    <div id="ui-layer">
+        <button class="skip-btn" onclick="skipIntro()">Skip Intro</button>
+    </div>
+
+    <div id="site-reveal"></div>
+
+    <script>
+        // --- CONFIGURATION ---
+        const CONFIG = {
+            earthRadius: 4.5, // Taille Terre légèrement réduite pour laisser place au texte
+            textureUrl: 'https://unpkg.com/three-globe/example/img/earth-dark.jpg',
+            colors: {
+                bg: 0x050505, // Noir très profond mais pas absolu
+                wMetallic: 0xffffff
+            }
+        };
+
+        // --- GLOBALS ---
+        let scene, camera, renderer;
+        let earthMesh, atmosphereMesh, wGroup, textMesh, stars;
+        let audioCtx;
+        let isSkipped = false;
+        let animationStarted = false;
+
+        // --- AUDIO ENGINE (Procedural) ---
+        const AudioEngine = {
+            init: () => {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                audioCtx = new AudioContext();
+            },
+            
+            playSwoosh: () => {
+                if (!audioCtx) return;
+                const t = audioCtx.currentTime;
+                
+                // Bruit rose filtré pour le vent
+                const bufferSize = audioCtx.sampleRate * 2;
+                const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+
+                const noise = audioCtx.createBufferSource();
+                noise.buffer = buffer;
+
+                const filter = audioCtx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.Q.value = 5;
+
+                const gain = audioCtx.createGain();
+                const panner = audioCtx.createStereoPanner();
+
+                noise.connect(filter);
+                filter.connect(gain);
+                gain.connect(panner);
+                panner.connect(audioCtx.destination);
+
+                filter.frequency.setValueAtTime(200, t);
+                filter.frequency.exponentialRampToValueAtTime(3000, t + 1.0); // Monte
+                filter.frequency.exponentialRampToValueAtTime(100, t + 2.0);  // Descend
+
+                gain.gain.setValueAtTime(0, t);
+                gain.gain.linearRampToValueAtTime(0.8, t + 1.0);
+                gain.gain.linearRampToValueAtTime(0, t + 2.0);
+
+                panner.pan.setValueAtTime(-1, t);
+                panner.pan.linearRampToValueAtTime(1, t + 2.0);
+
+                noise.start(t);
+            },
+
+            playTurbine: () => {
+                if (!audioCtx) return;
+                const t = audioCtx.currentTime;
+                // Son grave qui monte en tension
+                const osc = audioCtx.createOscillator();
+                osc.type = 'triangle';
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                osc.frequency.setValueAtTime(40, t);
+                osc.frequency.exponentialRampToValueAtTime(200, t + 2.0);
+
+                gain.gain.setValueAtTime(0, t);
+                gain.gain.linearRampToValueAtTime(0.4, t + 1.0);
+                gain.gain.linearRampToValueAtTime(0, t + 2.5);
+
+                osc.start(t);
+                osc.stop(t + 2.5);
+            },
+
+            playLock: () => {
+                if (!audioCtx) return;
+                const t = audioCtx.currentTime;
+
+                // 1. Impact Bass
+                const oscBass = audioCtx.createOscillator();
+                oscBass.type = 'sine';
+                const gainBass = audioCtx.createGain();
+                oscBass.connect(gainBass);
+                gainBass.connect(audioCtx.destination);
+
+                oscBass.frequency.setValueAtTime(100, t);
+                oscBass.frequency.exponentialRampToValueAtTime(10, t + 0.5);
+                gainBass.gain.setValueAtTime(1, t);
+                gainBass.gain.exponentialRampToValueAtTime(0.01, t + 1.0);
+                oscBass.start(t);
+                oscBass.stop(t + 1.0);
+
+                // 2. Glitch noise
+                const bufferSize = audioCtx.sampleRate * 0.2;
+                const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() > 0.5) ? 0.5 : -0.5; // Square noise
+
+                const noise = audioCtx.createBufferSource();
+                noise.buffer = buffer;
+                const noiseGain = audioCtx.createGain();
+                noiseGain.gain.setValueAtTime(0.3, t);
+                noiseGain.gain.exponentialRampToValueAtTime(0.01, t + 0.2);
+                
+                noise.connect(noiseGain);
+                noiseGain.connect(audioCtx.destination);
+                noise.start(t);
+            }
+        };
+
+        // --- 3D SCENE SETUP ---
+        function initScene() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(CONFIG.colors.bg);
+            scene.fog = new THREE.FogExp2(CONFIG.colors.bg, 0.02);
+
+            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 0, 30); // Départ loin
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.outputEncoding = THREE.sRGBEncoding;
+            renderer.shadowMap.enabled = true;
+            document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.1);
+            scene.add(ambientLight);
+
+            // Soleil principal (haut droite)
+            const mainLight = new THREE.DirectionalLight(0xffffff, 1.5);
+            mainLight.position.set(10, 10, 10);
+            mainLight.castShadow = true;
+            scene.add(mainLight);
+
+            // Lumières bleutées pour le métal (Rim lights)
+            const rimLightL = new THREE.SpotLight(0x4488ff, 10, 50);
+            rimLightL.position.set(-15, 5, 10);
+            rimLightL.lookAt(0,0,0);
+            scene.add(rimLightL);
+
+            const rimLightR = new THREE.SpotLight(0xaaccff, 8, 50);
+            rimLightR.position.set(15, -5, 10);
+            rimLightR.lookAt(0,0,0);
+            scene.add(rimLightR);
+        }
+
+        // --- EARTH ---
+        function createEarth(texture) {
+            // Shader personnalisé Noir & Blanc Contrasté
+            const earthMaterial = new THREE.ShaderMaterial({
+                uniforms: {
+                    tDiffuse: { value: texture },
+                },
+                vertexShader: `
+                    varying vec2 vUv;
+                    varying vec3 vNormal;
+                    varying vec3 vViewPosition;
+                    void main() {
+                        vUv = uv;
+                        vNormal = normalize(normalMatrix * normal);
+                        vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+                        vViewPosition = -mvPosition.xyz;
+                        gl_Position = projectionMatrix * mvPosition;
+                    }
+                `,
+                fragmentShader: `
+                    uniform sampler2D tDiffuse;
+                    varying vec2 vUv;
+                    varying vec3 vNormal;
+                    varying vec3 vViewPosition;
+
+                    void main() {
+                        vec4 texColor = texture2D(tDiffuse, vUv);
+                        
+                        // Grayscale + High Contrast
+                        float gray = dot(texColor.rgb, vec3(0.299, 0.587, 0.114));
+                        float contrast = smoothstep(0.1, 0.45, gray); // Threshold plus strict
+
+                        // Fresnel Rim
+                        vec3 viewDir = normalize(vViewPosition);
+                        float fresnel = dot(vNormal, viewDir);
+                        float rim = pow(1.0 - fresnel, 4.0);
+
+                        vec3 finalColor = vec3(contrast * 0.8) + (vec3(rim) * 0.4);
+                        gl_FragColor = vec4(finalColor, 1.0);
+                    }
+                `
+            });
+
+            earthMesh = new THREE.Mesh(new THREE.SphereGeometry(CONFIG.earthRadius, 64, 64), earthMaterial);
+            scene.add(earthMesh);
+
+            // Atmosphere
+            const atmoMat = new THREE.ShaderMaterial({
+                transparent: true,
+                side: THREE.BackSide,
+                blending: THREE.AdditiveBlending,
+                vertexShader: `
+                    varying vec3 vNormal;
+                    void main() {
+                        vNormal = normalize(normalMatrix * normal);
+                        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                    }
+                `,
+                fragmentShader: `
+                    varying vec3 vNormal;
+                    void main() {
+                        float intensity = pow(0.6 - dot(vNormal, vec3(0, 0, 1.0)), 5.0);
+                        gl_FragColor = vec4(0.5, 0.7, 1.0, intensity * 0.6);
+                    }
+                `
+            });
+            atmosphereMesh = new THREE.Mesh(new THREE.SphereGeometry(CONFIG.earthRadius * 1.08, 64, 64), atmoMat);
+            scene.add(atmosphereMesh);
+
+            // Particules d'ambiance
+            const starsGeo = new THREE.BufferGeometry();
+            const starsCount = 1000;
+            const posArray = new Float32Array(starsCount * 3);
+            for(let i=0; i<starsCount*3; i++) {
+                posArray[i] = (Math.random() - 0.5) * 80;
+            }
+            starsGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+            const starsMat = new THREE.PointsMaterial({size: 0.1, color: 0xffffff, transparent: true, opacity: 0.6});
+            stars = new THREE.Points(starsGeo, starsMat);
+            scene.add(stars);
+        }
+
+        // --- W LOGO CONSTRUCTION (Structural) ---
+        function createStructuralW() {
+            wGroup = new THREE.Group();
+
+            // Matériau Métallique Lourd
+            const material = new THREE.MeshStandardMaterial({
+                color: 0xffffff,
+                metalness: 0.95,
+                roughness: 0.15,
+                envMapIntensity: 1.5
+            });
+
+            // Dimensions des barres
+            const barWidth = 0.8;
+            const barHeight = 4.5;
+            const barDepth = 1.0; // Bien épais
+            const geometry = new THREE.BoxGeometry(barWidth, barHeight, barDepth);
+
+            // Calculs trigonométriques pour un W parfait
+            // On construit 2 "V" qui se touchent
+            const angle = 20 * (Math.PI / 180); // 20 degrés inclinaison
+            const offsetX = 1.1; // Espacement horizontal
+
+            // Barre 1 (Ext gauche) \
+            const b1 = new THREE.Mesh(geometry, material);
+            b1.position.set(-offsetX * 1.5, 0, 0);
+            b1.rotation.z = angle;
+            b1.castShadow = true;
+            b1.receiveShadow = true;
+
+            // Barre 2 (Int gauche) /
+            const b2 = new THREE.Mesh(geometry, material);
+            b2.position.set(-offsetX * 0.5, 0, 0);
+            b2.rotation.z = -angle;
+            b2.castShadow = true;
+            b2.receiveShadow = true;
+
+            // Barre 3 (Int droite) \
+            const b3 = new THREE.Mesh(geometry, material);
+            b3.position.set(offsetX * 0.5, 0, 0);
+            b3.rotation.z = angle;
+            b3.castShadow = true;
+            b3.receiveShadow = true;
+
+            // Barre 4 (Ext droite) /
+            const b4 = new THREE.Mesh(geometry, material);
+            b4.position.set(offsetX * 1.5, 0, 0);
+            b4.rotation.z = -angle;
+            b4.castShadow = true;
+            b4.receiveShadow = true;
+
+            // Ajustement vertical pour aligner les pointes (car la rotation décale Y)
+            // On laisse tel quel, le look "flottant" des barres est technique et cool.
+            
+            wGroup.add(b1, b2, b3, b4);
+            
+            // Position Initiale (caché derrière ou loin)
+            wGroup.position.set(0, 0, 40); 
+            scene.add(wGroup);
+        }
+
+        // --- TEXTE (Canvas Texture) ---
+        function createText() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 1024;
+            canvas.height = 256;
+            const ctx = canvas.getContext('2d');
+            
+            // Style de texte
+            ctx.fillStyle = 'rgba(0,0,0,0)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.font = '900 130px "Segoe UI", Arial, sans-serif'; // Très gras
+            ctx.textAlign = 'center';
+            ctx.fillStyle = '#ffffff';
+            ctx.shadowColor = "rgba(100, 200, 255, 0.8)";
+            ctx.shadowBlur = 0; // Net au début
+            ctx.letterSpacing = "10px"; // Espacement tracking
+            ctx.fillText('WIKIMIND', canvas.width / 2, canvas.height / 2 + 40);
+
+            const texture = new THREE.CanvasTexture(canvas);
+            const material = new THREE.MeshBasicMaterial({ 
+                map: texture, 
+                transparent: true, 
+                opacity: 0,
+                depthTest: false // Toujours visible devant
+            });
+
+            const geo = new THREE.PlaneGeometry(8, 2);
+            textMesh = new THREE.Mesh(geo, material);
+            
+            // Position : Plus bas qu'avant, et on ajustera la caméra
+            textMesh.position.set(0, -3.5, 6); 
+            scene.add(textMesh);
+        }
+
+        // --- ANIMATION SEQUENCE ---
+        function runSequence() {
+            const tl = gsap.timeline({
+                onComplete: enterSite
+            });
+
+            // 1. Apparition UI
+            gsap.to('#ui-layer', { opacity: 1, duration: 1 });
+
+            // 2. Flyby du W (De Z=40 à Z=6)
+            // Rotation complexe pendant le vol
+            tl.to(wGroup.position, {
+                z: 6,
+                duration: 2.5,
+                ease: "power2.inOut",
+                onStart: () => AudioEngine.playSwoosh()
+            }, 0);
+
+            tl.to(wGroup.rotation, {
+                z: Math.PI * 2, // 360 complet
+                x: Math.PI * 0.15, // Légère bascule
+                y: Math.PI * 0.1,
+                duration: 2.5,
+                ease: "power1.inOut"
+            }, 0);
+
+            // 3. Accélération de la Terre (Pendant que le W arrive)
+            const earthState = { rotSpeed: 0.001 };
+            tl.to(earthState, {
+                rotSpeed: 0.1, // Spin rapide
+                duration: 2.0,
+                ease: "expo.in",
+                onStart: () => AudioEngine.playTurbine(),
+                onUpdate: () => {
+                    earthMesh.rotation.y += earthState.rotSpeed;
+                    atmosphereMesh.rotation.y = earthMesh.rotation.y;
+                    // Camera shake léger
+                    camera.position.x = (Math.random() - 0.5) * 0.05;
+                    camera.position.y = (Math.random() - 0.5) * 0.05;
+                }
+            }, 0.5);
+
+            // 4. PRE-LOCK : Le W dépasse légèrement la Terre et se redresse
+            tl.to(wGroup.rotation, {
+                x: 0, y: 0, z: 0,
+                duration: 0.5,
+                ease: "power2.out"
+            }, 2.5);
+
+            // 5. LOCK FINAL (Impact)
+            // Camera Recule pour cadrer W + Texte
+            tl.to(camera.position, {
+                z: 16, // Recul suffisant pour voir Y=-3.5
+                x: 0, y: 0, // Reset shake
+                duration: 0.8,
+                ease: "elastic.out(1, 0.5)",
+                onStart: () => {
+                    AudioEngine.playLock();
+                    triggerGlitch(textMesh); // Effet glitch sur le texte
+                }
+            }, 3.0);
+
+            // Stabilisation Terre
+            tl.to(earthState, {
+                rotSpeed: 0.002,
+                duration: 1.0,
+                ease: "power2.out",
+                onUpdate: () => {
+                    earthMesh.rotation.y += earthState.rotSpeed;
+                }
+            }, 3.0);
+
+            // Le W ne disparait pas, il "pulse" un coup lors du lock
+            tl.fromTo(wGroup.scale, 
+                { x: 1, y: 1, z: 1 },
+                { x: 1.1, y: 1.1, z: 1.1, duration: 0.1, yoyo: true, repeat: 1 },
+                3.0
+            );
+
+            // Pause lecture (2 sec)
+            tl.to({}, { duration: 2.0 }, 4.0);
+        }
+
+        // Effet Glitch visuel pour le texte
+        function triggerGlitch(mesh) {
+            const tl = gsap.timeline();
+            
+            // Séquence de flashs
+            tl.set(mesh.material, { opacity: 1 })
+              .set(mesh, { visible: true })
+              .to(mesh.position, { x: 0.2, duration: 0.05 }) // Tremblement
+              .to(mesh.position, { x: -0.2, duration: 0.05 })
+              .set(mesh, { visible: false }) // Blink OFF
+              .to({}, { duration: 0.05 })
+              .set(mesh, { visible: true }) // Blink ON
+              .to(mesh.position, { x: 0, duration: 0.05 })
+              .to(mesh.scale, { x: 1.1, y: 0.9, duration: 0.1, yoyo: true, repeat: 1 }) // Stretch
+              .set(mesh.material, { opacity: 1 });
+        }
+
+        // --- SYSTEM ---
+        function startExperience() {
+            if(animationStarted) return;
+            animationStarted = true;
+
+            // Masquer overlay de départ
+            document.getElementById('start-overlay').style.opacity = 0;
+            setTimeout(() => document.getElementById('start-overlay').remove(), 500);
+
+            // Init Audio
+            AudioEngine.init();
+            if(audioCtx.state === 'suspended') audioCtx.resume();
+
+            // Lancer la séquence
+            runSequence();
+        }
+
+        function init() {
+            initScene();
+            createStructuralW();
+            createText();
+
+            // Chargement Texture
+            new THREE.TextureLoader().load(CONFIG.textureUrl, (tex) => {
+                createEarth(tex);
+                animate();
+            }, undefined, () => {
+                // Fallback texture grise si pas internet
+                const data = new Uint8Array([50, 50, 50]);
+                const tex = new THREE.DataTexture(data, 1, 1, THREE.RGBFormat);
+                createEarth(tex);
+                animate();
+            });
+
+            window.addEventListener('resize', onResize);
+        }
+
+        function onResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            if(isSkipped) return;
+
+            // Rotation idle (si pas animé par GSAP)
+            if(!animationStarted) {
+                if(earthMesh) earthMesh.rotation.y += 0.001;
+                if(wGroup) wGroup.rotation.y += 0.002;
+            }
+
+            // Particules drift
+            if(stars) stars.rotation.y -= 0.0005;
+
+            renderer.render(scene, camera);
+        }
+
+        function skipIntro() {
+            if(isSkipped) return;
+            isSkipped = true;
+            gsap.globalTimeline.clear();
+            enterSite();
+        }
+
+        function enterSite() {
+            if(isSkipped && document.getElementById('canvas-container').style.opacity == 0) return;
+            isSkipped = true;
+
+            const reveal = document.getElementById('site-reveal');
+            const canvas = document.getElementById('canvas-container');
+            const ui = document.getElementById('ui-layer');
+
+            if(ui) ui.style.display = 'none';
+
+            // Fade out
+            gsap.to(canvas, { opacity: 0, duration: 1.0, ease: "power2.inOut" });
+            gsap.to(reveal, { opacity: 1, duration: 1.0 });
+
+            // Redirection
+            setTimeout(() => {
+                console.log("REDIRECTION -> HOME");
+                window.location.href = "index.html"; 
+            }, 1200);
+        }
+
+        // Boot
+        init();
+
+    </script>
+</body>
+</html>
