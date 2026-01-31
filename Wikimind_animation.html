@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WikiMind - Loading Sequence</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- GSAP for High-End Motion -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;900&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg: #000000;
+            --white: #ffffff;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--bg);
+            overflow: hidden;
+            font-family: 'Inter', sans-serif;
+            cursor: none; /* Immersion totale */
+        }
+
+        /* --- CONTENEUR PRINCIPAL --- */
+        #splash-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            perspective: 1000px; /* Pour l'effet 3D subtil */
+        }
+
+        /* --- FILM GRAIN (Cinematic Noise) --- */
+        .noise-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 50;
+            opacity: 0.07;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='1'/%3E%3C/svg%3E");
+        }
+
+        /* --- CANVAS --- */
+        canvas {
+            position: absolute;
+            top: 0; left: 0;
+            z-index: 10;
+            filter: blur(0.5px); /* Softness luxueuse */
+        }
+
+        /* --- TYPOGRAPHIE --- */
+        #text-container {
+            position: absolute;
+            bottom: 15%;
+            width: 100%;
+            text-align: center;
+            z-index: 20;
+            opacity: 0; /* Géré par GSAP */
+            mix-blend-mode: exclusion;
+        }
+
+        .brand-name {
+            font-weight: 300;
+            font-size: 0.8rem;
+            letter-spacing: 2em; /* Start wide */
+            color: var(--white);
+            text-transform: uppercase;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="splash-container">
+        <!-- Grain Overlay -->
+        <div class="noise-overlay"></div>
+
+        <!-- Canvas for Particles -->
+        <canvas id="scene"></canvas>
+
+        <!-- Typography -->
+        <div id="text-container">
+            <h1 class="brand-name">WikiMind</h1>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const canvas = document.getElementById('scene');
+            const ctx = canvas.getContext('2d');
+            const container = document.getElementById('splash-container');
+            
+            let width = window.innerWidth;
+            let height = window.innerHeight;
+            
+            // Configuration de base
+            canvas.width = width;
+            canvas.height = height;
+
+            // Paramètres de l'animation
+            const SETTINGS = {
+                particleSize: 1.5,
+                scanStep: 6, // Plus petit = plus de particules (Attention performance)
+                font: "900 25vw 'Inter'", // Taille massive pour le "W"
+                monolithHeight: height * 0.6,
+                exitSpeed: 1.2
+            };
+
+            let particles = [];
+            
+            // --- 1. GÉNÉRATION DES COORDONNÉES DU LOGO "W" ---
+            function getLogoCoordinates() {
+                // Création d'un canvas virtuel pour "scanner" le texte
+                const tempCanvas = document.createElement('canvas');
+                const tempCtx = tempCanvas.getContext('2d');
+                tempCanvas.width = width;
+                tempCanvas.height = height;
+
+                tempCtx.fillStyle = '#ffffff';
+                tempCtx.font = SETTINGS.font;
+                tempCtx.textAlign = 'center';
+                tempCtx.textBaseline = 'middle';
+                tempCtx.fillText('W', width / 2, height / 2);
+
+                const imageData = tempCtx.getImageData(0, 0, width, height);
+                const data = imageData.data;
+                const coords = [];
+
+                // Scan des pixels
+                for (let y = 0; y < height; y += SETTINGS.scanStep) {
+                    for (let x = 0; x < width; x += SETTINGS.scanStep) {
+                        const alpha = data[(y * width + x) * 4 + 3];
+                        if (alpha > 128) {
+                            coords.push({ x, y });
+                        }
+                    }
+                }
+                return coords;
+            }
+
+            // --- 2. SYSTÈME DE PARTICULES ---
+            class Particle {
+                constructor(targetX, targetY, index, total) {
+                    // Position Initiale : LE MONOLITHE
+                    // Une ligne verticale parfaite au centre de l'écran
+                    this.x = width / 2;
+                    
+                    // Distribution verticale le long du monolithe
+                    const normalizedPos = index / total; // 0 à 1
+                    const startY = (height - SETTINGS.monolithHeight) / 2;
+                    this.y = startY + (normalizedPos * SETTINGS.monolithHeight);
+
+                    // Position Cible (Le Logo W)
+                    this.targetX = targetX;
+                    this.targetY = targetY;
+
+                    // Propriétés visuelles
+                    this.size = Math.random() < 0.1 ? SETTINGS.particleSize * 1.5 : SETTINGS.particleSize; // Quelques particules plus grosses
+                    this.alpha = 1; 
+                    
+                    // Pour l'animation d'entrée (Le Monolithe grandit)
+                    this.currentY = height / 2; // Départ du centre pour growth
+                }
+
+                draw() {
+                    ctx.fillStyle = `rgba(255, 255, 255, ${this.alpha})`;
+                    ctx.beginPath();
+                    ctx.rect(this.x, this.y, this.size, this.size); // Rectangles = plus "Digital/Architectural" que des cercles
+                    ctx.fill();
+                }
+            }
+
+            // --- 3. INITIALISATION ---
+            function init() {
+                const targetCoords = getLogoCoordinates();
+                
+                // On mélange les coordonnées cibles pour que l'explosion soit organique
+                // (Sinon le haut du monolithe va vers le haut du W, trop linéaire)
+                targetCoords.sort(() => Math.random() - 0.5);
+
+                particles = targetCoords.map((coord, i) => {
+                    return new Particle(coord.x, coord.y, i, targetCoords.length);
+                });
+
+                // Préparer l'état initial visuel (Le Monolithe fermé)
+                // On écrase this.y pour l'animation GSAP
+                particles.forEach(p => {
+                    p.finalMonolithY = p.y; // Sauvegarde la position finale du monolithe
+                    p.y = height / 2; // Commence au centre (point)
+                    p.x = width / 2;
+                });
+            }
+
+            // --- 4. BOUCLE DE RENDU ---
+            function animate() {
+                ctx.clearRect(0, 0, width, height);
+                particles.forEach(p => p.draw());
+                requestAnimationFrame(animate);
+            }
+
+            // --- 5. SÉQUENCE D'ANIMATION (TIMELINE) ---
+            function runSequence() {
+                init();
+                animate();
+
+                const tl = gsap.timeline();
+
+                // PHASE 1 : Le Monolithe s'étire (De point à ligne)
+                tl.to(particles, {
+                    duration: 1.2,
+                    y: (i, t) => t.finalMonolithY,
+                    ease: "power4.inOut",
+                    stagger: {
+                        amount: 0.2,
+                        from: "center"
+                    }
+                });
+
+                // Pause dramatique
+                tl.to({}, { duration: 0.3 });
+
+                // PHASE 2 : Fragmentation (Le Monolithe explose vers le W)
+                tl.to(particles, {
+                    duration: 1.8,
+                    x: (i, t) => t.targetX,
+                    y: (i, t) => t.targetY,
+                    ease: "expo.out", // "Explosion" rapide puis ralentissement élégant
+                });
+
+                // PHASE 3 : Texte (Kerning Animation)
+                tl.to("#text-container", {
+                    opacity: 1,
+                    duration: 1,
+                    ease: "power2.out"
+                }, "-=1.5"); // Commence avant la fin des particules
+
+                tl.to(".brand-name", {
+                    letterSpacing: "0.2em", // Resserrement drastique
+                    duration: 2.5,
+                    ease: "power4.out"
+                }, "-=1.5");
+
+                // PHASE 4 : LA SINGULARITÉ (Sortie)
+                tl.to(container, {
+                    duration: SETTINGS.exitSpeed,
+                    scale: 0, // Aspiration vers le centre
+                    opacity: 0,
+                    rotation: 15, // Légère vrille pour l'effet vortex
+                    filter: "blur(50px)", // Flou de vitesse extrême
+                    ease: "power4.in", // Accélération vers la fin
+                    delay: 0.5,
+                    onComplete: () => {
+                        // --- REDIRECTION ---
+                        window.location.href = "index.html";
+                    }
+                });
+            }
+
+            // Gestion du redimensionnement (optionnel pour splash, mais propre)
+            window.addEventListener('resize', () => {
+                width = window.innerWidth;
+                height = window.innerHeight;
+                canvas.width = width;
+                canvas.height = height;
+            });
+
+            // Lancement
+            runSequence();
+        });
+    </script>
+</body>
+</html>

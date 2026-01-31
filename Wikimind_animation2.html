@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WikiMind - Loading...</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- GSAP -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@900&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg: #050505;
+            --text: #ffffff;
+            --glitch-offset: 2px;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            font-family: 'Inter', sans-serif;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        /* --- Container Principal --- */
+        #splash-screen {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--bg);
+        }
+
+        /* --- Background FX --- */
+        .bg-grain {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.04'/%3E%3C/svg%3E");
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .data-stream-container {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 2;
+            overflow: hidden;
+            opacity: 0.3;
+        }
+
+        .data-line {
+            position: absolute;
+            top: -100px;
+            width: 1px;
+            background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.5), transparent);
+            opacity: 0;
+        }
+
+        /* --- Central Element --- */
+        #canvas-container {
+            position: relative;
+            z-index: 10;
+            filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.1));
+        }
+
+        /* Le Pulse Central (Battement de coeur) */
+        .core-light {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 2px; height: 2px;
+            background: white;
+            border-radius: 50%;
+            box-shadow: 0 0 20px 5px rgba(255, 255, 255, 0.8);
+            animation: pulse-core 2s infinite ease-in-out;
+            z-index: 5;
+            opacity: 0; /* Géré par GSAP */
+        }
+
+        @keyframes pulse-core {
+            0% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7); transform: translate(-50%, -50%) scale(1); }
+            70% { box-shadow: 0 0 50px 20px rgba(255, 255, 255, 0); transform: translate(-50%, -50%) scale(1.5); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); transform: translate(-50%, -50%) scale(1); }
+        }
+
+        /* --- Glitch Effect (CSS Class triggered by JS) --- */
+        .glitch-active {
+            position: relative;
+            color: white;
+            animation: glitch-anim 0.3s infinite;
+        }
+
+        .glitch-active::before,
+        .glitch-active::after {
+            content: "W";
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg);
+            opacity: 0.8;
+        }
+
+        .glitch-active::before {
+            color: #0ff;
+            clip-path: polygon(0 0, 100% 0, 100% 33%, 0 33%);
+            transform: translate(-2px, -2px);
+            animation: glitch-anim-1 2s infinite linear alternate-reverse;
+        }
+
+        .glitch-active::after {
+            color: #f0f;
+            clip-path: polygon(0 67%, 100% 67%, 100% 100%, 0 100%);
+            transform: translate(2px, 2px);
+            animation: glitch-anim-2 2s infinite linear alternate-reverse;
+        }
+
+        @keyframes glitch-anim-1 {
+            0% { clip-path: inset(20% 0 80% 0); }
+            20% { clip-path: inset(60% 0 1% 0); }
+            40% { clip-path: inset(40% 0 50% 0); }
+            60% { clip-path: inset(80% 0 5% 0); }
+            80% { clip-path: inset(10% 0 70% 0); }
+            100% { clip-path: inset(30% 0 20% 0); }
+        }
+
+        @keyframes glitch-anim-2 {
+            0% { clip-path: inset(10% 0 60% 0); }
+            20% { clip-path: inset(30% 0 10% 0); }
+            40% { clip-path: inset(80% 0 5% 0); }
+            60% { clip-path: inset(10% 0 80% 0); }
+            80% { clip-path: inset(40% 0 20% 0); }
+            100% { clip-path: inset(50% 0 30% 0); }
+        }
+
+        /* --- Text Overlay Final --- */
+        #final-text {
+            position: absolute;
+            font-size: 120px;
+            font-weight: 900;
+            color: white;
+            opacity: 0;
+            z-index: 20;
+            line-height: 1;
+            letter-spacing: -5px;
+            mix-blend-mode: exclusion;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="splash-screen">
+        <div class="bg-grain"></div>
+        
+        <!-- Data Stream Background -->
+        <div class="data-stream-container" id="stream-container"></div>
+        
+        <!-- Core Pulse Light -->
+        <div class="core-light" id="core"></div>
+
+        <!-- Canvas for Particles -->
+        <canvas id="particle-canvas"></canvas>
+
+        <!-- Final Text Element (Hidden initially) -->
+        <div id="final-text">W</div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            // Configuration
+            const CONFIG = {
+                text: "W",
+                font: "900 150px 'Inter'", // Taille de base pour le scan
+                particleSize: 2,
+                particleColor: "#ffffff",
+                mobileScale: 0.6, // Facteur d'échelle sur mobile
+                duration: 3.5, // Durée totale avant sortie
+                exitSpeed: 0.8
+            };
+
+            const canvas = document.getElementById('particle-canvas');
+            const ctx = canvas.getContext('2d');
+            const finalText = document.getElementById('final-text');
+            const core = document.getElementById('core');
+            const splashScreen = document.getElementById('splash-screen');
+
+            let particles = [];
+            let width, height;
+
+            // --- 1. SETUP CANVAS ---
+            function resize() {
+                width = window.innerWidth;
+                height = window.innerHeight;
+                canvas.width = width;
+                canvas.height = height;
+            }
+            window.addEventListener('resize', resize);
+            resize();
+
+            // --- 2. DATA STREAM EFFECT (Lignes verticales) ---
+            function createDataStream() {
+                const container = document.getElementById('stream-container');
+                const count = window.innerWidth < 768 ? 10 : 30;
+
+                for (let i = 0; i < count; i++) {
+                    const line = document.createElement('div');
+                    line.classList.add('data-line');
+                    
+                    // Random styles
+                    const h = Math.random() * 100 + 50;
+                    line.style.height = `${h}px`;
+                    line.style.left = `${Math.random() * 100}%`;
+                    
+                    container.appendChild(line);
+
+                    // GSAP Animation Loop for lines
+                    gsap.to(line, {
+                        y: window.innerHeight + 200,
+                        duration: Math.random() * 1 + 0.5,
+                        delay: Math.random() * 2,
+                        repeat: -1,
+                        ease: "none",
+                        opacity: Math.random() * 0.5 + 0.1
+                    });
+                }
+            }
+
+            // --- 3. PARTICLE SYSTEM ---
+            class Particle {
+                constructor(targetX, targetY) {
+                    this.x = width / 2; // Start at center
+                    this.y = height / 2;
+                    this.targetX = targetX;
+                    this.targetY = targetY;
+                    this.size = Math.random() * CONFIG.particleSize + 0.5;
+                    this.alpha = 0;
+                    this.speed = Math.random() * 0.1 + 0.05;
+                }
+
+                draw() {
+                    ctx.fillStyle = `rgba(255, 255, 255, ${this.alpha})`;
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+
+            // --- 4. GENERATE TEXT SHAPE ---
+            function initParticles() {
+                // Créer un canvas temporaire pour lire les pixels du texte
+                const tempCanvas = document.createElement('canvas');
+                const tempCtx = tempCanvas.getContext('2d');
+                tempCanvas.width = width;
+                tempCanvas.height = height;
+
+                // Ajuster la taille de la police selon l'écran
+                const fontSize = window.innerWidth < 768 ? 120 : 250;
+                tempCtx.font = `900 ${fontSize}px 'Inter'`;
+                tempCtx.fillStyle = 'white';
+                tempCtx.textAlign = 'center';
+                tempCtx.textBaseline = 'middle';
+                
+                // Dessiner le texte au centre
+                tempCtx.fillText(CONFIG.text, width / 2, height / 2);
+
+                // Scanner les pixels
+                const imageData = tempCtx.getImageData(0, 0, width, height);
+                const data = imageData.data;
+                const step = window.innerWidth < 768 ? 4 : 3; // Moins de particules sur mobile
+
+                for (let y = 0; y < height; y += step) {
+                    for (let x = 0; x < width; x += step) {
+                        const index = (y * width + x) * 4;
+                        // Si le pixel n'est pas transparent (alpha > 128)
+                        if (data[index + 3] > 128) {
+                            particles.push(new Particle(x, y));
+                        }
+                    }
+                }
+            }
+
+            function animateCanvas() {
+                ctx.clearRect(0, 0, width, height);
+                particles.forEach(p => p.draw());
+                requestAnimationFrame(animateCanvas);
+            }
+
+            // --- 5. THE MASTER ANIMATION SEQUENCE ---
+            function startSequence() {
+                // Initialiser
+                createDataStream();
+                
+                // Attendre que la police soit chargée
+                document.fonts.ready.then(() => {
+                    initParticles();
+                    animateCanvas();
+
+                    const timeline = gsap.timeline();
+
+                    // Etape 1: Pulse Heartbeat
+                    timeline.to(core, {
+                        opacity: 1,
+                        duration: 0.5,
+                        ease: "power2.out"
+                    });
+
+                    // Etape 2: Explosion des particules vers la forme "W"
+                    timeline.to(particles, {
+                        duration: 1.8,
+                        x: (i, target) => target.targetX,
+                        y: (i, target) => target.targetY,
+                        alpha: 1,
+                        stagger: {
+                            amount: 0.5,
+                            from: "center"
+                        },
+                        ease: "elastic.out(1, 0.5)" // Effet rebond cybernétique
+                    }, "-=0.2");
+
+                    // Etape 3: Flash et transformation en solide
+                    timeline.to("#particle-canvas", {
+                        opacity: 0,
+                        duration: 0.1,
+                        onComplete: () => {
+                            // Afficher le texte final à la place du canvas
+                            const fontSize = window.innerWidth < 768 ? "120px" : "250px";
+                            gsap.set(finalText, { 
+                                fontSize: fontSize, 
+                                opacity: 1,
+                                left: "50%",
+                                top: "50%",
+                                x: "-50%",
+                                y: "-50%" 
+                            });
+                            
+                            // Activer le Glitch
+                            finalText.classList.add('glitch-active');
+                            
+                            // Désactiver le glitch après un court instant pour stabiliser
+                            setTimeout(() => {
+                                finalText.classList.remove('glitch-active');
+                                // Effet "Burn" final blanc
+                                finalText.style.textShadow = "0 0 30px white";
+                            }, 400);
+                        }
+                    });
+
+                    // Etape 4: Disparition du point central
+                    timeline.to(core, { opacity: 0, duration: 0.2 }, "<");
+
+                    // Etape 5: Sortie (Slide Up)
+                    timeline.to(splashScreen, {
+                        yPercent: -100,
+                        duration: CONFIG.exitSpeed,
+                        ease: "power4.in", // Accélération vers le haut
+                        delay: 0.8, // Temps de pause pour lire "W"
+                        onComplete: () => {
+                            // REDIRECTION SIMULÉE
+                            // Dans une vraie app, vous redirigeriez ici :
+                            window.location.href = "index.html"; 
+                            // console.log("Splash Screen terminé. Redirection...");
+                        }
+                    });
+                });
+            }
+
+            // Lancer
+            startSequence();
+        });
+    </script>
+</body>
+</html>

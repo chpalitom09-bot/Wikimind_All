@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WikiMind - Architecture</title>
+    
+    <!-- Three.js & PostProcessing Stack (Via CDN) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://unpkg.com/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
+    <script src="https://unpkg.com/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+    <script src="https://unpkg.com/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
+    <script src="https://unpkg.com/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
+    <script src="https://unpkg.com/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
+    <script src="https://unpkg.com/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
+
+    <!-- Font for real content -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+    <style>
+        /* --- RESET --- */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body, html { width: 100%; height: 100%; overflow: hidden; background: #000; font-family: 'Inter', sans-serif; }
+
+        /* --- CINEMATIC CANVAS --- */
+        #cinematic-stage {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 9999;
+            background: #000000;
+        }
+
+        /* --- WHITE OUT TRANSITION --- */
+        #transition-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: #fff;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 10000;
+            transition: opacity 1s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        /* --- REAL CONTENT CONTAINER --- */
+        #real-content {
+            position: relative;
+            z-index: 1;
+            opacity: 0;
+            /* Une fois l'intro finie, on passera opacity à 1 via JS */
+            width: 100%;
+            height: 100%;
+            overflow-y: auto; /* Réactive le scroll */
+            background: #ffffff;
+        }
+
+        /* Classes utilitaires minimales pour la démo du contenu */
+        .demo-center { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; text-align: center; }
+        .demo-title { font-size: 4rem; font-weight: 900; letter-spacing: -2px; color: #000; margin-bottom: 1rem; }
+    </style>
+</head>
+<body>
+
+    <!-- LAYER 1: WebGL Experience -->
+    <div id="cinematic-stage"></div>
+
+    <!-- LAYER 2: Flash Transition -->
+    <div id="transition-overlay"></div>
+
+    <!-- LAYER 3: Your Website Content -->
+    <div id="real-content">
+        <!-- 
+            PLACEHOLDER: COPIEZ ICI TOUT LE BODY DE VOTRE PAGE D'ACCUEIL (Wikimind_landing.html)
+            Pour l'instant, je mets un placeholder.
+        -->
+        <div class="demo-center">
+            <h1 class="demo-title">WikiMind</h1>
+            <p style="color: #666; font-size: 1.2rem;">L'Architecture de la Pensée.</p>
+        </div>
+    </div>
+
+    <!-- SHADER CODE (GLSL Embedded) -->
+    <script type="x-shader/x-vertex" id="vertexShader">
+        uniform float uTime;
+        uniform float uProgress; // 0 = Chaos, 1 = Order (W shape)
+        
+        attribute vec3 initialPos;
+        attribute vec3 targetPos;
+        attribute float size;
+        
+        varying float vAlpha;
+
+        // Easing function (Cubic InOut)
+        float cubicInOut(float t) {
+            return t < 0.5 ? 4.0 * t * t * t : 1.0 - pow(-2.0 * t + 2.0, 3.0) / 2.0;
+        }
+
+        void main() {
+            // Interpolation between random chaos and structured W
+            float t = cubicInOut(uProgress);
+            
+            // Add some noise movement
+            vec3 noise = vec3(
+                sin(uTime * 2.0 + initialPos.x) * 0.5,
+                cos(uTime * 1.5 + initialPos.y) * 0.5,
+                sin(uTime * 1.0 + initialPos.z) * 0.5
+            ) * (1.0 - t); // Noise reduces as it forms structure
+
+            vec3 pos = mix(initialPos, targetPos, t) + noise;
+
+            // Zoom effect at the end (controlled by JS camera, but aided here)
+            vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
+            
+            gl_PointSize = size * (300.0 / -mvPosition.z); // Perspective scale
+            gl_Position = projectionMatrix * mvPosition;
+
+            // Distance fade (fog)
+            vAlpha = smoothstep(50.0, 0.0, -mvPosition.z / 2.0);
+        }
+    </script>
+
+    <script type="x-shader/x-fragment" id="fragmentShader">
+        uniform vec3 color;
+        varying float vAlpha;
+
+        void main() {
+            // Circular particle
+            vec2 center = gl_PointCoord - 0.5;
+            float dist = length(center);
+            if (dist > 0.5) discard;
+
+            // Soft edge
+            float strength = 1.0 - smoothstep(0.3, 0.5, dist);
+            
+            gl_FragColor = vec4(color, strength * vAlpha);
+        }
+    </script>
+
+    <!-- CINEMATIC ENGINE -->
+    <script>
+        /**
+         * WIKIMIND CINEMATIC INTRO
+         * Tech: Three.js + Custom Shaders + PostProcessing
+         * Style: Oppenheimer / Westworld Intro
+         */
+
+        const container = document.getElementById('cinematic-stage');
+        const overlay = document.getElementById('transition-overlay');
+        const realContent = document.getElementById('real-content');
+
+        // --- SCENE SETUP ---
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x000000, 0.02);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 30;
+
+        const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Perf optimization
+        container.appendChild(renderer.domElement);
+
+        // --- GENERATING THE "W" STRUCTURE ---
+        // We create a cloud of points. Some will form the "W", others will be ambient dust.
+        
+        const PARTICLE_COUNT = 12000;
+        const W_PARTICLES = 4000; // Particles used for the logo
+        
+        const geometry = new THREE.BufferGeometry();
+        const initialPos = [];
+        const targetPos = [];
+        const sizes = [];
+
+        // Helper to get point on a line segment
+        function getPointOnLine(x1, y1, z1, x2, y2, z2, t) {
+            return {
+                x: x1 + (x2 - x1) * t,
+                y: y1 + (y2 - y1) * t,
+                z: z1 + (z2 - z1) * t
+            };
+        }
+
+        // Define "W" strokes (Coordinates in 3D space)
+        const wStrokes = [
+            { s: [-10, 8, 0], e: [-5, -8, 0] }, // Left down
+            { s: [-5, -8, 0], e: [0, 2, 0] },   // Left up (middle)
+            { s: [0, 2, 0], e: [5, -8, 0] },    // Right down (middle)
+            { s: [5, -8, 0], e: [10, 8, 0] }    // Right up
+        ];
+
+        for (let i = 0; i < PARTICLE_COUNT; i++) {
+            // 1. Initial Position (Chaos) - Huge spread
+            const r = 80;
+            const theta = Math.random() * Math.PI * 2;
+            const phi = Math.acos((Math.random() * 2) - 1);
+            
+            const ix = r * Math.sin(phi) * Math.cos(theta);
+            const iy = r * Math.sin(phi) * Math.sin(theta);
+            const iz = r * Math.cos(phi);
+
+            initialPos.push(ix, iy, iz);
+            sizes.push(Math.random() * 1.5 + 0.5);
+
+            // 2. Target Position (Order or Ambient)
+            if (i < W_PARTICLES) {
+                // Determine which stroke of the "W"
+                const strokeIdx = i % 4;
+                const stroke = wStrokes[strokeIdx];
+                const t = Math.random(); // Position along the line
+                
+                // Base point on line
+                const p = getPointOnLine(stroke.s[0], stroke.s[1], stroke.s[2], stroke.e[0], stroke.e[1], stroke.e[2], t);
+                
+                // Add "Thickness" / Volumetric jitter to the W
+                const jitter = 0.6; // Width of the silk thread
+                targetPos.push(
+                    p.x + (Math.random() - 0.5) * jitter, 
+                    p.y + (Math.random() - 0.5) * jitter, 
+                    p.z + (Math.random() - 0.5) * jitter
+                );
+            } else {
+                // Ambient dust that stays floating around the center but slightly compacted
+                const ambR = 40;
+                targetPos.push(
+                    (Math.random() - 0.5) * ambR,
+                    (Math.random() - 0.5) * ambR,
+                    (Math.random() - 0.5) * 20 // Flatter depth
+                );
+            }
+        }
+
+        geometry.setAttribute('position', new THREE.Float32BufferAttribute(initialPos, 3)); // Used as reference for shader mainly
+        geometry.setAttribute('initialPos', new THREE.Float32BufferAttribute(initialPos, 3));
+        geometry.setAttribute('targetPos', new THREE.Float32BufferAttribute(targetPos, 3));
+        geometry.setAttribute('size', new THREE.Float32BufferAttribute(sizes, 1));
+
+        // --- MATERIAL & SHADER ---
+        const material = new THREE.ShaderMaterial({
+            uniforms: {
+                uTime: { value: 0 },
+                uProgress: { value: 0 },
+                color: { value: new THREE.Color(0xffffff) }
+            },
+            vertexShader: document.getElementById('vertexShader').textContent,
+            fragmentShader: document.getElementById('fragmentShader').textContent,
+            transparent: true,
+            depthWrite: false,
+            blending: THREE.AdditiveBlending
+        });
+
+        const particleSystem = new THREE.Points(geometry, material);
+        scene.add(particleSystem);
+
+        // --- SILK THREADS (LINES) ---
+        // To create the "Silk" look, we connect random points within the "W" structure
+        const lineGeo = new THREE.BufferGeometry();
+        // Use a subset of the W positions for lines to save performance
+        const lineCount = 600; 
+        const linePos = [];
+        // Simply reusing target positions for static lines that appear
+        // Note: For true dynamic lines between moving points, we'd need CPU update loop, 
+        // but for 60fps cinematic, we trick it by fading lines in.
+        
+        // Let's stick to particles for the dynamic morph, and post-processing for the "glow" connection look.
+
+        // --- POST PROCESSING ---
+        const composer = new THREE.EffectComposer(renderer);
+        const renderPass = new THREE.RenderPass(scene, camera);
+        composer.addPass(renderPass);
+
+        // 1. Bloom (The Glow/Silk effect)
+        // High strength to make points bleed into each other like light filaments
+        const bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+        bloomPass.threshold = 0;
+        bloomPass.strength = 2.5; // Intense glow
+        bloomPass.radius = 0.5;
+        composer.addPass(bloomPass);
+
+        // 2. Custom Film Grain & Vignette Shader
+        const FilmShader = {
+            uniforms: {
+                "tDiffuse": { value: null },
+                "time": { value: 0.0 },
+                "nIntensity": { value: 0.3 }, // Grain strength
+                "sIntensity": { value: 0.05 }, // Scanline strength
+                "sCount": { value: 4096 },
+                "grayscale": { value: 1 }
+            },
+            vertexShader: `
+                varying vec2 vUv;
+                void main() {
+                    vUv = uv;
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+                }
+            `,
+            fragmentShader: `
+                uniform float time;
+                uniform float nIntensity;
+                uniform float sIntensity;
+                uniform float sCount;
+                uniform sampler2D tDiffuse;
+                varying vec2 vUv;
+
+                void main() {
+                    vec4 cTextureScreen = texture2D( tDiffuse, vUv );
+                    
+                    // Vignette
+                    float dist = distance(vUv, vec2(0.5));
+                    cTextureScreen.rgb *= (1.0 - dist * 0.8);
+
+                    // Noise/Grain
+                    float x = vUv.x * vUv.y * time *  1000.0;
+                    x = mod( x, 13.0 ) * mod( x, 123.0 );
+                    float dx = mod( x, 0.01 );
+                    vec3 cResult = cTextureScreen.rgb + cTextureScreen.rgb * clamp( 0.1 + dx * 100.0, 0.0, 1.0 );
+                    vec2 sc = vec2( sin( vUv.y * sCount ), cos( vUv.y * sCount ) );
+                    cResult += cTextureScreen.rgb * vec3( sc.x, sc.y, sc.x ) * sIntensity;
+                    cResult = cTextureScreen.rgb + clamp( nIntensity, 0.0,1.0 ) * ( cResult - cTextureScreen.rgb );
+
+                    // Black and White Hard Clamp
+                    float gray = dot(cResult, vec3(0.299, 0.587, 0.114));
+                    // Push contrast
+                    gray = (gray - 0.5) * 1.2 + 0.5;
+                    
+                    gl_FragColor =  vec4( vec3(gray), 1.0 );
+                }
+            `
+        };
+
+        const filmPass = new THREE.ShaderPass(FilmShader);
+        filmPass.renderToScreen = true;
+        composer.addPass(filmPass);
+
+        // --- ANIMATION SEQUENCE ---
+        const clock = new THREE.Clock();
+        let introFinished = false;
+
+        // Timeline variables
+        const durationFormation = 2.5; // Time to form the W
+        const durationHold = 1.0;      // Time holding the shape
+        const durationFly = 1.0;       // Time flying through
+
+        function animate() {
+            if (introFinished) return;
+
+            requestAnimationFrame(animate);
+
+            const elapsedTime = clock.getElapsedTime();
+            const delta = clock.getDelta();
+
+            // 1. Update Uniforms
+            material.uniforms.uTime.value = elapsedTime;
+            filmPass.uniforms.time.value = elapsedTime;
+
+            // 2. Choreography
+            if (elapsedTime < durationFormation) {
+                // PHASE 1: FORMATION
+                // Smooth ease into the shape
+                let progress = elapsedTime / durationFormation;
+                material.uniforms.uProgress.value = progress;
+                
+                // Slow rotation
+                scene.rotation.y = elapsedTime * 0.1;
+                
+            } else if (elapsedTime < durationFormation + durationHold) {
+                // PHASE 2: SCAN / HOLD
+                material.uniforms.uProgress.value = 1;
+                
+                // "Scan" light effect via rotation and camera drift
+                scene.rotation.y = elapsedTime * 0.1;
+                camera.position.z = 30 - (elapsedTime - durationFormation) * 2; // Slight zoom in
+
+            } else if (elapsedTime < durationFormation + durationHold + durationFly) {
+                // PHASE 3: IMMERSION (Fly Through)
+                const flyTime = elapsedTime - (durationFormation + durationHold);
+                const t = flyTime / durationFly;
+                
+                // Exponential Zoom into the center of the W
+                camera.position.z = THREE.MathUtils.lerp(28, -10, t * t);
+                
+                // Increase Bloom to whiteout
+                bloomPass.strength = 2.5 + t * 10.0;
+                bloomPass.radius = 0.5 + t * 2.0;
+
+                // Trigger White Overlay fade-in near the end
+                if (t > 0.8) {
+                    overlay.style.opacity = (t - 0.8) * 5; // Rapid fade to white
+                }
+
+            } else {
+                // PHASE 4: END
+                finishIntro();
+            }
+
+            composer.render();
+        }
+
+        function finishIntro() {
+            introFinished = true;
+            
+            // 1. Full white screen is already handled by overlay opacity
+            overlay.style.opacity = 1;
+
+            // 2. Kill WebGL to save CPU
+            renderer.dispose();
+            container.remove();
+
+            // 3. Prepare Content
+            realContent.style.opacity = 1;
+
+            // 4. Fade OUT the white overlay to reveal content
+            setTimeout(() => {
+                overlay.style.opacity = 0;
+                // Allow interactions
+                setTimeout(() => {
+                    overlay.style.display = 'none';
+                    document.body.style.overflow = 'auto';
+                }, 1000);
+            }, 100);
+        }
+
+        // Handle Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            composer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Start
+        animate();
+
+    </script>
+</body>
+</html>

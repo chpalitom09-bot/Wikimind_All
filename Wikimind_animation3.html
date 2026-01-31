@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WikiMind - Intro</title>
+    
+    <!-- GSAP CDN (Core + CustomEase) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+
+    <style>
+        /* --- RESET & BASE --- */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden; /* Empêche le scroll pendant l'intro */
+            background-color: #000000;
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* --- CANVAS LAYER --- */
+        #intro-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 9999;
+            /* Le canvas fera le rendu des barres blanches sur fond noir */
+        }
+
+        /* --- FLASH LAYER (Transition de sortie) --- */
+        #flash-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #FFFFFF;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 10000;
+        }
+
+        /* --- CONTENT SIMULATION (Ce qui apparaît après) --- */
+        /* Dans ton projet réel, c'est ici que se trouverait ta page d'accueil */
+        #real-content {
+            opacity: 0; /* Caché au départ */
+            width: 100%;
+            height: 100%;
+            background: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .mock-ui {
+            text-align: center;
+            color: #000;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- LAYER 1: L'Animation Canvas -->
+    <canvas id="intro-canvas"></canvas>
+
+    <!-- LAYER 2: Le Flash Blanc pour la transition -->
+    <div id="flash-overlay"></div>
+
+    <!-- LAYER 3: Le Contenu du Site (Simulé pour l'exemple) -->
+    <div id="real-content">
+        <!-- 
+            C'est ici que votre page index.html serait normalement chargée 
+            ou visible. Pour cet exemple, je simule le contenu.
+        -->
+        <div class="mock-ui">
+            <h1 style="font-size: 4rem; font-weight: 900; letter-spacing: -2px; margin-bottom: 1rem;">WikiMind</h1>
+            <p style="font-size: 1.2rem; color: #666;">La Suite Intelligente</p>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * WIKIMIND INTRO - "THE SEMANTIC PRISM"
+         * Concept: Ignition -> Spectrum -> Formation (W) -> Immersion
+         * Tech: Canvas 2D + GSAP Timeline
+         */
+
+        const canvas = document.getElementById('intro-canvas');
+        const ctx = canvas.getContext('2d');
+        const flashOverlay = document.getElementById('flash-overlay');
+        const realContent = document.getElementById('real-content');
+
+        let width, height, cx, cy;
+        let bars = []; // Contiendra nos objets barres
+        const BAR_COUNT = 31; // Nombre impair pour avoir un centre parfait
+
+        // Configuration de la grille
+        const CONFIG = {
+            color: '#FFFFFF',
+            bgColor: '#000000',
+            barBaseWidth: 4, // Largeur de base (sera responsive)
+            gap: 2 // Espace entre les barres
+        };
+
+        // --- RESIZE HANDLER ---
+        function resize() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            
+            // Gestion High DPI (Retina)
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = width * dpr;
+            canvas.height = height * dpr;
+            ctx.scale(dpr, dpr);
+
+            cx = width / 2;
+            cy = height / 2;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // --- BAR OBJECT ---
+        // Une barre est un rectangle défini par sa position relative au centre
+        class Bar {
+            constructor(index, total) {
+                this.index = index; // 0 à total-1
+                // Position relative au centre (-15 ... 0 ... +15)
+                this.relPos = index - Math.floor(total / 2); 
+                
+                this.h = 0;       // Hauteur actuelle
+                this.w = 0;       // Largeur actuelle
+                this.yOffset = 0; // Décalage vertical
+                this.alpha = 1;   // Opacité
+                
+                // Pour l'animation d'écartement
+                this.spacingMult = 0; 
+            }
+
+            draw(context, baseW, spacing) {
+                // Calcul de la position X
+                // Au début spacingMult est 0, tout est au centre.
+                // Puis il augmente pour écarter les barres.
+                const x = cx + (this.relPos * (baseW + spacing) * this.spacingMult) - (this.w / 2);
+                const y = cy - (this.h / 2) + this.yOffset;
+
+                context.fillStyle = CONFIG.color;
+                context.globalAlpha = this.alpha;
+                context.fillRect(x, y, this.w, this.h);
+                context.globalAlpha = 1;
+            }
+        }
+
+        // --- INITIALIZATION ---
+        function initBars() {
+            bars = [];
+            for (let i = 0; i < BAR_COUNT; i++) {
+                bars.push(new Bar(i, BAR_COUNT));
+            }
+        }
+        initBars();
+
+        // --- RENDERING LOOP ---
+        function render() {
+            // Clear background (Hard Black)
+            ctx.fillStyle = CONFIG.bgColor;
+            ctx.fillRect(0, 0, width, height);
+
+            // Responsive dimensions
+            const baseW = Math.max(2, width * 0.005); // Largeur dynamique
+            const spacing = Math.max(1, width * 0.002);
+
+            // Draw bars
+            bars.forEach(bar => bar.draw(ctx, baseW, spacing));
+            
+            requestAnimationFrame(render);
+        }
+        requestAnimationFrame(render);
+
+        // --- GSAP TIMELINE ---
+        const tl = gsap.timeline({
+            defaults: { ease: "power4.inOut" },
+            onComplete: () => {
+                console.log("Animation terminée");
+                // Optionnel: Supprimer le canvas du DOM pour libérer la mémoire
+                // canvas.remove(); 
+            }
+        });
+
+        // =========================================================
+        // SÉQUENCE D'ANIMATION
+        // =========================================================
+
+        // 1. SETUP INITIAL (Tout est invisible et fin au centre)
+        bars.forEach(b => { b.w = 2; b.h = 0; b.spacingMult = 0; });
+
+        // 2. PHASE 1: IGNITION
+        // Une seule ligne (la barre centrale) fend l'écran
+        const centerBar = bars[Math.floor(BAR_COUNT / 2)];
+        
+        tl.to(centerBar, {
+            h: height * 1.2, // Dépasse l'écran
+            duration: 0.6,
+            ease: "expo.inOut"
+        })
+
+        // 3. PHASE 2: LE SPECTRE (Burst)
+        // Les barres s'écartent et prennent des hauteurs aléatoires (Code-barres)
+        .to(bars, {
+            h: () => Math.random() * (height * 0.6) + (height * 0.1), // Hauteur random
+            w: () => Math.max(4, width * 0.015), // Elles s'épaississent
+            spacingMult: 1.5, // Elles s'écartent
+            duration: 0.8,
+            stagger: {
+                amount: 0.2,
+                from: "center"
+            },
+            ease: "elastic.out(1, 0.5)" // Effet ressort
+        }, "-=0.2")
+
+        // 4. PHASE 3: FORMATION DU "W"
+        // On sculpte les hauteurs pour former la lettre W
+        // W abstrait : Haut - Bas - Haut - Bas - Haut
+        .to(bars, {
+            h: (i) => {
+                // Algorithme de sculpture du "W"
+                const center = Math.floor(BAR_COUNT / 2);
+                const dist = Math.abs(i - center);
+                
+                // On crée 5 "piliers" pour le W
+                if (dist === 0) return height * 0.5; // Centre (Pointe milieu)
+                if (dist === 7) return height * 0.8; // Pointes externes du milieu
+                if (dist === 14) return height * 0.8; // Bords extérieurs
+                
+                // Les barres intermédiaires servent à lier ou sont petites
+                if (dist > 14) return 0; // Cacher les barres trop loin
+                
+                // Interpolation linéaire pour les pentes
+                return height * 0.15; 
+            },
+            yOffset: (i) => {
+                // Léger décalage Y pour accentuer la forme
+                const center = Math.floor(BAR_COUNT / 2);
+                const dist = Math.abs(i - center);
+                if (dist === 0) return height * 0.1;
+                return 0;
+            },
+            spacingMult: 1.2, // Resserrer légèrement pour la densité
+            w: () => Math.max(2, width * 0.02), // Plus épais pour le logo
+            duration: 0.8,
+            ease: "power3.inOut"
+        }, "-=0.4")
+
+        // 5. PHASE 4: L'IMMERSION (Le Zoom Final)
+        // Zoom violent à travers le canvas
+        .to('#intro-canvas', {
+            scale: 50, // Zoom massif
+            opacity: 0,
+            duration: 0.5,
+            ease: "expo.in"
+        }, "+=0.2") // Petite pause avant le zoom
+
+        // 6. FLASH & REVEAL
+        // Flash blanc synchronisé avec la fin du zoom
+        .to(flashOverlay, {
+            opacity: 1,
+            duration: 0.1,
+            ease: "power1.out"
+        }, "<0.3") // Commence pendant le zoom
+
+        .add(() => {
+            // === LOGIQUE DE REDIRECTION / AFFICHAGE ===
+            
+            // Option A : Si c'est une page d'intro séparée et que tu veux rediriger :
+            // window.location.href = "index.html";
+            
+            // Option B (Utilisée ici) : On révèle le contenu sur la même page
+            realContent.style.opacity = 1;
+            canvas.style.display = 'none'; // Désactiver le canvas
+            
+        })
+
+        // Fade out du flash pour révéler le site
+        .to(flashOverlay, {
+            opacity: 0,
+            duration: 0.8,
+            ease: "power2.out",
+            onComplete: () => {
+                flashOverlay.style.display = 'none';
+                document.body.style.overflow = 'auto'; // Réactiver le scroll
+            }
+        });
+
+    </script>
+</body>
+</html>
