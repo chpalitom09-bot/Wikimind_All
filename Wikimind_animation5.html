@@ -1,12 +1,14 @@
---- START OF FILE text/html ---
-
 <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>WikiMind - Initialisation</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WikiMind - Sequence d'Initialisation</title>
     
+    <!-- Libraries CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+
     <style>
         body, html {
             margin: 0;
@@ -15,7 +17,7 @@
             height: 100%;
             background-color: #000000;
             overflow: hidden;
-            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
         #canvas-container {
@@ -24,248 +26,266 @@
             left: 0;
             width: 100%;
             height: 100%;
-            z-index: 1;
-        }
-
-        /* Overlay Text Container */
-        #text-overlay {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
             z-index: 10;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
         }
 
-        /* Le Titre Final */
-        #main-title {
-            margin-top: 32vh; /* Position sous la terre (ajusté dynamiquement par JS si besoin) */
-            font-size: clamp(2rem, 8vw, 6rem); /* Responsive font size */
-            font-weight: 900;
-            color: #ffffff;
-            opacity: 0;
-            letter-spacing: -5px; /* Départ serré */
-            text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
-            white-space: nowrap;
+        #ui-layer {
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            z-index: 20;
+            opacity: 0; /* Animé par JS */
         }
 
-        /* Overlay blanc de transition */
-        #flash-overlay {
+        .skip-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: rgba(255, 255, 255, 0.6);
+            padding: 10px 20px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+        }
+
+        .skip-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border-color: white;
+        }
+
+        /* Overlay de transition de fin */
+        #site-reveal {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
             background: white;
-            z-index: 100;
+            z-index: 30;
             opacity: 0;
             pointer-events: none;
-        }
-
-        /* Loading Spinner discret */
-        #loader {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: #333;
-            font-size: 10px;
-            font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            z-index: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
     </style>
-
-    <!-- GSAP for Animation -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 </head>
 <body>
 
-    <div id="loader">Chargement Neural...</div>
     <div id="canvas-container"></div>
     
-    <div id="text-overlay">
-        <h1 id="main-title">WIKIMIND</h1>
+    <div id="ui-layer">
+        <button class="skip-btn" onclick="skipIntro()">Skip Intro</button>
     </div>
 
-    <div id="flash-overlay"></div>
+    <div id="site-reveal">
+        <!-- Placeholder pour le contenu du site -->
+    </div>
 
-    <!-- Script Module pour Three.js moderne -->
-    <script type="module">
-        import * as THREE from 'https://unpkg.com/three@0.128.0/build/three.module.js';
-        import { FontLoader } from 'https://unpkg.com/three@0.128.0/examples/jsm/loaders/FontLoader.js';
-        import { TextGeometry } from 'https://unpkg.com/three@0.128.0/examples/jsm/geometries/TextGeometry.js';
-
+    <script>
         // --- CONFIGURATION ---
         const CONFIG = {
-            earthRadius: 4,
+            duration: 6, // Secondes
+            earthRadius: 5,
+            textureUrl: 'https://unpkg.com/three-globe/example/img/earth-dark.jpg',
             colors: {
                 bg: 0x000000,
-                wColor: 0xffffff,
-                lightTrail: 0x00ffff // Cyan pour le sillage du W
-            },
-            urls: {
-                // Texture standard de la terre (sera transformée en N&B par shader)
-                earth: 'https://unpkg.com/three-globe/example/img/earth-dark.jpg', 
-                // Font JSON standard
-                font: 'https://unpkg.com/three@0.128.0/examples/fonts/helvetiker_bold.typeface.json'
+                atmosphere: 0x4444ff,
+                wMetallic: 0xffffff
             }
         };
 
         // --- GLOBALS ---
-        let scene, camera, renderer;
-        let earthMesh, atmosphereMesh, starsMesh;
-        let wMesh, wGroup, wLight;
+        let scene, camera, renderer, clock;
+        let earthMesh, atmosphereMesh, wGroup, textMesh;
         let audioCtx;
-        
-        // --- AUDIO ENGINE (Silent start compliant) ---
+        let animationFrameId;
+        let isSkipped = false;
+
+        // --- AUDIO ENGINE (Web Audio API - Procedural) ---
         const AudioEngine = {
-            ctx: null,
             init: () => {
-                const AudioContext = window.AudioContext || window.webkitAudioContext;
-                if (AudioContext) {
-                    AudioEngine.ctx = new AudioContext();
-                    // Resume context on first user interaction
-                    const resumeAudio = () => {
-                        if (AudioEngine.ctx.state === 'suspended') AudioEngine.ctx.resume();
-                        window.removeEventListener('click', resumeAudio);
-                        window.removeEventListener('touchstart', resumeAudio);
-                    };
-                    window.addEventListener('click', resumeAudio);
-                    window.addEventListener('touchstart', resumeAudio);
+                try {
+                    window.AudioContext = window.AudioContext || window.webkitAudioContext;
+                    audioCtx = new AudioContext();
+                } catch(e) {
+                    console.warn("Web Audio API not supported");
                 }
             },
+            
+            // Son 1: Passage rapide (Doppler Swoosh)
             playSwoosh: () => {
-                if (!AudioEngine.ctx || AudioEngine.ctx.state === 'suspended') return;
-                const t = AudioEngine.ctx.currentTime;
-                const osc = AudioEngine.ctx.createOscillator();
-                const gain = AudioEngine.ctx.createGain();
-                const filter = AudioEngine.ctx.createBiquadFilter();
+                if (!audioCtx) return;
+                const t = audioCtx.currentTime;
+                
+                // Noise buffer creation
+                const bufferSize = audioCtx.sampleRate * 2;
+                const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
 
-                // Noise simulation (Pink noise logic simplified with oscillator modulation)
-                osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(50, t);
-                osc.frequency.exponentialRampToValueAtTime(800, t + 1);
-                osc.frequency.exponentialRampToValueAtTime(50, t + 2);
+                const noise = audioCtx.createBufferSource();
+                noise.buffer = buffer;
 
+                const filter = audioCtx.createBiquadFilter();
                 filter.type = 'lowpass';
-                filter.frequency.setValueAtTime(200, t);
-                filter.frequency.linearRampToValueAtTime(5000, t + 1); // Open filter on pass
+                filter.Q.value = 1;
+
+                const gain = audioCtx.createGain();
+                
+                // Panner for stereo movement
+                const panner = audioCtx.createStereoPanner();
+
+                noise.connect(filter);
+                filter.connect(gain);
+                gain.connect(panner);
+                panner.connect(audioCtx.destination);
+
+                // Automation
+                filter.frequency.setValueAtTime(100, t);
+                filter.frequency.exponentialRampToValueAtTime(3000, t + 0.5); // Peak at flyby
+                filter.frequency.exponentialRampToValueAtTime(100, t + 1.5);
 
                 gain.gain.setValueAtTime(0, t);
-                gain.gain.linearRampToValueAtTime(0.3, t + 1);
-                gain.gain.linearRampToValueAtTime(0, t + 2);
+                gain.gain.linearRampToValueAtTime(1, t + 0.5);
+                gain.gain.linearRampToValueAtTime(0, t + 1.5);
+
+                panner.pan.setValueAtTime(-0.8, t);
+                panner.pan.linearRampToValueAtTime(0.8, t + 1.5);
+
+                noise.start(t);
+                noise.stop(t + 2);
+            },
+
+            // Son 2: Accélération Turbine
+            playTurbine: () => {
+                if (!audioCtx) return;
+                const t = audioCtx.currentTime;
+
+                const osc = audioCtx.createOscillator();
+                osc.type = 'sawtooth';
+                
+                const filter = audioCtx.createBiquadFilter();
+                filter.type = 'bandpass';
+                filter.Q.value = 2;
+
+                const gain = audioCtx.createGain();
 
                 osc.connect(filter);
                 filter.connect(gain);
-                gain.connect(AudioEngine.ctx.destination);
+                gain.connect(audioCtx.destination);
+
+                // Pitch rising
+                osc.frequency.setValueAtTime(50, t);
+                osc.frequency.exponentialRampToValueAtTime(400, t + 1.5);
+
+                // Filter opening
+                filter.frequency.setValueAtTime(100, t);
+                filter.frequency.linearRampToValueAtTime(800, t + 1.5);
+
+                gain.gain.setValueAtTime(0, t);
+                gain.gain.linearRampToValueAtTime(0.3, t + 1.0);
+                gain.gain.linearRampToValueAtTime(0, t + 2.0);
+
                 osc.start(t);
-                osc.stop(t + 2.5);
+                osc.stop(t + 2.0);
             },
-            playImpact: () => {
-                if (!AudioEngine.ctx || AudioEngine.ctx.state === 'suspended') return;
-                const t = AudioEngine.ctx.currentTime;
+
+            // Son 3: Impact Final (Deep Boom + Digital Chime)
+            playLock: () => {
+                if (!audioCtx) return;
+                const t = audioCtx.currentTime;
+
+                // Sub Bass Boom
+                const oscBass = audioCtx.createOscillator();
+                oscBass.type = 'sine';
+                const gainBass = audioCtx.createGain();
                 
-                // Low Boom
-                const osc = AudioEngine.ctx.createOscillator();
-                const gain = AudioEngine.ctx.createGain();
-                osc.frequency.setValueAtTime(100, t);
-                osc.frequency.exponentialRampToValueAtTime(10, t + 1);
-                gain.gain.setValueAtTime(1, t);
-                gain.gain.exponentialRampToValueAtTime(0.001, t + 1);
+                oscBass.connect(gainBass);
+                gainBass.connect(audioCtx.destination);
+
+                oscBass.frequency.setValueAtTime(150, t);
+                oscBass.frequency.exponentialRampToValueAtTime(40, t + 0.5);
                 
-                osc.connect(gain);
-                gain.connect(AudioEngine.ctx.destination);
-                osc.start(t);
-                osc.stop(t + 1);
+                gainBass.gain.setValueAtTime(1, t);
+                gainBass.gain.exponentialRampToValueAtTime(0.01, t + 1.5);
+
+                oscBass.start(t);
+                oscBass.stop(t + 1.5);
+
+                // High Tech Ping
+                const oscPing = audioCtx.createOscillator();
+                oscPing.type = 'sine';
+                const gainPing = audioCtx.createGain();
+                
+                oscPing.connect(gainPing);
+                gainPing.connect(audioCtx.destination);
+
+                oscPing.frequency.setValueAtTime(2000, t);
+                gainPing.gain.setValueAtTime(0.1, t);
+                gainPing.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+
+                oscPing.start(t);
+                oscPing.stop(t + 0.5);
             }
         };
 
-        function init() {
-            // Scene Setup
+        // --- 3D SCENE SETUP ---
+        function initScene() {
+            // Scene
             scene = new THREE.Scene();
             scene.background = new THREE.Color(CONFIG.colors.bg);
             scene.fog = new THREE.FogExp2(0x000000, 0.02);
 
-            // Camera (FOV 45)
+            // Camera
             camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-            updateCameraPosition(); // Initial position based on screen ratio
+            camera.position.set(0, 0, 25);
 
             // Renderer
             renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Perf optimization
+            renderer.setPixelRatio(window.devicePixelRatio);
             renderer.toneMapping = THREE.ACESFilmicToneMapping;
             renderer.outputEncoding = THREE.sRGBEncoding;
-            renderer.shadowMap.enabled = true;
             document.getElementById('canvas-container').appendChild(renderer.domElement);
 
-            // Lighting
+            // Lights
             const ambientLight = new THREE.AmbientLight(0xffffff, 0.1);
             scene.add(ambientLight);
 
-            const sunLight = new THREE.DirectionalLight(0xffffff, 1.5);
-            sunLight.position.set(50, 20, 30);
-            sunLight.castShadow = true;
+            const sunLight = new THREE.DirectionalLight(0xffffff, 2);
+            sunLight.position.set(10, 5, 10);
             scene.add(sunLight);
 
-            // Back/Rim Light for the Earth edge
-            const rimLight = new THREE.SpotLight(0x4455ff, 5);
-            rimLight.position.set(-10, 10, -10);
-            rimLight.lookAt(0, 0, 0);
-            scene.add(rimLight);
-
-            // Audio Init
-            AudioEngine.init();
-
-            // Load Assets
-            const manager = new THREE.LoadingManager();
-            manager.onLoad = () => {
-                document.getElementById('loader').style.display = 'none';
-                startSequence();
-            };
-
-            const textureLoader = new THREE.TextureLoader(manager);
-            const fontLoader = new FontLoader(manager);
-
-            // 1. Load Earth
-            textureLoader.load(CONFIG.urls.earth, (tex) => {
-                createEarth(tex);
-                createStars();
-            });
-
-            // 2. Load Font & Create W
-            fontLoader.load(CONFIG.urls.font, (font) => {
-                createWLogo(font);
-            });
-
-            // Event Listeners
-            window.addEventListener('resize', onWindowResize);
+            // Rim lights for "W" metal reflections
+            const rimLight1 = new THREE.PointLight(0x4488ff, 5, 50);
+            rimLight1.position.set(-10, 5, 5);
+            scene.add(rimLight1);
             
-            // Loop
-            animate();
+            const rimLight2 = new THREE.PointLight(0xffffff, 2, 50);
+            rimLight2.position.set(10, -5, 10);
+            scene.add(rimLight2);
         }
 
-        // --- CREATION FUNCTIONS ---
-
+        // --- EARTH SHADER & MESH ---
         function createEarth(texture) {
-            // Custom Shader Material for High Contrast B&W Look
-            const material = new THREE.ShaderMaterial({
+            // GLSL Custom Shader for B&W High Contrast Earth
+            const earthMaterial = new THREE.ShaderMaterial({
                 uniforms: {
                     tDiffuse: { value: texture },
-                    sunDirection: { value: new THREE.Vector3(1, 0.5, 1).normalize() }
+                    lightDirection: { value: new THREE.Vector3(1, 0.5, 1).normalize() }
                 },
                 vertexShader: `
                     varying vec2 vUv;
                     varying vec3 vNormal;
                     varying vec3 vViewPosition;
+                    
                     void main() {
                         vUv = uv;
                         vNormal = normalize(normalMatrix * normal);
@@ -283,32 +303,31 @@
                     void main() {
                         vec4 texColor = texture2D(tDiffuse, vUv);
                         
-                        // Grayscale conversion
+                        // Convert to Grayscale
                         float gray = dot(texColor.rgb, vec3(0.299, 0.587, 0.114));
                         
-                        // Thresholding: Oceans (dark) -> Black, Continents (light) -> White
-                        // Smoothstep for slightly soft edges (antialiasing effect)
-                        float contrast = smoothstep(0.15, 0.25, gray);
+                        // High Contrast (Thresholding oceans to black)
+                        float contrast = smoothstep(0.05, 0.4, gray);
                         
-                        // Atmosphere Fresnel (Rim light)
+                        // Atmosphere Rim Effect (Fresnel)
                         vec3 viewDir = normalize(vViewPosition);
                         float fresnel = dot(vNormal, viewDir);
                         float rim = 1.0 - fresnel;
-                        rim = pow(rim, 4.0);
+                        rim = pow(rim, 3.0);
 
-                        // Combine: Earth Surface + Rim
-                        vec3 finalColor = vec3(contrast) + (vec3(rim) * 0.4);
+                        // Mix Earth with Rim
+                        vec3 finalColor = vec3(contrast) + (vec3(rim) * 0.3);
 
                         gl_FragColor = vec4(finalColor, 1.0);
                     }
                 `
             });
 
-            earthMesh = new THREE.Mesh(new THREE.SphereGeometry(CONFIG.earthRadius, 64, 64), material);
+            earthMesh = new THREE.Mesh(new THREE.SphereGeometry(CONFIG.earthRadius, 64, 64), earthMaterial);
             scene.add(earthMesh);
 
-            // Atmosphere Glow (Outer shell)
-            const atmoGeo = new THREE.SphereGeometry(CONFIG.earthRadius * 1.1, 64, 64);
+            // Atmosphere Glow Mesh
+            const atmoGeo = new THREE.SphereGeometry(CONFIG.earthRadius * 1.05, 64, 64);
             const atmoMat = new THREE.ShaderMaterial({
                 transparent: true,
                 side: THREE.BackSide,
@@ -323,8 +342,8 @@
                 fragmentShader: `
                     varying vec3 vNormal;
                     void main() {
-                        float intensity = pow(0.6 - dot(vNormal, vec3(0, 0, 1.0)), 6.0);
-                        gl_FragColor = vec4(0.5, 0.7, 1.0, intensity * 0.5);
+                        float intensity = pow(0.6 - dot(vNormal, vec3(0, 0, 1.0)), 4.0);
+                        gl_FragColor = vec4(1.0, 1.0, 1.0, intensity * 0.8);
                     }
                 `
             });
@@ -332,192 +351,279 @@
             scene.add(atmosphereMesh);
         }
 
-        function createStars() {
-            const starGeo = new THREE.BufferGeometry();
-            const count = 2000;
-            const posArray = new Float32Array(count * 3);
-            for(let i=0; i<count*3; i++) {
-                posArray[i] = (Math.random() - 0.5) * 100;
-            }
-            starGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-            const starMat = new THREE.PointsMaterial({size: 0.1, color: 0x555555});
-            starsMesh = new THREE.Points(starGeo, starMat);
-            scene.add(starsMesh);
-        }
+        // --- W OBJECT GENERATION ---
+        function createWLogo() {
+            const shape = new THREE.Shape();
+            
+            // Dessin vectoriel du W (centré)
+            const w = 4;
+            const h = 3;
+            
+            shape.moveTo(-w/2, h/2);
+            shape.lineTo(-w/2 + 0.8, h/2);
+            shape.lineTo(-w/4, -h/2 + 1); // Bas gauche
+            shape.lineTo(0, 0); // Pointe centrale haute
+            shape.lineTo(w/4, -h/2 + 1); // Bas droit
+            shape.lineTo(w/2 - 0.8, h/2);
+            shape.lineTo(w/2, h/2);
+            shape.lineTo(w/4 + 0.2, -h/2);
+            shape.lineTo(0, -0.5); // Pointe centrale basse
+            shape.lineTo(-w/4 - 0.2, -h/2);
+            shape.lineTo(-w/2, h/2);
 
-        function createWLogo(font) {
-            const geometry = new TextGeometry('W', {
-                font: font,
-                size: 2.5,
-                height: 0.5, // Thickness
-                curveSegments: 12,
+            const extrudeSettings = {
+                depth: 0.5,
                 bevelEnabled: true,
                 bevelThickness: 0.1,
-                bevelSize: 0.05,
-                bevelOffset: 0,
-                bevelSegments: 5
-            });
+                bevelSize: 0.1,
+                bevelSegments: 4
+            };
 
-            geometry.center(); // Important pour la rotation
+            const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+            geometry.center(); // Centre la géométrie pour la rotation
 
             const material = new THREE.MeshStandardMaterial({
                 color: 0xffffff,
                 metalness: 1.0,
-                roughness: 0.1,
-                emissive: 0x222222,
-                emissiveIntensity: 0.2
+                roughness: 0.15,
+                envMapIntensity: 1.0
             });
 
-            wMesh = new THREE.Mesh(geometry, material);
-            
-            // Container Group for animation
+            const mesh = new THREE.Mesh(geometry, material);
             wGroup = new THREE.Group();
-            wGroup.add(wMesh);
-
-            // Dynamic Light attached to the W (The "Energy Source")
-            wLight = new THREE.PointLight(CONFIG.colors.lightTrail, 2, 20);
-            wLight.position.set(0, 0, 0);
-            wGroup.add(wLight);
-
-            // Start position: Behind camera, slightly to the left
-            wGroup.position.set(-5, 2, 20); 
-            wGroup.visible = false; // Hidden until start
-
+            wGroup.add(mesh);
+            wGroup.position.set(0, 0, 20); // Position de départ (derrière cam ou loin)
             scene.add(wGroup);
         }
 
-        // --- ANIMATION SEQUENCE ---
+        // --- TEXT GENERATION (Canvas Texture) ---
+        function createText() {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = 1024;
+            canvas.height = 256;
 
-        function startSequence() {
-            wGroup.visible = true;
+            ctx.fillStyle = 'rgba(0,0,0,0)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
             
+            ctx.font = 'bold 120px "Segoe UI", Arial, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillStyle = '#ffffff';
+            ctx.shadowColor = "rgba(255, 255, 255, 0.8)";
+            ctx.shadowBlur = 20;
+            ctx.fillText('WIKIMIND', canvas.width / 2, canvas.height / 2 + 40);
+
+            const texture = new THREE.CanvasTexture(canvas);
+            const material = new THREE.MeshBasicMaterial({ 
+                map: texture, 
+                transparent: true,
+                opacity: 0,
+                depthWrite: false
+            });
+
+            const geometry = new THREE.PlaneGeometry(8, 2);
+            textMesh = new THREE.Mesh(geometry, material);
+            textMesh.position.set(0, -4.5, 8); // Devant la terre
+            textMesh.scale.set(0.8, 0.8, 0.8);
+            scene.add(textMesh);
+        }
+
+        // --- ANIMATION SEQUENCE (GSAP) ---
+        function startAnimation() {
             const tl = gsap.timeline({
-                onComplete: () => {
-                    setTimeout(redirect, 1500);
-                }
+                onComplete: enterSite
             });
 
-            // 0s - 2.5s: Le W passe la caméra et tourne autour de la terre
-            // Trajectoire courbe simulée par position et rotation
-            
-            AudioEngine.playSwoosh();
+            // Variables de contrôle
+            const state = {
+                earthRotSpeed: 0.002,
+                wProgress: 0
+            };
 
-            // Mouvement du W (Bezier curve style via GSAP)
+            // Reveal UI Skip
+            gsap.to('#ui-layer', { opacity: 1, duration: 1, delay: 0.5 });
+
+            // T=0.5s -> T=2.5s : W Fly-by
+            // Le W vient de derrière (z=20), passe la caméra, va vers la terre
             tl.to(wGroup.position, {
-                x: 0, y: 0, z: 6, // Position finale devant la terre
-                duration: 3,
+                z: 8,
+                duration: 2.0,
                 ease: "power2.inOut",
-                onUpdate: () => {
-                    // Ajout d'une rotation chaotique qui se stabilise
-                    wMesh.rotation.x += 0.05;
-                    wMesh.rotation.y += 0.1;
-                }
-            });
+                onStart: () => AudioEngine.playSwoosh()
+            }, 0.5);
 
-            // Stabilisation de la rotation du W à la fin
-            tl.to(wMesh.rotation, {
-                x: 0, y: 0, z: 0,
-                duration: 1,
-                ease: "elastic.out(1, 0.5)"
-            }, "-=1.0");
-
-            // Recul Caméra pour cadrer la Terre + le Texte
-            tl.to(camera.position, {
-                z: isMobile() ? 25 : 18,
-                duration: 3,
+            // Rotation dynamique du W pendant le vol
+            tl.to(wGroup.rotation, {
+                z: Math.PI * 2, // 360 spin
+                x: Math.PI * 0.1,
+                duration: 2.0,
                 ease: "power1.inOut"
-            }, 0);
+            }, 0.5);
 
-            // Accélération de la Terre au passage du W
-            tl.to(earthMesh.rotation, {
-                y: Math.PI * 2,
-                duration: 3,
-                ease: "expo.out"
-            }, 0);
-
-            // 4.0s : Impact & Disparition W -> Text Reveal
-            tl.to(wGroup.scale, {
-                x: 0.01, y: 0.01, z: 0.01,
-                duration: 0.3,
-                ease: "back.in(2)",
-                onComplete: () => {
-                    wGroup.visible = false;
-                    AudioEngine.playImpact();
-                    revealText();
-                }
-            });
-
-            // Flash blanc
-            tl.to('#flash-overlay', {
-                opacity: 0.2,
-                duration: 0.1,
-                yoyo: true,
-                repeat: 1
-            }, "<"); // Starts with previous anim
-        }
-
-        function revealText() {
-            const title = document.getElementById('main-title');
-            
-            // Animation Tracking (espacement lettres) + Fade In
-            gsap.to(title, {
-                opacity: 1,
-                letterSpacing: "10px", // Écartement
-                duration: 2.5,
+            // T=2.5s -> T=4.0s : Orbite et Accélération
+            // W orbite autour de la terre (simulé par rotation group ou x/z)
+            tl.to(wGroup.position, {
+                x: 0,
+                y: 0,
+                z: 6,
+                duration: 1.5,
                 ease: "power2.out"
-            });
-        }
+            }, 2.5);
 
-        function redirect() {
-            // Fondu au blanc total
-            gsap.to('#flash-overlay', {
-                opacity: 1,
-                duration: 1,
-                onComplete: () => {
-                    window.location.href = "index.html";
+            // Accélération Terre
+            tl.to(state, {
+                earthRotSpeed: 0.15, // Très rapide
+                duration: 1.5,
+                ease: "expo.in",
+                onStart: () => AudioEngine.playTurbine(),
+                onUpdate: () => {
+                    earthMesh.rotation.y += state.earthRotSpeed;
+                    // Léger tremblement caméra
+                    camera.position.x = (Math.random() - 0.5) * 0.1;
+                    camera.position.y = (Math.random() - 0.5) * 0.1;
+                }
+            }, 2.5);
+
+            // Recul Caméra
+            tl.to(camera.position, {
+                z: 18,
+                duration: 1.5,
+                ease: "power2.inOut"
+            }, 2.5);
+
+            // T=4.0s : LOCK FINAL
+            // Stop accélération terre
+            tl.to(state, {
+                earthRotSpeed: 0.002,
+                duration: 0.5,
+                ease: "power2.out",
+                onUpdate: () => {
+                    earthMesh.rotation.y += state.earthRotSpeed;
+                    camera.position.x = 0; // Reset shake
+                    camera.position.y = 0;
+                }
+            }, 4.0);
+
+            // Disparition du W (fusion)
+            tl.to(wGroup.scale, {
+                x: 0, y: 0, z: 0,
+                duration: 0.3,
+                ease: "back.in(1.7)"
+            }, 4.0);
+
+            // Apparition Texte + Pulse
+            tl.to(textMesh.material, { opacity: 1, duration: 0.1 }, 4.3);
+            tl.fromTo(textMesh.scale, 
+                { x: 0.5, y: 0.5 }, 
+                { 
+                    x: 1.2, y: 1.2, 
+                    duration: 0.4, 
+                    ease: "elastic.out(1, 0.3)",
+                    onStart: () => AudioEngine.playLock()
+                }, 
+                4.3
+            );
+
+            // Stabilisation pour la lecture (T=5s to 6s)
+            tl.to(textMesh.scale, { x: 1, y: 1, duration: 1 }, 4.7);
+
+            // Loop de rendu pour mettre à jour les rotations continues
+            gsap.ticker.add(() => {
+                if(!isSkipped) {
+                    // Rotation de base de la terre si pas en accélération
+                    if(state.earthRotSpeed < 0.05) {
+                        earthMesh.rotation.y += state.earthRotSpeed;
+                    }
+                    atmosphereMesh.rotation.y = earthMesh.rotation.y;
+                    
+                    // Lent mouvement de l'atmosphère
+                    atmosphereMesh.scale.setScalar(1.05 + Math.sin(Date.now() * 0.001) * 0.01);
                 }
             });
         }
 
-        // --- UTILS & HELPERS ---
+        // --- MAIN INITIALIZATION ---
+        function init() {
+            initScene();
+            createWLogo();
+            createText();
+            AudioEngine.init();
 
-        function isMobile() {
-            return window.innerWidth < 768;
-        }
+            // Setup Texture Loading
+            const textureLoader = new THREE.TextureLoader();
+            textureLoader.load(CONFIG.textureUrl, (texture) => {
+                createEarth(texture);
+                
+                // Démarrer l'animation une fois chargé
+                // Petit hack pour débloquer l'audio si l'utilisateur a cliqué quelque part, 
+                // sinon l'audio sera silencieux mais visuel OK.
+                document.body.addEventListener('click', () => {
+                    if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+                }, { once: true });
 
-        function updateCameraPosition() {
-            const aspect = window.innerWidth / window.innerHeight;
-            // Si écran vertical (mobile), on recule la caméra
-            if (aspect < 1) {
-                camera.position.z = 28;
-            } else {
-                camera.position.z = 18;
-            }
-        }
+                startAnimation();
+                animate();
 
-        function onWindowResize() {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            updateCameraPosition();
+            }, undefined, (err) => {
+                console.error("Erreur chargement texture, fallback couleur");
+                // Fallback si pas internet
+                const fallbackTex = new THREE.DataTexture(new Uint8Array([50, 50, 50]), 1, 1, THREE.RGBFormat);
+                createEarth(fallbackTex);
+                startAnimation();
+                animate();
+            });
+
+            // Resize Handler
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
         }
 
         function animate() {
+            if (isSkipped) return;
             requestAnimationFrame(animate);
-
-            // Rotation lente permanente
-            if(earthMesh) {
-                earthMesh.rotation.y += 0.001;
-                atmosphereMesh.rotation.y = earthMesh.rotation.y;
-            }
-            if(starsMesh) {
-                starsMesh.rotation.y -= 0.0005;
-            }
-
             renderer.render(scene, camera);
         }
 
-        // Start init
+        // --- EXIT FUNCTIONS ---
+        function skipIntro() {
+            if(isSkipped) return;
+            isSkipped = true;
+            gsap.globalTimeline.clear(); // Kill animations
+            enterSite();
+        }
+
+        function enterSite() {
+            isSkipped = true;
+            
+            // Animation de sortie (Fade out Canvas -> White)
+            const reveal = document.getElementById('site-reveal');
+            const canvas = document.getElementById('canvas-container');
+            const ui = document.getElementById('ui-layer');
+
+            ui.style.display = 'none';
+
+            // Animation CSS/GSAP de transition
+            gsap.to(canvas, {
+                opacity: 0,
+                duration: 1,
+                ease: "power2.inOut"
+            });
+
+            reveal.style.opacity = 1;
+            reveal.style.pointerEvents = 'auto'; // Active les clics
+
+            // Redirection après le fondu
+            setTimeout(() => {
+                // REDIRECTION VERS L'ACCUEIL DU PROJET
+                // Remplace 'index.html' par le vrai fichier d'accueil si différent
+                window.location.href = "index.html"; 
+            }, 1000);
+        }
+
+        // --- LAUNCH ---
         init();
 
     </script>
