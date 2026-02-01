@@ -7,11 +7,10 @@
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
-
   gtag('config', 'G-29XYBNJ2CB');
 </script>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>WikiMind - La Suite Intelligente</title>
     
     <!-- Tailwind CSS -->
@@ -24,7 +23,7 @@
         :root {
             --bg: #ffffff;
             --text: #111111;
-            --card-bg: rgba(249, 250, 251, 0.8);
+            --card-bg: rgba(249, 250, 251, 0.85);
             --border: #e5e7eb;
             --accent: #000000;
             --accent-text: #ffffff;
@@ -35,7 +34,7 @@
         .dark-mode {
             --bg: #0f0f0f;
             --text: #eeeeee;
-            --card-bg: rgba(22, 22, 22, 0.8);
+            --card-bg: rgba(22, 22, 22, 0.85);
             --border: #252525;
             --accent: #ffffff;
             --accent-text: #000000;
@@ -49,14 +48,15 @@
             color: var(--text);
             transition: background-color 0.4s ease, color 0.4s ease;
             overflow-x: hidden;
+            -webkit-tap-highlight-color: transparent;
         }
 
-        /* --- INTRO ANIMATION (Splash Screen) --- */
+        /* --- INTRO ANIMATION --- */
         #intro-overlay {
             position: fixed; inset: 0; z-index: 9999;
             background-color: var(--bg);
             display: flex; align-items: center; justify-content: center;
-            transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.8s;
+            transition: opacity 0.6s ease-out, visibility 0.6s;
         }
         
         .logo-pulse {
@@ -75,12 +75,12 @@
         }
 
         .content-reveal {
-            animation: revealUp 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            animation: revealUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
 
         @keyframes revealUp {
-            from { opacity: 0; transform: translateY(40px) scale(0.95); filter: blur(10px); }
-            to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+            from { opacity: 0; transform: translateY(20px); filter: blur(4px); }
+            to { opacity: 1; transform: translateY(0); filter: blur(0); }
         }
 
         /* --- Background Animation Canvas --- */
@@ -91,38 +91,36 @@
         .dark-mode #bg-canvas { opacity: 0.4; }
 
         /* --- Animations Globales --- */
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0px); } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-8px); } 100% { transform: translateY(0px); } }
 
-        .animate-fade { animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; }
+        .animate-fade { animation: fadeIn 0.6s ease-out forwards; opacity: 0; }
         .delay-100 { animation-delay: 0.1s; }
         .delay-200 { animation-delay: 0.2s; }
         .delay-300 { animation-delay: 0.3s; }
-        .delay-400 { animation-delay: 0.4s; }
-        .delay-500 { animation-delay: 0.5s; }
         .animate-float { animation: float 6s ease-in-out infinite; }
 
         /* --- View Transitions --- */
         .view-container {
             display: none; opacity: 0;
-            transition: opacity 0.4s ease, transform 0.4s ease;
-            transform: scale(0.98); width: 100%;
+            transition: opacity 0.3s ease;
+            width: 100%;
         }
-        .view-container.active { display: block; opacity: 1; transform: scale(1); }
+        .view-container.active { display: block; opacity: 1; }
 
         /* --- Components --- */
         .app-card {
             background: var(--card-bg); backdrop-filter: blur(12px);
             border: 1px solid var(--border); border-radius: 24px;
-            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
             position: relative; overflow: hidden; width: 100%; cursor: pointer;
         }
         .app-card:hover {
-            transform: translateY(-5px) scale(1.02);
+            transform: translateY(-4px);
             border-color: var(--text);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1); z-index: 10;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.08); z-index: 10;
         }
-        .dark-mode .app-card:hover { box-shadow: 0 20px 40px rgba(255,255,255,0.05); }
+        .dark-mode .app-card:hover { box-shadow: 0 15px 30px rgba(255,255,255,0.03); }
 
         .icon-box {
             width: 60px; height: 60px; border-radius: 16px;
@@ -135,12 +133,19 @@
             background-color: var(--accent); color: var(--accent-text);
             transition: transform 0.2s, opacity 0.2s;
         }
-        .btn-primary:hover { transform: scale(1.05); opacity: 0.9; }
+        .btn-primary:active { transform: scale(0.95); }
 
-        /* Rating Stars */
-        .star-rating { display: inline-flex; gap: 2px; }
-        .star { color: var(--star-inactive); transition: color 0.2s; cursor: pointer; }
-        .star.active, .star:hover, .star-rating:hover .star:hover ~ .star { color: var(--star-active); }
+        /* Rating Stars Mobile Friendly */
+        .star-rating { display: inline-flex; gap: 4px; padding: 4px 0; }
+        .star { 
+            color: var(--star-inactive); 
+            transition: color 0.2s, transform 0.1s; 
+            cursor: pointer; 
+            font-size: 24px; /* Plus gros pour le tactile */
+            padding: 2px; /* Zone de touche étendue */
+        }
+        .star.active { color: var(--star-active); }
+        .star:active { transform: scale(1.3); }
 
         /* Modal */
         .modal {
@@ -155,7 +160,7 @@
         }
     </style>
 </head>
-<body class="flex flex-col min-h-screen relative overflow-hidden"> <!-- overflow hidden initially for splash -->
+<body class="flex flex-col min-h-screen relative overflow-hidden">
     
     <!-- SPLASH SCREEN INTRO -->
     <div id="intro-overlay">
@@ -171,27 +176,28 @@
     <!-- CANEVAS D'ANIMATION -->
     <canvas id="bg-canvas"></canvas>
 
-    <!-- WRAPPER GLOBAL POUR L'EFFET REVEAL -->
+    <!-- WRAPPER GLOBAL -->
     <div id="app-wrapper" class="opacity-0 flex flex-col min-h-screen">
 
         <!-- NAVBAR -->
         <header class="fixed top-0 w-full z-50 border-b border-gray-200/50 dark:border-gray-800/50 backdrop-blur-md transition-colors duration-500">
             <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
                 <div class="flex items-center gap-3 cursor-pointer" onclick="switchView('home')">
-                    <div class="w-10 h-10 bg-black dark:bg-white text-white dark:text-black rounded-xl flex items-center justify-center font-black text-xl hover:rotate-12 transition-transform duration-300">W</div>
-                    <h1 class="text-xl font-black uppercase tracking-tighter italic">WikiMind</h1>
+                    <div class="w-10 h-10 bg-black dark:bg-white text-white dark:text-black rounded-xl flex items-center justify-center font-black text-xl">W</div>
+                    <h1 class="hidden md:block text-xl font-black uppercase tracking-tighter italic">WikiMind</h1>
                 </div>
                 
-                <div class="flex items-center gap-4">
-                    <button onclick="switchView('catalog')" class="hidden md:block text-xs font-bold uppercase tracking-widest hover:text-gray-500 transition">Catalogue</button>
-                    
-                    <a href="Wikimind_vote.html" class="hidden md:flex items-center gap-2 px-4 py-2 rounded-full border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-zinc-800 transition text-xs font-bold uppercase tracking-widest">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5"></path></svg>
-                        <span>Voter</span>
+                <div class="flex items-center gap-3">
+                    <!-- BOUTON VOTE MOBILE/DESKTOP -->
+                    <a href="Wikimind_vote.html" class="flex items-center justify-center gap-2 px-3 py-2 md:px-4 rounded-full border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-zinc-800 transition bg-white/50 dark:bg-black/50">
+                        <svg class="w-5 h-5 md:w-4 md:h-4 text-black dark:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5"></path></svg>
+                        <span class="hidden md:inline text-xs font-bold uppercase tracking-widest">Voter</span>
                     </a>
 
+                    <button onclick="switchView('catalog')" class="hidden md:block text-xs font-bold uppercase tracking-widest hover:text-gray-500 transition">Catalogue</button>
+                    
                     <a href="user.html" id="auth-btn" class="hidden md:flex items-center gap-2 px-4 py-2 rounded-full bg-gray-100 dark:bg-zinc-800 text-xs font-bold uppercase tracking-widest hover:bg-gray-200 dark:hover:bg-zinc-700 transition">
-                        <span>Mon Compte</span>
+                        <span>Compte</span>
                     </a>
 
                     <button onclick="toggleTheme()" class="w-10 h-10 rounded-full border border-gray-200 dark:border-gray-700 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-zinc-800 transition">
@@ -202,36 +208,39 @@
         </header>
 
         <!-- MAIN CONTAINER -->
-        <main class="flex-grow pt-32 pb-20 px-6 max-w-7xl mx-auto w-full z-10 flex flex-col justify-center">
+        <main class="flex-grow pt-28 pb-20 px-4 md:px-6 max-w-7xl mx-auto w-full z-10 flex flex-col justify-center">
 
             <!-- VIEW: HOME -->
             <div id="view-home" class="view-container active">
-                <div class="text-center mb-24 animate-fade">
+                <div class="text-center mb-16 md:mb-24 animate-fade">
                     <div class="inline-block mb-4 px-4 py-1.5 rounded-full border border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-zinc-900/50 backdrop-blur-md text-[10px] font-bold uppercase tracking-widest text-gray-500 animate-float">
                         La Suite Intelligente
                     </div>
-                    <h2 class="text-5xl md:text-7xl font-black tracking-tighter mb-6 leading-tight">
+                    <h2 class="text-4xl md:text-7xl font-black tracking-tighter mb-6 leading-tight">
                         BOOSTEZ VOTRE<br>
                         <span class="text-transparent bg-clip-text bg-gradient-to-r from-black to-gray-500 dark:from-white dark:to-gray-500">POTENTIEL.</span>
                     </h2>
-                    <p class="text-lg text-gray-500 max-w-2xl mx-auto font-medium">
+                    <p class="text-base md:text-lg text-gray-500 max-w-2xl mx-auto font-medium px-4">
                         Une suite d'outils connectés pour apprendre, créer et s'organiser. Propulsé par une architecture IA de pointe.
                     </p>
-                    <div class="mt-8 flex flex-col md:flex-row gap-4 justify-center items-center">
-                        <a href="user.html" class="btn-primary px-8 py-4 rounded-full font-bold uppercase tracking-widest text-xs inline-flex items-center gap-2">
+                    <div class="mt-8 flex flex-col md:flex-row gap-4 justify-center items-center px-4">
+                        <a href="user.html" class="w-full md:w-auto btn-primary px-8 py-4 rounded-full font-bold uppercase tracking-widest text-xs inline-flex justify-center items-center gap-2">
                             Commencer Gratuitement
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
                         </a>
-                        <a href="Wikimind_presentation.html" class="px-8 py-4 rounded-full font-bold uppercase tracking-widest text-xs inline-flex items-center gap-2 border border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-all hover:scale-105 backdrop-blur-sm">
+                        <a href="Wikimind_presentation.html" class="w-full md:w-auto px-8 py-4 rounded-full font-bold uppercase tracking-widest text-xs inline-flex justify-center items-center gap-2 border border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-zinc-800 transition backdrop-blur-sm">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                             Présenter le projet
                         </a>
                     </div>
                 </div>
 
-                <!-- HOME GRID (Apps) -->
-                <div id="home-grid" class="flex flex-wrap justify-center gap-6 w-full mb-12"></div>
-
+                <!-- HOME GRID -->
+                <div id="home-grid" class="flex flex-wrap justify-center gap-4 md:gap-6 w-full mb-12">
+                     <div class="text-center text-gray-400 text-xs font-mono uppercase animate-pulse">Chargement des modules...</div>
+                </div>
+                
+                 <!-- BOUTON TOUTES LES APPS -->
                 <div class="text-center animate-fade delay-600 mb-24">
                     <button onclick="switchView('catalog')" class="inline-flex items-center gap-2 px-6 py-3 rounded-full border border-gray-200 dark:border-gray-800 hover:bg-gray-100 dark:hover:bg-zinc-900 transition-all duration-300 text-xs font-bold uppercase tracking-widest backdrop-blur-sm">
                         <span>Voir tout l'écosystème</span>
@@ -239,8 +248,9 @@
                     </button>
                 </div>
 
-                <!-- ABOUT SECTIONS -->
+                <!-- ABOUT SECTIONS (RESTAURÉES) -->
                 <div class="mt-24 border-t border-gray-100 dark:border-gray-800 pt-16 grid grid-cols-1 lg:grid-cols-2 gap-16 animate-fade delay-300">
+                    <!-- BLOC 1: POURQUOI WIKIMIND ? -->
                     <div>
                         <h3 class="text-3xl font-black uppercase tracking-tight mb-4">Pourquoi WikiMind ?</h3>
                         <p class="text-gray-500 leading-relaxed mb-8">
@@ -257,27 +267,37 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- BLOC 2: POURQUOI CE NOM ? -->
                     <div>
                         <h3 class="text-3xl font-black uppercase tracking-tight mb-4">Pourquoi ce nom ?</h3>
                         <div class="text-gray-500 leading-relaxed space-y-4">
-                            <p>À l'origine, le projet est né d'une idée simple : créer une intelligence artificielle capable de sourcer ses réponses directement depuis les données fiables de <a href="https://www.wikipedia.org/" target="_blank" class="font-bold text-black dark:text-white underline hover:no-underline transition">Wikipedia</a>.</p>
-                            <p>C'est de cet héritage que vient le préfixe <strong>"Wiki"</strong>. Le suffixe <strong>"Mind"</strong> (l'esprit) incarne la capacité de réfléchir, d'analyser et de synthétiser.</p>
+                            <p>
+                                À l'origine, le projet est né d'une idée simple : créer une intelligence artificielle capable de sourcer ses réponses directement depuis les données fiables de 
+                                <a href="https://www.wikipedia.org/" target="_blank" rel="noopener noreferrer" class="font-bold text-black dark:text-white underline hover:no-underline transition">Wikipedia</a>.
+                            </p>
+                            <p>
+                                C'est de cet héritage que vient le préfixe <strong>"Wiki"</strong>. Le suffixe <strong>"Mind"</strong> (l'esprit) incarne la capacité de réfléchir, d'analyser et de synthétiser.
+                            </p>
                         </div>
                     </div>
                 </div>
+
             </div>
 
             <!-- VIEW: CATALOG -->
             <div id="view-catalog" class="view-container">
                 <div class="flex flex-col items-center mb-12">
-                    <button onclick="switchView('home')" class="mb-8 text-xs font-bold uppercase tracking-widest text-gray-400 hover:text-black dark:hover:text-white transition">← Retour à l'accueil</button>
-                    <h2 class="text-4xl md:text-5xl font-black tracking-tighter mb-4">Catalogue des Applications</h2>
+                    <button onclick="switchView('home')" class="mb-8 text-xs font-bold uppercase tracking-widest text-gray-400 hover:text-black dark:hover:text-white transition">← Retour</button>
+                    <h2 class="text-3xl md:text-5xl font-black tracking-tighter mb-4 text-center">Catalogue</h2>
                     <p class="text-gray-500 max-w-xl text-center">Toutes les solutions WikiMind à portée de clic.</p>
                 </div>
-                <div id="catalog-grid" class="flex flex-wrap justify-center gap-6 w-full"></div>
+                <div id="catalog-grid" class="flex flex-wrap justify-center gap-4 md:gap-6 w-full"></div>
                 <div class="w-full mt-16 mb-4 flex flex-col items-center justify-center animate-fade delay-100">
                     <div class="p-1 rounded-2xl bg-gradient-to-r from-gray-200 to-gray-100 dark:from-zinc-800 dark:to-zinc-900 shadow-sm hover:shadow-md transition-shadow">
-                        <a href="https://docs.google.com/forms/d/e/1FAIpQLSffzaqJ8p4m7gaojh2EsVVgYzZ3LDVKAaO5BsvZud4NIZqaJg/viewform?usp=publish-editor" target="_blank" class="block bg-var(--card-bg) px-8 py-4 rounded-xl text-center hover:bg-transparent transition-all duration-300 group relative overflow-hidden bg-white dark:bg-black">
+                        <a href="https://docs.google.com/forms/d/e/1FAIpQLSffzaqJ8p4m7gaojh2EsVVgYzZ3LDVKAaO5BsvZud4NIZqaJg/viewform?usp=publish-editor" 
+                        target="_blank"
+                        class="block bg-var(--card-bg) px-8 py-4 rounded-xl text-center hover:bg-transparent transition-all duration-300 group relative overflow-hidden bg-white dark:bg-black">
                             <span class="relative z-10 text-xs font-black uppercase tracking-widest flex items-center gap-3 text-gray-500 group-hover:text-black dark:group-hover:text-white transition-colors">
                                 <span class="text-xl leading-none">+</span> Proposer une Application
                             </span>
@@ -288,34 +308,34 @@
 
             <!-- VIEW: DETAIL -->
             <div id="view-detail" class="view-container">
-                <button onclick="switchView('catalog')" class="mb-8 text-xs font-bold uppercase tracking-widest text-gray-400 hover:text-black dark:hover:text-white transition">← Retour au catalogue</button>
-                <div class="bg-white/80 dark:bg-[#111]/80 backdrop-blur-xl border border-gray-200 dark:border-gray-800 rounded-3xl overflow-hidden shadow-2xl">
-                    <div class="p-8 md:p-12 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-[#161616]/50">
+                <button onclick="switchView('catalog')" class="mb-6 text-xs font-bold uppercase tracking-widest text-gray-400 hover:text-black dark:hover:text-white transition">← Catalogue</button>
+                <div class="bg-white/90 dark:bg-[#111]/90 backdrop-blur-xl border border-gray-200 dark:border-gray-800 rounded-3xl overflow-hidden shadow-2xl">
+                    <div class="p-6 md:p-12 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-[#161616]/50">
                         <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-                            <div class="flex items-center gap-6">
-                                <div id="detail-icon" class="w-20 h-20 rounded-2xl bg-black dark:bg-white text-white dark:text-black flex items-center justify-center text-4xl shadow-lg">🧠</div>
+                            <div class="flex items-center gap-5">
+                                <div id="detail-icon" class="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-black dark:bg-white text-white dark:text-black flex items-center justify-center text-3xl md:text-4xl shadow-lg">🧠</div>
                                 <div>
                                     <div id="detail-tag" class="inline-block mb-2 px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-blue-100 text-blue-600">Flagship</div>
-                                    <h1 id="detail-title" class="text-3xl md:text-4xl font-black tracking-tight">WikiMind AI</h1>
-                                    <div class="mt-2 flex items-center gap-3">
-                                        <div id="detail-stars" class="flex text-lg"></div>
+                                    <h1 id="detail-title" class="text-2xl md:text-4xl font-black tracking-tight">WikiMind AI</h1>
+                                    <div class="mt-2 flex flex-wrap items-center gap-3">
+                                        <div id="detail-stars" class="flex text-2xl"></div>
                                         <div class="text-xs text-gray-500 font-bold uppercase tracking-wider" id="detail-rating-text">Chargement...</div>
                                     </div>
                                 </div>
                             </div>
-                            <a id="detail-btn" href="#" class="btn-primary px-8 py-4 rounded-xl font-bold uppercase tracking-widest text-sm flex items-center gap-3">Ouvrir l'application</a>
+                            <a id="detail-btn" href="#" class="w-full md:w-auto btn-primary px-8 py-4 rounded-xl font-bold uppercase tracking-widest text-xs flex justify-center items-center gap-3">Ouvrir</a>
                         </div>
                     </div>
-                    <div class="p-8 md:p-12 grid grid-cols-1 lg:grid-cols-3 gap-12">
+                    <div class="p-6 md:p-12 grid grid-cols-1 lg:grid-cols-3 gap-8 md:gap-12">
                         <div class="lg:col-span-2">
-                            <h3 class="text-xl font-bold uppercase tracking-tight mb-4">Description</h3>
-                            <p id="detail-desc" class="text-gray-500 leading-loose mb-8 text-lg"></p>
-                            <h3 class="text-xl font-bold uppercase tracking-tight mb-4">Fonctionnalités Principales</h3>
-                            <ul id="detail-features" class="space-y-4 text-gray-600 dark:text-gray-400"></ul>
+                            <h3 class="text-lg font-bold uppercase tracking-tight mb-4">Description</h3>
+                            <p id="detail-desc" class="text-gray-500 leading-relaxed mb-8 text-base md:text-lg"></p>
+                            <h3 class="text-lg font-bold uppercase tracking-tight mb-4">Fonctionnalités</h3>
+                            <ul id="detail-features" class="space-y-4 text-gray-600 dark:text-gray-400 text-sm md:text-base"></ul>
                         </div>
                         <div class="bg-gray-50 dark:bg-zinc-900 rounded-2xl p-6 h-fit border border-gray-100 dark:border-gray-800">
-                            <h4 class="font-bold uppercase tracking-widest text-xs mb-6 text-gray-400">Fiche Technique</h4>
-                            <div id="detail-extras" class="space-y-6"></div>
+                            <h4 class="font-bold uppercase tracking-widest text-xs mb-6 text-gray-400">Technique</h4>
+                            <div id="detail-extras" class="space-y-4"></div>
                         </div>
                     </div>
                 </div>
@@ -343,25 +363,31 @@
     <div id="legal-modal" class="modal" onclick="closeModal('legal-modal')">
         <div class="modal-content" onclick="event.stopPropagation()">
             <h3 class="text-xl font-black uppercase mb-4">Mentions Légales</h3>
-            <div class="text-sm text-gray-500 space-y-4 leading-relaxed"><p><strong>Éditeur :</strong> Projet Open Source WikiMind.</p></div>
+            <div class="text-sm text-gray-500 space-y-4 leading-relaxed">
+                <p><strong>Éditeur :</strong> Projet Open Source WikiMind, développé par Tom Duval et l'équipe Pépins de Tomates.</p>
+                <p><strong>Hébergement :</strong> Ce site est hébergé par GitHub Pages.</p>
+                <p><strong>Responsabilité :</strong> Les outils sont fournis à titre indicatif.</p>
+            </div>
             <button onclick="closeModal('legal-modal')" class="w-full mt-6 btn-primary py-3 rounded-xl font-bold text-xs uppercase tracking-widest">Fermer</button>
         </div>
     </div>
-    <div id="privacy-modal" class="modal" onclick="closeModal('privacy-modal')">
+     <div id="privacy-modal" class="modal" onclick="closeModal('privacy-modal')">
         <div class="modal-content" onclick="event.stopPropagation()">
-            <h3 class="text-xl font-black uppercase mb-4">Confidentialité</h3>
-            <div class="text-sm text-gray-500 space-y-4 leading-relaxed"><p><strong>Privacy First :</strong> Aucune donnée personnelle n'est envoyée.</p></div>
+            <h3 class="text-xl font-black uppercase mb-4">Politique de Confidentialité</h3>
+            <div class="text-sm text-gray-500 space-y-4 leading-relaxed">
+                <p><strong>Privacy First :</strong> Aucune donnée personnelle n'est envoyée sur nos serveurs. Tout est stocké localement.</p>
+            </div>
             <button onclick="closeModal('privacy-modal')" class="w-full mt-6 btn-primary py-3 rounded-xl font-bold text-xs uppercase tracking-widest">Fermer</button>
         </div>
     </div>
 
-    <!-- FIREBASE AND APP LOGIC -->
+    <!-- MAIN SCRIPT -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
         import { getDatabase, ref, onValue, runTransaction } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-database.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-auth.js";
 
-        // CONFIG WIKIMIND RATE
+        // CONFIGURATION FIREBASE
         const firebaseConfig = {
             apiKey: "AIzaSyCna0s3guy723jPdW0AdMVGLKE1J4OGmY0",
             authDomain: "wikimind-rate.firebaseapp.com",
@@ -374,222 +400,172 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
         const auth = getAuth(app);
-        
-        // Auth anonyme pour permettre l'écriture dans la DB
-        signInAnonymously(auth).catch((error) => console.error("Auth Error:", error));
+        signInAnonymously(auth).catch(console.error);
 
-        // --- GLOBAL VARIABLES & FUNCTIONS EXPORT ---
-        window.rateApp = function(appId, stars) {
-            // 1. Check if already voted locally
-            if (localStorage.getItem(`wikimind_voted_${appId}`)) {
-                alert("Vous avez déjà voté pour cette application !");
-                return;
-            }
-
-            // 2. Transaction Firebase
-            const appRef = ref(db, 'ratings/' + appId);
-            runTransaction(appRef, (currentData) => {
-                if (currentData === null) {
-                    return { total: stars, count: 1 };
-                } else {
-                    return { total: currentData.total + stars, count: currentData.count + 1 };
-                }
-            }).then(() => {
-                // 3. Mark as voted locally
-                localStorage.setItem(`wikimind_voted_${appId}`, stars);
-                // Refresh UI (optimistic)
-                updateStarDisplay(appId, stars); 
-            }).catch((err) => console.error("Vote failed", err));
-        };
-
-        // Données statiques des apps
+        // DONNEES COMPLETES RESTAURÉES
         const appsData = {
-            "wikimind": { title: "WikiMind AI", icon: "🧠", tag: "Flagship", tagColor: "bg-blue-100 text-blue-600", desc: "Assistant cognitif ultime.", features: ["Multi-Modèles", "Analyse Doc", "Chat Partagé"], extras: ["PDF Gen", "Data Viz"], url: "Wikimind_AI.html" },
-            "cours": { title: "WikiMind Cours", icon: "📝", tag: "Workspace", tagColor: "bg-teal-100 text-teal-600", desc: "Prise de notes intelligente.", features: ["Éditeur Riche", "Dictée", "Restructuration"], extras: ["Cloud Save", "Export"], url: "Wikimind_cours.html" },
-            "bac": { title: "WikiMind BAC", icon: "🎓", tag: "Éducation", tagColor: "bg-red-100 text-red-600", desc: "Simulateur Bac 2026.", features: ["Multi-Filières", "Calcul Live"], extras: ["Coeffs à jour"], url: "Wikimind_BAC.html" },
-            "study": { title: "WikiMind Study", icon: "⏱️", tag: "Productivité", tagColor: "bg-green-100 text-green-600", desc: "Focus OS & Pomodoro.", features: ["Timer", "Planning IA"], extras: ["Ambiance"], url: "WikiMind_study.html" },
-            "maths": { title: "WikiMind Maths", icon: "📐", tag: "Sciences", tagColor: "bg-purple-100 text-purple-600", desc: "Solveur mathématique.", features: ["Pas à Pas", "Géométrie"], extras: ["Historique"], url: "Wikimind_maths.html" },
-            "cloud": { title: "WikiMind Cloud", icon: "☁️", tag: "Stockage", tagColor: "bg-gray-100 text-gray-600", desc: "Stockage sécurisé.", features: ["Auth", "Base64"], extras: ["Firebase"], url: "Wikimind_cloud.html" },
-            "create": { title: "WikiMind Create", icon: "🎨", tag: "Créativité", tagColor: "bg-pink-100 text-pink-600", desc: "Studio visuel Pro.", features: ["Images HD", "Vidéo"], extras: ["No-Code"], url: "Wikimind_creator.html" },
-            "finance": { title: "WikiMind Finance", icon: "💸", tag: "Gestion", tagColor: "bg-yellow-100 text-yellow-600", desc: "Budget intelligent.", features: ["Suivi Live", "Conseiller IA"], extras: ["Sécurité"], url: "Wikimind_finance.html" },
-            "diaporama": { title: "WikiMind Diaporama", icon: "🎞️", tag: "Bêta", tagColor: "bg-orange-100 text-orange-600", desc: "Présentations IA.", features: ["Gen Mistral", "JSON"], extras: ["Plein Écran"], url: "Wikimind_diaporama.html" },
-            "games": { title: "WikiMind Games", icon: "🎮", tag: "Arcade", tagColor: "bg-indigo-100 text-indigo-600", desc: "Hub ludique & Échecs.", features: ["Chess IA", "ELO"], extras: ["Multi"], url: "Wikimind_games.html" },
-            "detector": { title: "WikiMind Detector", icon: "🛡️", tag: "AI Analysis", tagColor: "bg-indigo-100 text-indigo-600", desc: "Détecteur d'IA.", features: ["Score %", "Moteur 6.2"], extras: ["GPT-4"], url: "https://chpalitom09-bot.github.io/Wikimind_All/Wikimind_detect.html" },
-            "humanizer": { title: "WikiMind Humanizer", icon: "🧬", tag: "Style", tagColor: "bg-violet-100 text-violet-600", desc: "Réécriture naturelle.", features: ["Indétectable", "Fluide"], extras: ["Illimité"], url: "Wikimind_humanise.html" },
-            "3d": { title: "WikiMind 3D", icon: "🧊", tag: "Design CAD", tagColor: "bg-cyan-100 text-cyan-600", desc: "CAO Hybride.", features: ["2D vers 3D", "Gen IA"], extras: ["STL"], url: "Wikimind_3D.html" },
-            "tableur": { title: "WikiMind Tableur", icon: "📊", tag: "Bientôt", tagColor: "bg-gray-200 text-gray-500", desc: "Tableur IA.", features: ["Formules IA"], extras: ["2026"], url: "#" }
+            "wikimind": {
+                title: "WikiMind AI",
+                icon: "🧠",
+                tag: "Flagship",
+                tagColor: "bg-blue-100 text-blue-600",
+                desc: "WikiMind AI est le vaisseau amiral de la suite. C'est une architecture cognitive avancée qui agit comme un système d'exploitation pour l'IA, centralisant l'accès à de multiples modèles de langage et disposant d'un Routeur Neural.",
+                features: ["Sélecteur Multi-Modèles (Llama, Mistral, Gemini)", "Analyse de Documents (PDF, DOCX, IMG)", "Bibliothèque d'Apps Intégrée", "Mode Chat Partagé Collaboratif"],
+                extras: ["Génération de PDF Haute Fidélité", "Éditeur d'Image 'Néon'", "Visualisation de Données (Chart.js)"],
+                url: "Wikimind_AI.html"
+            },
+            "cours": {
+                title: "WikiMind Cours",
+                icon: "📝",
+                tag: "Workspace",
+                tagColor: "bg-teal-100 text-teal-600",
+                desc: "Prise de notes intelligente avec éditeur de texte riche, dictée vocale et restructuration par IA. L'alternative moderne à Word pour vos cours.",
+                features: ["Éditeur Riche (Gras, Italique, Titres)", "Dictée Vocale Temps Réel", "Restructuration IA des notes"],
+                extras: ["Sauvegarde Cloud (Firebase)", "Export HTML", "Mode sombre immersif"],
+                url: "Wikimind_cours.html"
+            },
+            "bac": {
+                title: "WikiMind BAC",
+                icon: "🎓",
+                tag: "Éducation",
+                tagColor: "bg-red-100 text-red-600",
+                desc: "Un simulateur de notes dédié aux lycéens préparant le Baccalauréat (Réforme 2026). Intègre les spécificités des différentes filières.",
+                features: ["Support Multi-Filières (Général, Techno, Pro)", "Calcul Temps Réel de la moyenne", "Sauvegarde Auto Locale"],
+                extras: ["Interface adaptée aux coefficients", "Bouton d'Analyse IA intégré", "Gestion intelligente des erreurs"],
+                url: "Wikimind_BAC.html"
+            },
+            "study": {
+                title: "WikiMind Study",
+                icon: "⏱️",
+                tag: "Productivité",
+                tagColor: "bg-green-100 text-green-600",
+                desc: "Un environnement de travail focalisé (Focus OS). Fusionne la méthode Pomodoro avec un gestionnaire de tâches intelligent piloté par une IA.",
+                features: ["Minuteur Pomodoro Configurable", "Gestionnaire IA (The Brain)", "Statistiques Temps Réel"],
+                extras: ["Ambiance sonore (Pluie, Forêt...)", "Sauvegarde 100% Locale", "Mode sombre immersif"],
+                url: "WikiMind_study.html"
+            },
+            "maths": {
+                title: "WikiMind Maths",
+                icon: "📐",
+                tag: "Sciences",
+                tagColor: "bg-purple-100 text-purple-600",
+                desc: "Votre solveur mathématique intelligent. Résolution de problèmes complexes, algèbre et géométrie expliquées pas à pas.",
+                features: ["Résolution Pas à Pas détaillée", "Couvre Géométrie & Algèbre", "Interface Saisie Intuitive"],
+                extras: ["Historique des calculs", "Exportation des résultats", "Mode graphique"],
+                url: "Wikimind_maths.html"
+            },
+            "cloud": {
+                title: "WikiMind Cloud",
+                icon: "☁️",
+                tag: "Stockage",
+                tagColor: "bg-gray-100 text-gray-600",
+                desc: "Gestionnaire de fichiers cloud personnel et sécurisé. Utilise la Firebase Realtime Database pour stocker les fichiers (Base64).",
+                features: ["Authentification Dédiée (UID)", "Conversion Base64 Temps Réel", "Contrôle des Quotas (10Mo)"],
+                extras: ["HTML5 / CSS3 / JS", "Firebase v10", "Sécurité Rules"],
+                url: "Wikimind_cloud.html"
+            },
+            "create": {
+                title: "WikiMind Create",
+                icon: "🎨",
+                tag: "Créativité",
+                tagColor: "bg-pink-100 text-pink-600",
+                desc: "Studio visuel Pro simplifié. Génération d'assets graphiques et vidéos de haute qualité via IA générative.",
+                features: ["Images HD (Modèles Diffusion)", "Vidéo Motion (Image to Video)", "Formats Sociaux (1:1, 16:9, 9:16)"],
+                extras: ["Moteur de rendu client", "Interface Studio", "Export sans filigrane"],
+                url: "Wikimind_creator.html"
+            },
+            "finance": {
+                title: "WikiMind Finance",
+                icon: "💸",
+                tag: "Gestion",
+                tagColor: "bg-yellow-100 text-yellow-600",
+                desc: "Prenez le contrôle de votre budget avec une intelligence financière. Suivi des revenus/dépenses et analyses prédictives.",
+                features: ["Suivi Temps Réel Synchronisé", "Conseiller IA (Analyse Habitudes)", "Gestion Activités/Projets"],
+                extras: ["Mode Sombre/Clair", "Sécurité des données", "Visualisation intuitive"],
+                url: "Wikimind_finance.html"
+            },
+            "diaporama": {
+                title: "WikiMind Diaporama",
+                icon: "🎞️",
+                tag: "Bêta",
+                tagColor: "bg-orange-100 text-orange-600",
+                desc: "Générez des structures de présentation complètes en quelques secondes via l'IA Mistral. Éditez et sauvegardez vos slides.",
+                features: ["Génération Structure JSON (Mistral)", "Sauvegarde Cloud Firebase", "Personnalisation Densité"],
+                extras: ["Mode Plein Écran", "Notes Présentateur Auto", "Export HTML (Bientôt)"],
+                url: "Wikimind_diaporama.html"
+            },
+             "games": {
+                title: "WikiMind Games",
+                icon: "🎮",
+                tag: "Arcade",
+                tagColor: "bg-indigo-100 text-indigo-600",
+                desc: "Le hub ludique de WikiMind. Affrontez l'IA Mistral aux échecs, jouez en ligne et grimpez dans le classement ELO.",
+                features: ["WikiMind Chess (IA & Multi)", "Classement ELO Temps Réel", "Profils Joueurs Persistants"],
+                extras: ["Mode Multijoueur", "Moteur Mistral AI", "Interface Moderne"],
+                url: "Wikimind_games.html"
+            },
+            "detector": {
+                title: "WikiMind Detector",
+                icon: "🛡️",
+                tag: "AI Analysis",
+                tagColor: "bg-indigo-100 text-indigo-600",
+                desc: "Outil de pointe pour analyser, identifier et quantifier la présence d'intelligence artificielle dans n'importe quel contenu textuel.",
+                features: ["Score de Confiance Précis", "Moteur Wikimind 6.2 Engine", "Explication Patterns Syntaxiques"],
+                extras: ["Détection GPT-4 / Claude", "Visualisation Dynamique", "Optimisé Mobile"],
+                url: "https://chpalitom09-bot.github.io/Wikimind_All/Wikimind_detect.html"
+            },
+             "humanizer": {
+                title: "WikiMind Humanizer",
+                icon: "🧬",
+                tag: "Style",
+                tagColor: "bg-violet-100 text-violet-600",
+                desc: "Transformez vos textes générés par IA en une écriture fluide, naturelle et indétectable. Algorithmes de réécriture avancés.",
+                features: ["Reformulation Naturelle", "Indétectabilité (Baisse Score IA)", "Flux Bidirectionnel (Détecteur)"],
+                extras: ["Moteur Linguistique Mistral", "Préservation contexte", "Illimité"],
+                url: "Wikimind_humanise.html"
+            },
+            "3d": {
+                title: "WikiMind 3D Pro",
+                icon: "🧊",
+                tag: "Design CAD",
+                tagColor: "bg-cyan-100 text-cyan-600",
+                desc: "Une solution de CAO hybride fonctionnant dans le navigateur. Combine dessin 2D et modélisation 3D assistée par IA.",
+                features: ["Extrusion Automatique 2D vers 3D", "Génération de Formes par IA", "Export STL pour Impression"],
+                extras: ["Outils de Précision", "Visualisation Multi-Vues", "Three.js Engine"],
+                url: "Wikimind_3D.html"
+            },
+            "tableur": {
+                title: "WikiMind Tableur",
+                icon: "📊",
+                tag: "Bientôt",
+                tagColor: "bg-gray-200 text-gray-500",
+                desc: "Un tableur puissant intégré à l'écosystème. Analysez vos données avec l'aide de l'IA et générez des graphiques.",
+                features: ["Formules en Langage Naturel", "Graphiques Automatiques", "Import/Export CSV & Excel"],
+                extras: ["En développement", "Sortie 2026", "Intégration Cloud"],
+                url: "#"
+            }
         };
 
-        // Store live ratings here
         const liveRatings = {};
 
-        // --- LISTENERS ---
-        function setupListeners() {
-            Object.keys(appsData).forEach(key => {
-                if(appsData[key].url === "#") return; // Skip comming soon
-
-                const appRef = ref(db, 'ratings/' + key);
-                onValue(appRef, (snapshot) => {
-                    const val = snapshot.val();
-                    if (val) {
-                        const avg = (val.total / val.count).toFixed(1);
-                        liveRatings[key] = { average: avg, count: val.count };
-                    } else {
-                        // Default if no votes yet
-                        liveRatings[key] = { average: "0.0", count: 0 };
-                    }
-                    updateStarDisplay(key);
-                });
-            });
-        }
-        setupListeners();
-
-        function updateStarDisplay(appId) {
-            const data = liveRatings[appId] || { average: "...", count: 0 };
-            const myVote = localStorage.getItem(`wikimind_voted_${appId}`);
-            
-            // Update Card widgets if they exist
-            const widgetId = `stars-${appId}`;
-            const widgetEl = document.getElementById(widgetId);
-            if (widgetEl) {
-                widgetEl.innerHTML = generateStarHTML(appId, data.average, 'sm', myVote);
-            }
-
-            // Update Detail View if active
-            if (document.getElementById('view-detail').style.display === 'block') {
-                const title = document.getElementById('detail-title').innerText;
-                // Find key by title (ugly but works given structure)
-                const currentKey = Object.keys(appsData).find(k => appsData[k].title === title);
-                if (currentKey === appId) {
-                    document.getElementById('detail-stars').innerHTML = generateStarHTML(appId, data.average, 'lg', myVote);
-                    const voteText = myVote ? `(Votre vote: ${myVote})` : '';
-                    document.getElementById('detail-rating-text').innerText = `${data.average}/5 • ${data.count} avis ${voteText}`;
-                }
-            }
-        }
-
-        function generateStarHTML(appId, average, size, myVote) {
-            let html = `<div class="flex items-center gap-1 ${size === 'lg' ? 'text-2xl' : 'text-sm'} text-gray-300">`;
-            const score = parseFloat(average);
-            for (let i = 1; i <= 5; i++) {
-                // Gold if i <= average OR if user just clicked it (visual feedback handled by reload usually)
-                // Here we show average in Gold.
-                let colorClass = (i <= Math.round(score)) ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-700';
-                
-                // If user voted this specific star, maybe distinct? keep simple for now
-                html += `<span onclick="event.stopPropagation(); window.rateApp('${appId}', ${i})" class="cursor-pointer hover:text-yellow-500 transition-colors ${colorClass}">★</span>`;
-            }
-            html += `</div>`;
-            if (size === 'sm') html += `<span class="ml-2 text-xs text-gray-400 font-bold">(${average})</span>`;
-            return html;
-        }
-
-        // --- EXPOSE TO GLOBAL SCOPE FOR HTML ---
-        window.appsData = appsData; // Needed for rendering
-        window.generateStarHTML = generateStarHTML;
-        window.liveRatings = liveRatings;
-    </script>
-
-    <script>
-        // --- ANIMATION CANVAS ---
-        const canvas = document.getElementById('bg-canvas');
-        const ctx = canvas.getContext('2d');
-        let width, height, particles = [];
-
-        function initCanvas() {
-            resize(); createParticles(); animate();
-        }
-        function resize() { width = canvas.width = window.innerWidth; height = canvas.height = window.innerHeight; }
-        function createParticles() {
-            particles = [];
-            const count = window.innerWidth < 768 ? 30 : 60;
-            for (let i = 0; i < count; i++) {
-                particles.push({ x: Math.random() * width, y: Math.random() * height, vx: (Math.random() - 0.5) * 0.5, vy: (Math.random() - 0.5) * 0.5, size: Math.random() * 2 + 1 });
-            }
-        }
-        function animate() {
-            ctx.clearRect(0, 0, width, height);
-            const isDark = document.body.classList.contains('dark-mode');
-            ctx.fillStyle = isDark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)';
-            ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
-            
-            for (let i = 0; i < particles.length; i++) {
-                let p = particles[i]; p.x += p.vx; p.y += p.vy;
-                if (p.x < 0 || p.x > width) p.vx *= -1; if (p.y < 0 || p.y > height) p.vy *= -1;
-                ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill();
-                for (let j = i + 1; j < particles.length; j++) {
-                    let p2 = particles[j]; let dist = Math.hypot(p.x - p2.x, p.y - p2.y);
-                    if (dist < 150) { ctx.lineWidth = 1 - dist / 150; ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p2.x, p2.y); ctx.stroke(); }
-                }
-            }
-            requestAnimationFrame(animate);
-        }
-        window.addEventListener('resize', () => { resize(); createParticles(); });
-
-        // --- INTRO LOADER LOGIC ---
-        window.addEventListener('load', () => {
-            initCanvas();
-            setTimeout(() => {
-                const overlay = document.getElementById('intro-overlay');
-                const wrapper = document.getElementById('app-wrapper');
-                
-                overlay.style.opacity = '0';
-                overlay.style.visibility = 'hidden';
-                
-                wrapper.classList.remove('opacity-0');
-                wrapper.classList.add('content-reveal');
-                document.body.style.overflow = 'auto'; // Re-enable scroll
-            }, 2200); // 2.2s splash duration
-        });
-
-        // --- APP LOGIC ---
-        function switchView(viewName) {
-            document.querySelectorAll('.view-container').forEach(el => {
-                el.classList.remove('active');
-                setTimeout(() => { if(!el.classList.contains('active')) el.style.display = 'none'; }, 400);
-            });
-            const target = document.getElementById(`view-${viewName}`);
-            target.style.display = 'block';
-            setTimeout(() => target.classList.add('active'), 10);
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-
-            if(viewName === 'catalog') renderCatalog();
-            if(viewName === 'home') renderHomeGrid();
-        }
-
-        function renderCatalog() {
-            const grid = document.getElementById('catalog-grid');
-            grid.innerHTML = '';
-            Object.keys(window.appsData).forEach(key => {
-                grid.innerHTML += createAppCard(key, window.appsData[key]);
-            });
-        }
-
-        function renderHomeGrid() {
-            const grid = document.getElementById('home-grid');
-            grid.innerHTML = '';
-            ['wikimind', 'cours', 'bac', 'study', 'maths', 'create'].forEach(key => {
-                if(window.appsData[key]) grid.innerHTML += createAppCard(key, window.appsData[key]);
-            });
-        }
-
-        function createAppCard(key, app) {
+        // FONCTIONS GLOBALES
+        window.createAppCard = function(key, app) {
             const isComingSoon = app.url === "#";
             const extraClasses = isComingSoon ? "opacity-75 grayscale hover:grayscale-0" : "";
-            // Use global window functions for HTML string generation
-            const ratingData = window.liveRatings && window.liveRatings[key] ? window.liveRatings[key] : { average: "...", count: 0 };
+            
+            const ratingData = liveRatings[key] || { average: "...", count: 0 };
             const myVote = localStorage.getItem(`wikimind_voted_${key}`);
-            const ratingHTML = isComingSoon ? '' : `<div id="stars-${key}" class="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800 flex justify-between items-center">${window.generateStarHTML ? window.generateStarHTML(key, ratingData.average, 'sm', myVote) : 'Loading...'}</div>`;
+            const ratingHTML = isComingSoon ? '' : `<div id="stars-${key}" class="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800 flex justify-between items-center">${window.generateStarHTML(key, ratingData.average, 'sm', myVote)}</div>`;
 
             return `
-                <div onclick="openAppDetail('${key}')" class="app-card p-8 group flex flex-col justify-between min-h-[340px] flex-[1_1_300px] max-w-[400px] ${extraClasses}">
+                <div onclick="openAppDetail('${key}')" class="app-card p-6 md:p-8 group flex flex-col justify-between min-h-[320px] md:min-h-[360px] flex-[1_1_300px] max-w-[400px] ${extraClasses}">
                     <div>
                         <div class="flex justify-between items-start">
                             <div class="icon-box group-hover:bg-black group-hover:text-white dark:group-hover:bg-white dark:group-hover:text-black transition-colors duration-300">${app.icon}</div>
                             <span class="${app.tagColor} text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider">${app.tag}</span>
                         </div>
-                        <h3 class="text-2xl font-bold mb-2 ${isComingSoon ? 'text-gray-400' : ''}">${app.title}</h3>
-                        <p class="text-sm ${isComingSoon ? 'text-gray-400' : 'text-gray-500'} font-medium leading-relaxed line-clamp-3">${app.desc}</p>
+                        <h3 class="text-xl md:text-2xl font-bold mb-2 ${isComingSoon ? 'text-gray-400' : ''}">${app.title}</h3>
+                        <p class="text-xs md:text-sm ${isComingSoon ? 'text-gray-400' : 'text-gray-500'} font-medium leading-relaxed line-clamp-3">${app.desc}</p>
                     </div>
                     <div>
                         ${ratingHTML}
@@ -598,10 +574,69 @@
                         </div>
                     </div>
                 </div>`;
-        }
+        };
 
-        function openAppDetail(appId) {
-            const app = window.appsData[appId];
+        window.renderHomeGrid = function() {
+            const grid = document.getElementById('home-grid');
+            if(!grid) return;
+            grid.innerHTML = '';
+            // Sélection manuelle des apps pour l'accueil pour garder la mise en page
+            ['wikimind', 'cours', 'bac', 'study', 'maths', 'create'].forEach(key => {
+                if(appsData[key]) grid.innerHTML += window.createAppCard(key, appsData[key]);
+            });
+        };
+
+        window.renderCatalog = function() {
+            const grid = document.getElementById('catalog-grid');
+            if(!grid) return;
+            grid.innerHTML = '';
+            Object.keys(appsData).forEach(key => {
+                grid.innerHTML += window.createAppCard(key, appsData[key]);
+            });
+        };
+
+        window.generateStarHTML = function(appId, average, size, myVote) {
+            let html = `<div class="star-rating ${size === 'lg' ? 'text-2xl' : 'text-xl'}">`;
+            const score = parseFloat(average);
+            
+            for (let i = 1; i <= 5; i++) {
+                const isActive = (i <= Math.round(score));
+                const colorClass = isActive ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-700';
+                html += `<span onclick="event.stopPropagation(); window.rateApp('${appId}', ${i})" class="star ${colorClass}">★</span>`;
+            }
+            html += `</div>`;
+            if (size === 'sm') html += `<span class="ml-2 text-xs text-gray-400 font-bold self-center">(${average})</span>`;
+            return html;
+        };
+
+        window.rateApp = function(appId, stars) {
+            if (localStorage.getItem(`wikimind_voted_${appId}`)) {
+                alert("🚫 Vous avez déjà voté pour cette application sur cet appareil.");
+                return;
+            }
+
+            const widgetId = `stars-${appId}`;
+            const widgetEl = document.getElementById(widgetId);
+            if(widgetEl) widgetEl.innerHTML = window.generateStarHTML(appId, stars, 'sm', stars);
+
+            const appRef = ref(db, 'ratings/' + appId);
+            runTransaction(appRef, (currentData) => {
+                if (currentData === null) {
+                    return { total: stars, count: 1 };
+                } else {
+                    return { total: currentData.total + stars, count: currentData.count + 1 };
+                }
+            }).then(() => {
+                localStorage.setItem(`wikimind_voted_${appId}`, stars);
+                console.log("Vote enregistré");
+            }).catch((err) => {
+                console.error("Erreur de vote", err);
+                alert("Erreur de connexion.");
+            });
+        };
+
+        window.openAppDetail = function(appId) {
+            const app = appsData[appId];
             if (!app) return;
             document.getElementById('detail-title').innerText = app.title;
             document.getElementById('detail-icon').innerText = app.icon;
@@ -611,29 +646,114 @@
             tagEl.className = `inline-block mb-2 px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${app.tagColor}`;
             tagEl.innerText = app.tag;
 
-            // Rating
-            if(window.liveRatings && window.liveRatings[appId]) {
-                 const data = window.liveRatings[appId];
-                 const myVote = localStorage.getItem(`wikimind_voted_${appId}`);
-                 document.getElementById('detail-stars').innerHTML = window.generateStarHTML(appId, data.average, 'lg', myVote);
-                 document.getElementById('detail-rating-text').innerText = `${data.average}/5 • ${data.count} avis`;
-            }
+            const ratingData = liveRatings[appId] || { average: "...", count: 0 };
+            const myVote = localStorage.getItem(`wikimind_voted_${appId}`);
+            document.getElementById('detail-stars').innerHTML = window.generateStarHTML(appId, ratingData.average, 'lg', myVote);
+            document.getElementById('detail-rating-text').innerText = `${ratingData.average}/5 • ${ratingData.count} avis`;
 
+            const btn = document.getElementById('detail-btn');
             if (app.url === "#") {
-                const btn = document.getElementById('detail-btn');
                 btn.href = "#"; btn.classList.add('opacity-50', 'cursor-not-allowed'); btn.innerText = "Indisponible";
             } else {
-                const btn = document.getElementById('detail-btn');
                 btn.href = app.url; btn.classList.remove('opacity-50', 'cursor-not-allowed');
-                btn.innerHTML = `Ouvrir l'application <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>`;
+                btn.innerHTML = `Ouvrir <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>`;
             }
 
             document.getElementById('detail-features').innerHTML = app.features.map(f => `<li class="flex items-start gap-3"><span class="mt-1 text-green-500">✓</span><span>${f}</span></li>`).join('');
             document.getElementById('detail-extras').innerHTML = app.extras.map(e => `<div class="flex items-center gap-3 p-3 bg-white dark:bg-black rounded-lg border border-gray-100 dark:border-gray-800"><div class="w-2 h-2 rounded-full bg-gray-400"></div><span class="text-sm font-medium">${e}</span></div>`).join('');
+            
             switchView('detail');
-        }
+        };
 
-        // Theme
+        window.switchView = function(viewName) {
+            document.querySelectorAll('.view-container').forEach(el => {
+                el.classList.remove('active');
+                setTimeout(() => { if(!el.classList.contains('active')) el.style.display = 'none'; }, 300);
+            });
+            const target = document.getElementById(`view-${viewName}`);
+            target.style.display = 'block';
+            setTimeout(() => target.classList.add('active'), 10);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+
+            if(viewName === 'catalog') window.renderCatalog();
+            if(viewName === 'home') window.renderHomeGrid();
+        };
+
+        // LISTENER TEMPS RÉEL
+        Object.keys(appsData).forEach(key => {
+            if(appsData[key].url === "#") return;
+            const appRef = ref(db, 'ratings/' + key);
+            onValue(appRef, (snapshot) => {
+                const val = snapshot.val();
+                if (val) {
+                    liveRatings[key] = { average: (val.total / val.count).toFixed(1), count: val.count };
+                } else {
+                    liveRatings[key] = { average: "0.0", count: 0 };
+                }
+                const widgetId = `stars-${key}`;
+                const widgetEl = document.getElementById(widgetId);
+                const myVote = localStorage.getItem(`wikimind_voted_${key}`);
+                if (widgetEl) {
+                    widgetEl.innerHTML = window.generateStarHTML(key, liveRatings[key].average, 'sm', myVote);
+                }
+                if (document.getElementById('view-detail').style.display === 'block') {
+                   const title = document.getElementById('detail-title').innerText;
+                   if(appsData[key].title === title) {
+                       document.getElementById('detail-stars').innerHTML = window.generateStarHTML(key, liveRatings[key].average, 'lg', myVote);
+                       document.getElementById('detail-rating-text').innerText = `${liveRatings[key].average}/5 • ${liveRatings[key].count} avis`;
+                   }
+                }
+            });
+        });
+
+        // INIT
+        window.renderHomeGrid();
+    </script>
+
+    <script>
+        // LOGIQUE ANIMATION ET UI (NON-MODULE)
+        const canvas = document.getElementById('bg-canvas');
+        const ctx = canvas.getContext('2d');
+        let width, height, particles = [];
+
+        function initCanvas() { resize(); createParticles(); animate(); }
+        function resize() { width = canvas.width = window.innerWidth; height = canvas.height = window.innerHeight; }
+        function createParticles() {
+            particles = [];
+            const count = window.innerWidth < 768 ? 25 : 50;
+            for (let i = 0; i < count; i++) {
+                particles.push({ x: Math.random() * width, y: Math.random() * height, vx: (Math.random() - 0.5) * 0.4, vy: (Math.random() - 0.5) * 0.4, size: Math.random() * 2 + 1 });
+            }
+        }
+        function animate() {
+            ctx.clearRect(0, 0, width, height);
+            const isDark = document.body.classList.contains('dark-mode');
+            ctx.fillStyle = isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)';
+            ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
+            for (let i = 0; i < particles.length; i++) {
+                let p = particles[i]; p.x += p.vx; p.y += p.vy;
+                if (p.x < 0 || p.x > width) p.vx *= -1; if (p.y < 0 || p.y > height) p.vy *= -1;
+                ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill();
+                for (let j = i + 1; j < particles.length; j++) {
+                    let p2 = particles[j]; let dist = Math.hypot(p.x - p2.x, p.y - p2.y);
+                    if (dist < 120) { ctx.lineWidth = 1 - dist / 120; ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p2.x, p2.y); ctx.stroke(); }
+                }
+            }
+            requestAnimationFrame(animate);
+        }
+        window.addEventListener('resize', () => { resize(); createParticles(); });
+
+        window.addEventListener('load', () => {
+            initCanvas();
+            setTimeout(() => {
+                const overlay = document.getElementById('intro-overlay');
+                const wrapper = document.getElementById('app-wrapper');
+                overlay.style.opacity = '0'; overlay.style.visibility = 'hidden';
+                wrapper.classList.remove('opacity-0'); wrapper.classList.add('content-reveal');
+                document.body.style.overflow = 'auto';
+            }, 1800);
+        });
+
         function toggleTheme() {
             const body = document.body; body.classList.toggle('dark-mode');
             const isDark = body.classList.contains('dark-mode');
@@ -648,7 +768,6 @@
         if (localStorage.getItem('wikimind_landing_theme') === 'dark' || (!localStorage.getItem('wikimind_landing_theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
             document.body.classList.add('dark-mode'); updateThemeIcon(true);
         }
-
         function openModal(id) { document.getElementById(id).style.display = 'flex'; }
         function closeModal(id) { document.getElementById(id).style.display = 'none'; }
     </script>
