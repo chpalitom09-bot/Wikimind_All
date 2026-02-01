@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-29XYBNJ2CB"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-29XYBNJ2CB');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WikiMind - Votez pour l'Animation</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg: #ffffff;
+            --text: #111111;
+            --card-bg: #f9fafb;
+            --border: #e5e7eb;
+            --accent: #000000;
+            --accent-text: #ffffff;
+        }
+
+        .dark-mode {
+            --bg: #0f0f0f;
+            --text: #eeeeee;
+            --card-bg: #161616;
+            --border: #252525;
+            --accent: #ffffff;
+            --accent-text: #000000;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            transition: background-color 0.4s ease, color 0.4s ease;
+            overflow-x: hidden;
+        }
+
+        /* --- Animations Globales --- */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0px); } }
+
+        .animate-fade { animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; }
+        .delay-100 { animation-delay: 0.1s; }
+        .delay-200 { animation-delay: 0.2s; }
+        .delay-300 { animation-delay: 0.3s; }
+        
+        /* Components */
+        .vote-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .vote-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--text);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        .dark-mode .vote-card:hover {
+            box-shadow: 0 20px 40px rgba(255,255,255,0.05);
+        }
+
+        .preview-frame {
+            width: 100%;
+            height: 250px;
+            border-bottom: 1px solid var(--border);
+            background: #000; /* Fond noir par défaut pour les anims */
+        }
+
+        .bg-grain {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E");
+            pointer-events: none; z-index: 0;
+        }
+
+        .btn-vote {
+            transition: all 0.2s;
+        }
+        .btn-vote.voted {
+            background-color: #22c55e;
+            color: white;
+            border-color: #22c55e;
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen relative">
+    <div class="bg-grain"></div>
+
+    <!-- NAVBAR -->
+    <header class="fixed top-0 w-full z-50 border-b border-gray-200/50 dark:border-gray-800/50 backdrop-blur-md transition-colors duration-500">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+            <a href="index.html" class="flex items-center gap-3 cursor-pointer">
+                <div class="w-10 h-10 bg-black dark:bg-white text-white dark:text-black rounded-xl flex items-center justify-center font-black text-xl hover:rotate-12 transition-transform duration-300">W</div>
+                <h1 class="text-xl font-black uppercase tracking-tighter italic">WikiMind</h1>
+            </a>
+            
+            <div class="flex items-center gap-4">
+                <a href="index.html" class="text-xs font-bold uppercase tracking-widest hover:text-gray-500 transition">Retour Accueil</a>
+                <button onclick="toggleTheme()" class="w-10 h-10 rounded-full border border-gray-200 dark:border-gray-700 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-zinc-800 transition">
+                    <svg id="theme-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTAINER -->
+    <main class="flex-grow pt-32 pb-20 px-6 max-w-7xl mx-auto w-full z-10 flex flex-col">
+
+        <div class="text-center mb-16 animate-fade">
+            <div class="inline-block mb-4 px-4 py-1.5 rounded-full border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-zinc-900 text-[10px] font-bold uppercase tracking-widest text-blue-600 animate-float">
+                Sondage Communautaire
+            </div>
+            <h2 class="text-4xl md:text-6xl font-black tracking-tighter mb-6 leading-tight">
+                CHOISISSEZ L'AVENIR<br>
+                <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">VISUEL.</span>
+            </h2>
+            <p class="text-lg text-gray-500 max-w-2xl mx-auto font-medium">
+                Explorez les 6 propositions d'animation pour l'écran de chargement de WikiMind. Votre vote déterminera l'identité de la version 7.0.
+            </p>
+        </div>
+
+        <!-- GRID VOTING -->
+        <div id="vote-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 animate-fade delay-100">
+            <!-- JS will populate cards here -->
+        </div>
+
+        <!-- SUMMARY SECTION -->
+        <div class="mt-20 p-8 rounded-3xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-zinc-900/50 text-center animate-fade delay-200">
+            <h3 class="text-2xl font-bold mb-4">Merci de votre participation</h3>
+            <p class="text-gray-500 text-sm mb-6">Les votes sont stockés localement sur votre navigateur à des fins de test.</p>
+            <button onclick="resetVotes()" class="text-xs font-bold uppercase tracking-widest text-red-500 hover:text-red-700 underline">Réinitialiser mes votes</button>
+        </div>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="border-t border-gray-200 dark:border-gray-800 py-10 z-10 bg-white/50 dark:bg-black/50 backdrop-blur-sm">
+        <div class="max-w-7xl mx-auto px-6 text-center">
+            <div class="font-black uppercase tracking-tight text-sm">WikiMind Project</div>
+            <div class="text-xs text-gray-500 mt-1">© 2026 Tous droits réservés.</div>
+        </div>
+    </footer>
+
+    <script>
+        // --- DATA ---
+        // Liste des animations avec vos chemins locaux
+        const animations = [
+            { id: 1, name: "Concept Alpha", path: "https://chpalitom09-bot.github.io/Wikimind_All/Wikimind_animation.html", desc: "Design minimaliste et fluide." },
+            { id: 2, name: "Flux Neuronal", path: "https://chpalitom09-bot.github.io/Wikimind_All/Wikimind_animation2.html", desc: "Simulation de réseau de neurones." },
+            { id: 3, name: "Cube Quantique", path: "https://chpalitom09-bot.github.io/Wikimind_All/Wikimind_animation3.html", desc: "Rotation 3D et effets de lumière." },
+            { id: 4, name: "Onde Sonore", path: "https://chpalitom09-bot.github.io/Wikimind_All/Wikimind_animation4.html", desc: "Réactif et rythmé." },
+            { id: 5, name: "Matrice Code", path: "https://chpalitom09-bot.github.io/Wikimind_All/Wikimind_animation5.html", desc: "Style terminal hacker." },
+            { id: 6, name: "Horizon Event", path: "https://chpalitom09-bot.github.io/Wikimind_All/Wikimind_animation6.html", desc: "Effet gravitationnel intense." }
+        ];
+
+        // --- RENDER ---
+        function renderGrid() {
+            const grid = document.getElementById('vote-grid');
+            grid.innerHTML = '';
+
+            // Récupérer les votes stockés
+            const savedVotes = JSON.parse(localStorage.getItem('wikimind_votes') || '{}');
+
+            animations.forEach(anim => {
+                const isVoted = savedVotes[anim.id] === true;
+                const voteCount = savedVotes[`count_${anim.id}`] || Math.floor(Math.random() * 50) + 10; // Faux nombre initial pour la démo
+
+                const card = document.createElement('div');
+                card.className = "vote-card group";
+                card.innerHTML = `
+                    <div class="relative w-full h-[250px] bg-black border-b border-gray-200 dark:border-gray-800 overflow-hidden">
+                        <iframe src="${anim.path}" class="w-full h-full border-0" scrolling="no" title="${anim.name}"></iframe>
+                        <!-- Overlay pour cliquer -->
+                        <a href="${anim.path}" target="_blank" class="absolute inset-0 bg-black/0 hover:bg-black/10 transition flex items-center justify-center group-hover:opacity-100 opacity-0">
+                            <span class="bg-white text-black px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest shadow-lg">Ouvrir en plein écran</span>
+                        </a>
+                    </div>
+                    <div class="p-6 flex flex-col justify-between flex-grow">
+                        <div>
+                            <div class="flex justify-between items-center mb-2">
+                                <h3 class="text-xl font-bold">${anim.name}</h3>
+                                <span class="text-xs font-mono text-gray-400">#0${anim.id}</span>
+                            </div>
+                            <p class="text-sm text-gray-500 mb-6">${anim.desc}</p>
+                        </div>
+                        
+                        <div class="flex items-center justify-between mt-auto pt-4 border-t border-gray-100 dark:border-gray-800">
+                            <div class="text-xs font-bold uppercase tracking-widest text-gray-400">
+                                <span id="count-${anim.id}">${voteCount}</span> Votes
+                            </div>
+                            <button onclick="vote(${anim.id})" id="btn-${anim.id}" 
+                                class="btn-vote px-6 py-2 rounded-full border border-gray-300 dark:border-gray-600 font-bold text-xs uppercase tracking-widest hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black ${isVoted ? 'voted' : ''}">
+                                ${isVoted ? 'Voté ✓' : 'Voter'}
+                            </button>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        // --- LOGIC ---
+        function vote(id) {
+            let savedVotes = JSON.parse(localStorage.getItem('wikimind_votes') || '{}');
+            const currentStatus = savedVotes[id];
+            
+            // Toggle vote
+            if (currentStatus) {
+                // Remove vote
+                delete savedVotes[id];
+                savedVotes[`count_${id}`] = (savedVotes[`count_${id}`] || 0) - 1;
+            } else {
+                // Add vote
+                savedVotes[id] = true;
+                // Si pas de count défini, on initialise avec un random pour la démo, puis on ajoute 1
+                if(!savedVotes[`count_${id}`]) savedVotes[`count_${id}`] = Math.floor(Math.random() * 50) + 10;
+                savedVotes[`count_${id}`]++;
+            }
+
+            localStorage.setItem('wikimind_votes', JSON.stringify(savedVotes));
+            renderGrid(); // Re-render to update UI
+        }
+
+        function resetVotes() {
+            if(confirm("Voulez-vous vraiment effacer tous les votes ?")) {
+                localStorage.removeItem('wikimind_votes');
+                renderGrid();
+            }
+        }
+
+        // --- THEME MANAGEMENT (Identique à Index) ---
+        function toggleTheme() {
+            const body = document.body;
+            body.classList.toggle('dark-mode');
+            const isDark = body.classList.contains('dark-mode');
+            localStorage.setItem('wikimind_landing_theme', isDark ? 'dark' : 'light');
+            updateThemeIcon(isDark);
+        }
+
+        function updateThemeIcon(isDark) {
+            const path = document.querySelector('#theme-icon path');
+            if(isDark) {
+                path.setAttribute('d', 'M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z');
+            } else {
+                path.setAttribute('d', 'M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z');
+            }
+        }
+
+        // Init
+        const savedTheme = localStorage.getItem('wikimind_landing_theme');
+        if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.body.classList.add('dark-mode');
+            updateThemeIcon(true);
+        }
+
+        // Run
+        renderGrid();
+    </script>
+</body>
+</html>
