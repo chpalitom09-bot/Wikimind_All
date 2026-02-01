@@ -6,11 +6,12 @@
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
+
       gtag('config', 'G-29XYBNJ2CB');
     </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WikiMind - Votez pour l'Animation</title>
+    <title>WikiMind Vote - L'Espace Démocratique</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     
@@ -22,6 +23,8 @@
             --text: #111111;
             --card-bg: #f9fafb;
             --border: #e5e7eb;
+            --accent: #000000;
+            --accent-text: #ffffff;
         }
 
         .dark-mode {
@@ -29,6 +32,8 @@
             --text: #eeeeee;
             --card-bg: #161616;
             --border: #252525;
+            --accent: #ffffff;
+            --accent-text: #000000;
         }
 
         body {
@@ -36,20 +41,57 @@
             background-color: var(--bg);
             color: var(--text);
             transition: background-color 0.4s ease, color 0.4s ease;
-            overflow-x: hidden; /* Empêche le scroll horizontal */
+            overflow-x: hidden;
         }
 
         /* --- Animations --- */
         @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-fade { animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; }
+        @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0px); } }
+
+        .animate-fade { animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; }
         .delay-100 { animation-delay: 0.1s; }
+        .delay-200 { animation-delay: 0.2s; }
+        .delay-300 { animation-delay: 0.3s; }
         
-        /* --- Vote Bars Animation --- */
-        .vote-bar-fill {
-            transition: width 1s cubic-bezier(0.25, 0.8, 0.25, 1);
+        /* --- Components --- */
+        .vote-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            position: relative;
+            overflow: hidden;
+            width: 100%;
+            cursor: pointer;
+        }
+        
+        .vote-card:hover {
+            transform: translateY(-5px) scale(1.01);
+            border-color: var(--text);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        .dark-mode .vote-card:hover {
+            box-shadow: 0 20px 40px rgba(255,255,255,0.05);
         }
 
-        /* --- Grain Effect --- */
+        .icon-box {
+            width: 50px; height: 50px;
+            border-radius: 14px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 20px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+        }
+
+        .status-badge {
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            padding: 4px 10px;
+            border-radius: 99px;
+        }
+
         .bg-grain {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E");
@@ -57,206 +99,144 @@
         }
     </style>
 </head>
-<body class="flex flex-col min-h-screen relative selection:bg-indigo-500 selection:text-white">
+<body class="flex flex-col min-h-screen relative">
     <div class="bg-grain"></div>
 
-    <header class="fixed top-0 w-full z-50 border-b border-gray-200/50 dark:border-gray-800/50 backdrop-blur-md">
+    <header class="fixed top-0 w-full z-50 border-b border-gray-200/50 dark:border-gray-800/50 backdrop-blur-md transition-colors duration-500">
         <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-            <a href="Wikimind_vote.html" class="flex items-center gap-2 text-sm font-bold uppercase tracking-widest hover:text-indigo-500 transition cursor-pointer z-50">
-                <span>←</span> Retour aux votes
+            <a href="index.html" class="flex items-center gap-3 cursor-pointer group">
+                <div class="w-10 h-10 bg-black dark:bg-white text-white dark:text-black rounded-xl flex items-center justify-center font-black text-xl group-hover:rotate-12 transition-transform duration-300">W</div>
+                <h1 class="text-xl font-black uppercase tracking-tighter italic">WikiMind <span class="opacity-50 font-normal not-italic normal-case text-sm ml-1">/ Votes</span></h1>
             </a>
-            <button onclick="toggleTheme()" class="w-10 h-10 rounded-full border border-gray-200 dark:border-gray-700 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-zinc-800 transition z-50">
-                <svg id="theme-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
-            </button>
+            
+            <div class="flex items-center gap-4">
+                <a href="index.html" class="text-xs font-bold uppercase tracking-widest hover:text-gray-500 transition">Retour Accueil</a>
+                
+                <button onclick="toggleTheme()" class="w-10 h-10 rounded-full border border-gray-200 dark:border-gray-700 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-zinc-800 transition">
+                    <svg id="theme-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+                </button>
+            </div>
         </div>
     </header>
 
-    <main class="flex-grow pt-32 pb-20 px-6 w-full max-w-4xl mx-auto z-10 flex flex-col items-center">
-        
-        <div class="text-center mb-12 animate-fade">
-            <span class="inline-block py-1 px-3 rounded-full bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-[10px] font-black uppercase tracking-widest mb-4 border border-indigo-100 dark:border-indigo-800">
-                Sondage Actif • Live
-            </span>
-            <h1 class="text-4xl md:text-5xl font-black tracking-tighter mb-4 leading-tight">
-                Quel style d'intro préférez-vous ?
-            </h1>
-            <p class="text-gray-500 max-w-xl mx-auto">
-                Nous finalisons l'expérience utilisateur de WikiMind. Aidez-nous à choisir l'animation de chargement qui définira l'identité de la plateforme.
+    <main class="flex-grow pt-32 pb-20 px-6 max-w-5xl mx-auto w-full z-10 flex flex-col">
+
+        <div class="text-center mb-16 animate-fade">
+            <div class="inline-block mb-4 px-4 py-1.5 rounded-full border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-zinc-900 text-[10px] font-bold uppercase tracking-widest text-indigo-500 animate-float">
+                Démocratie Participative
+            </div>
+            <h2 class="text-4xl md:text-6xl font-black tracking-tighter mb-6 leading-tight">
+                FAÇONNEZ LE FUTUR<br>
+                DE <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-purple-600">WIKIMIND.</span>
+            </h2>
+            <p class="text-lg text-gray-500 max-w-2xl mx-auto font-medium">
+                Participez aux décisions de développement. Votre voix compte pour définir les prochaines fonctionnalités et le design de la suite.
             </p>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 w-full mb-12 animate-fade delay-100">
-            
-            <div id="card-minimaliste" class="relative group p-1 rounded-3xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-zinc-900 overflow-hidden transition-all hover:border-indigo-500/50 dark:hover:border-indigo-500/50 hover:shadow-2xl hover:shadow-indigo-500/10">
-                <div class="absolute inset-0 bg-gradient-to-br from-gray-50 to-white dark:from-zinc-900 dark:to-black opacity-100 transition-opacity"></div>
-                
-                <div class="relative p-6 flex flex-col h-full items-center text-center">
-                    <div class="w-full aspect-video bg-gray-100 dark:bg-zinc-800 rounded-xl mb-6 flex items-center justify-center overflow-hidden border border-gray-200 dark:border-gray-700">
-                        <div class="w-8 h-8 bg-black dark:bg-white rounded-full animate-bounce"></div>
+
+            <a href="https://chpalitom09-bot.github.io/Wikimind_All/Wikimind_avote.html" class="vote-card p-8 group flex flex-col justify-between h-auto min-h-[220px]">
+                <div>
+                    <div class="flex justify-between items-start mb-6">
+                        <div class="icon-box group-hover:bg-indigo-600 group-hover:text-white dark:group-hover:bg-indigo-500 dark:group-hover:text-white transition-colors duration-300">
+                            🎭
+                        </div>
+                        <span class="status-badge bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border border-green-200 dark:border-green-900 flex items-center gap-2">
+                            <span class="relative flex h-2 w-2">
+                              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                              <span class="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                            </span>
+                            En Cours
+                        </span>
                     </div>
-                    <h3 class="text-xl font-bold mb-2">L'Essentiel</h3>
-                    <p class="text-xs text-gray-500 mb-6 px-4">Rapide, épuré, sans distraction. Un simple logo qui respire.</p>
-                    
-                    <button onclick="vote('minimaliste')" class="vote-btn w-full py-4 rounded-xl bg-black dark:bg-white text-white dark:text-black font-bold text-sm uppercase tracking-widest hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed">
-                        Voter Minimaliste
-                    </button>
+                    <h3 class="text-2xl font-bold mb-2 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">Animation d'Introduction</h3>
+                    <p class="text-sm text-gray-500 font-medium leading-relaxed">
+                        Choisissez le style d'animation qui sera utilisé lors du chargement initial de WikiMind. Minimaliste ou Spectaculaire ?
+                    </p>
                 </div>
-            </div>
-
-            <div id="card-spectaculaire" class="relative group p-1 rounded-3xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-zinc-900 overflow-hidden transition-all hover:border-purple-500/50 dark:hover:border-purple-500/50 hover:shadow-2xl hover:shadow-purple-500/10">
-                <div class="absolute inset-0 bg-gradient-to-br from-purple-50/50 to-white dark:from-purple-900/10 dark:to-black opacity-100 transition-opacity"></div>
-                
-                <div class="relative p-6 flex flex-col h-full items-center text-center">
-                    <div class="w-full aspect-video bg-gray-100 dark:bg-zinc-800 rounded-xl mb-6 flex items-center justify-center overflow-hidden border border-gray-200 dark:border-gray-700 relative">
-                         <div class="absolute inset-0 flex items-center justify-center">
-                             <div class="w-20 h-20 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 blur-xl opacity-50 animate-pulse"></div>
-                         </div>
-                         <div class="w-8 h-8 bg-black dark:bg-white rotate-45 transition-transform duration-[2s] hover:rotate-[225deg]"></div>
+                <div class="flex items-center justify-between mt-8 pt-6 border-t border-gray-100 dark:border-gray-800">
+                    <div class="text-xs font-bold text-gray-400 uppercase tracking-widest">Fin : Dimanche 8 Février</div>
+                    <div class="text-xs font-bold uppercase tracking-widest flex items-center gap-2 group-hover:gap-3 transition-all duration-300">
+                        Accéder au vote <span>→</span>
                     </div>
-                    <h3 class="text-xl font-bold mb-2">Le Show</h3>
-                    <p class="text-xs text-gray-500 mb-6 px-4">Immersif, fluide, moderne. Une entrée en matière cinématique.</p>
-                    
-                    <button onclick="vote('spectaculaire')" class="vote-btn w-full py-4 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold text-sm uppercase tracking-widest hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-purple-500/30">
-                        Voter Spectaculaire
-                    </button>
                 </div>
-            </div>
-        </div>
+            </a>
 
-        <div id="results-area" class="w-full max-w-2xl bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl p-6 md:p-8 animate-fade delay-100 hidden opacity-0 transition-opacity duration-500">
-            <h3 class="text-xs font-black uppercase tracking-widest text-gray-400 mb-6 text-center">Résultats en temps réel</h3>
-            
-            <div class="mb-6">
-                <div class="flex justify-between text-sm font-bold mb-2">
-                    <span>Minimaliste</span>
-                    <span id="percent-minimaliste">0%</span>
+            <div class="vote-card p-8 group flex flex-col justify-between h-auto min-h-[220px] opacity-60 grayscale hover:grayscale-0 transition-all">
+                <div>
+                    <div class="flex justify-between items-start mb-6">
+                        <div class="icon-box">
+                            🎨
+                        </div>
+                        <span class="status-badge bg-gray-100 text-gray-600 dark:bg-zinc-800 dark:text-gray-400 border border-gray-200 dark:border-gray-700">
+                            Terminé
+                        </span>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-2">Design de l'Interface v2</h3>
+                    <p class="text-sm text-gray-500 font-medium leading-relaxed">
+                        Vote communautaire pour le choix du thème sombre par défaut. Le thème "Oled Black" a remporté le scrutin.
+                    </p>
                 </div>
-                <div class="w-full h-3 bg-gray-100 dark:bg-zinc-800 rounded-full overflow-hidden">
-                    <div id="bar-minimaliste" class="vote-bar-fill h-full bg-black dark:bg-white w-0"></div>
+                <div class="flex items-center justify-between mt-8 pt-6 border-t border-gray-100 dark:border-gray-800">
+                    <div class="text-xs font-bold text-gray-400 uppercase tracking-widest">Clôturé</div>
+                    <div class="text-xs font-bold uppercase tracking-widest flex items-center gap-2">
+                        Voir résultats
+                    </div>
                 </div>
-                <div class="text-[10px] text-gray-400 mt-1 text-right"><span id="count-minimaliste">0</span> votes</div>
+            </div>
+			
+			<div class="vote-card p-8 group flex flex-col justify-between h-auto min-h-[220px] opacity-60 grayscale hover:grayscale-0 transition-all">
+                <div>
+                    <div class="flex justify-between items-start mb-6">
+                        <div class="icon-box">
+                            🎨
+                        </div>
+                        <span class="status-badge bg-gray-100 text-gray-600 dark:bg-zinc-800 dark:text-gray-400 border border-gray-200 dark:border-gray-700">
+                            Terminé
+                        </span>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-2">Design de l'Interface v2</h3>
+                    <p class="text-sm text-gray-500 font-medium leading-relaxed">
+                        Vote communautaire pour le choix du thème sombre par défaut. Le thème "Oled Black" a remporté le scrutin.
+                    </p>
+                </div>
+                <div class="flex items-center justify-between mt-8 pt-6 border-t border-gray-100 dark:border-gray-800">
+                    <div class="text-xs font-bold text-gray-400 uppercase tracking-widest">Clôturé</div>
+                    <div class="text-xs font-bold uppercase tracking-widest flex items-center gap-2">
+                        Voir résultats
+                    </div>
+                </div>
             </div>
 
-            <div class="mb-2">
-                <div class="flex justify-between text-sm font-bold mb-2">
-                    <span class="text-purple-600 dark:text-purple-400">Spectaculaire</span>
-                    <span id="percent-spectaculaire" class="text-purple-600 dark:text-purple-400">0%</span>
-                </div>
-                <div class="w-full h-3 bg-gray-100 dark:bg-zinc-800 rounded-full overflow-hidden">
-                    <div id="bar-spectaculaire" class="vote-bar-fill h-full bg-gradient-to-r from-indigo-500 to-purple-500 w-0"></div>
-                </div>
-                <div class="text-[10px] text-gray-400 mt-1 text-right"><span id="count-spectaculaire">0</span> votes</div>
-            </div>
+             </div>
 
-            <div class="mt-8 text-center">
-                 <p class="text-xs text-gray-400">Total des votes : <span id="total-votes" class="font-mono font-bold text-indigo-500">0</span></p>
-                 <p class="text-[10px] text-gray-500 mt-2 italic">Votre vote a été enregistré sur cet appareil.</p>
-            </div>
+        <div class="w-full mt-8 mb-4 flex flex-col items-center justify-center animate-fade delay-200">
+            <p class="text-gray-500 text-sm mb-4">Vous avez une idée de fonctionnalité ?</p>
+            <a href="https://docs.google.com/forms/d/e/1FAIpQLSffzaqJ8p4m7gaojh2EsVVgYzZ3LDVKAaO5BsvZud4NIZqaJg/viewform?usp=publish-editor" 
+               target="_blank"
+               class="inline-flex items-center gap-2 px-6 py-3 rounded-full border border-gray-200 dark:border-gray-800 hover:bg-gray-100 dark:hover:bg-zinc-900 transition-all duration-300 text-xs font-bold uppercase tracking-widest">
+                <span>Proposer un sujet de vote</span>
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+            </a>
         </div>
 
     </main>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
-        import { getDatabase, ref, onValue, runTransaction } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-database.js";
-
-        // CONFIGURATION FIREBASE
-        const firebaseConfig = {
-            apiKey: "AIzaSyDegu1qYfKXS2ufwG6nu-jY-bdpTy__HRU",
-            authDomain: "wikimind-vote.firebaseapp.com",
-            databaseURL: "https://wikimind-vote-default-rtdb.europe-west1.firebasedatabase.app",
-            projectId: "wikimind-vote",
-            storageBucket: "wikimind-vote.firebasestorage.app",
-            messagingSenderId: "116911410770",
-            appId: "1:116911410770:web:49948b4e75daee9073d98b"
-        };
-
-        // INITIALISATION
-        const app = initializeApp(firebaseConfig);
-        const db = getDatabase(app);
-        
-        // REFERENCES DB
-        // On stocke les votes sous le noeud 'votes/animation_intro'
-        const votesRef = ref(db, 'votes/animation_intro');
-
-        // ECOUTE DES CHANGEMENTS EN TEMPS REEL
-        onValue(votesRef, (snapshot) => {
-            const data = snapshot.val() || { minimaliste: 0, spectaculaire: 0 };
-            updateUI(data);
-        });
-
-        // FONCTION DE MISE A JOUR UI
-        function updateUI(data) {
-            const min = data.minimaliste || 0;
-            const spec = data.spectaculaire || 0;
-            const total = min + spec;
-
-            // Calcul pourcentages
-            const pMin = total === 0 ? 0 : Math.round((min / total) * 100);
-            const pSpec = total === 0 ? 0 : Math.round((spec / total) * 100);
-
-            // Update DOM Results
-            document.getElementById('count-minimaliste').innerText = min;
-            document.getElementById('percent-minimaliste').innerText = pMin + '%';
-            document.getElementById('bar-minimaliste').style.width = pMin + '%';
-
-            document.getElementById('count-spectaculaire').innerText = spec;
-            document.getElementById('percent-spectaculaire').innerText = pSpec + '%';
-            document.getElementById('bar-spectaculaire').style.width = pSpec + '%';
-            
-            document.getElementById('total-votes').innerText = total;
-
-            // Vérifier si l'user a déjà voté localement pour afficher les résultats
-            if (localStorage.getItem('wikimind_has_voted_animation')) {
-                showResultsState();
-            }
-        }
-
-        // EXPOSER LA FONCTION DE VOTE A LA FENETRE (Global scope)
-        window.vote = function(choice) {
-            // 1. Vérif locale
-            if (localStorage.getItem('wikimind_has_voted_animation')) {
-                alert("Vous avez déjà voté !");
-                return;
-            }
-
-            // 2. Transaction Firebase (Incrémenter de façon atomique)
-            // On pointe vers 'votes/animation_intro/minimaliste' ou 'spectaculaire'
-            const specificVoteRef = ref(db, `votes/animation_intro/${choice}`);
-
-            runTransaction(specificVoteRef, (currentVotes) => {
-                return (currentVotes || 0) + 1;
-            }).then(() => {
-                // Succès
-                localStorage.setItem('wikimind_has_voted_animation', 'true');
-                showResultsState();
-            }).catch((err) => {
-                console.error("Erreur de vote:", err);
-                alert("Erreur lors de l'envoi du vote. Réessayez.");
-            });
-        };
-
-        function showResultsState() {
-            // Désactiver les boutons
-            const btns = document.querySelectorAll('.vote-btn');
-            btns.forEach(btn => {
-                btn.disabled = true;
-                btn.innerText = "Vote enregistré";
-                btn.classList.add('opacity-50', 'cursor-not-allowed');
-            });
-
-            // Afficher le panneau de résultats
-            const results = document.getElementById('results-area');
-            results.classList.remove('hidden');
-            // Petit hack pour l'animation CSS
-            setTimeout(() => {
-                results.classList.remove('opacity-0');
-            }, 50);
-        }
-
-    </script>
+    <footer class="border-t border-gray-200 dark:border-gray-800 py-10 z-10 bg-white/50 dark:bg-black/50 backdrop-blur-sm">
+        <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
+            <div class="text-center md:text-left">
+                <div class="font-black uppercase tracking-tight text-sm">WikiMind Vote Center</div>
+                <div class="text-xs text-gray-500 mt-1">© 2026 Tous droits réservés.</div>
+            </div>
+            <div class="flex gap-6 text-xs font-bold uppercase tracking-widest text-gray-400">
+                <a href="index.html" class="hover:text-black dark:hover:text-white transition">WikiMind Accueil</a>
+            </div>
+        </div>
+    </footer>
 
     <script>
+        // --- THEME MANAGEMENT ---
         function toggleTheme() {
             const body = document.body;
             body.classList.toggle('dark-mode');
@@ -274,6 +254,7 @@
             }
         }
 
+        // Check LocalStorage on load
         const savedTheme = localStorage.getItem('wikimind_landing_theme');
         if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
             document.body.classList.add('dark-mode');
