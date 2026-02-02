@@ -1,15 +1,17 @@
+<!-- START OF FILE text/html -->
 <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>WikiMind Share</title>
+    <title>WikiMind Mobile Cast</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Agora SDK Stable -->
     <script src="https://download.agora.io/sdk/release/AgoraRTC_N-4.18.2.js"></script>
-
+    <!-- FontAwesome pour les icônes (Optionnel, mais plus joli) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
 
@@ -18,33 +20,36 @@
             background-color: #000000; 
             color: #ffffff; 
             font-family: 'Inter', sans-serif; 
-            overflow: hidden; /* Empêche le scroll pendant le visionnage */
+            overflow: hidden; 
+            /* Fix pour mobile height */
+            height: 100vh;
+            height: -webkit-fill-available;
         }
 
         /* Glassmorphism */
         .glass-panel {
-            background: rgba(20, 20, 20, 0.8);
+            background: rgba(20, 20, 20, 0.85);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
             border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 24px;
+            border-radius: 20px;
         }
 
-        /* Video Container - Critical for Mobile */
+        /* Video Container */
         #video-container { 
             width: 100%; 
             height: 100%; 
             position: relative; 
-            background: #000;
+            background: #080808;
         }
         
-        /* Force la vidéo Agora à s'adapter correctement sans être coupée */
+        /* Important : Contain pour voir tout l'écran mobile sur un autre écran */
         .agora_video_player { 
             object-fit: contain !important; 
         }
 
-        .btn { transition: transform 0.1s; }
-        .btn:active { transform: scale(0.95); }
+        .btn { transition: all 0.2s; }
+        .btn:active { transform: scale(0.96); }
         .hidden-view { display: none !important; }
         
         /* Animation */
@@ -52,136 +57,212 @@
         .animate-up { animation: fadeUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
     </style>
 </head>
-<body class="h-screen w-full flex flex-col">
+<body class="w-full flex flex-col">
 
-    <!-- HEADER (Visible seulement à l'accueil) -->
+    <!-- HEADER (Accueil) -->
     <header id="app-header" class="absolute top-0 left-0 w-full p-6 z-50 flex justify-between items-center">
         <div class="flex items-center gap-3">
-            <div class="w-8 h-8 bg-white text-black rounded-lg flex items-center justify-center font-black text-lg">W</div>
-            <span class="font-bold tracking-tight">WikiMind Share</span>
+            <div class="w-8 h-8 bg-blue-600 text-white rounded-lg flex items-center justify-center font-black text-lg">W</div>
+            <span class="font-bold tracking-tight">WikiMind Cast</span>
         </div>
-        <div class="text-xs font-mono text-gray-500">v2.0 • Secure</div>
+        <div class="text-xs font-mono text-gray-500 bg-white/10 px-2 py-1 rounded">v3.0</div>
     </header>
 
-    <!-- ACCUEIL / CONFIGURATION -->
-    <main id="setup-view" class="flex-grow flex items-center justify-center p-4 relative z-10">
-        <!-- Fond animé subtil -->
-        <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-gray-800/20 via-black to-black -z-10"></div>
+    <!-- SETUP VIEW -->
+    <main id="setup-view" class="flex-grow flex items-center justify-center p-4 relative z-10 h-full">
+        <!-- Fond animé -->
+        <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-blue-900/20 via-black to-black -z-10"></div>
 
-        <div class="glass-panel p-8 w-full max-w-md animate-up space-y-8 text-center">
+        <div class="glass-panel p-8 w-full max-w-md animate-up space-y-6 text-center">
             <div>
-                <h1 class="text-3xl font-black mb-2">Partage d'écran</h1>
-                <p class="text-gray-400 text-sm">Entrez un nom de salon pour commencer.</p>
+                <h1 class="text-3xl font-black mb-2">Live Stream</h1>
+                <p class="text-gray-400 text-sm">Ordinateur ou Mobile, partagez tout.</p>
             </div>
 
-            <div class="space-y-4">
-                <div class="text-left">
-                    <label class="text-xs font-bold uppercase text-gray-500 ml-1">Nom du Salon</label>
-                    <input type="text" id="channel-input" value="bureau" 
-                        class="w-full mt-1 bg-white/5 border border-white/10 rounded-xl p-4 text-white font-bold focus:outline-none focus:border-white/30 transition text-center text-xl placeholder-gray-600">
-                </div>
+            <div class="text-left bg-black/40 p-4 rounded-xl border border-white/5">
+                <label class="text-[10px] font-bold uppercase text-blue-400 ml-1 tracking-wider">ID du Salon</label>
+                <input type="text" id="channel-input" value="salon-1" 
+                    class="w-full mt-2 bg-transparent border-b border-white/20 pb-2 text-white font-bold focus:outline-none focus:border-blue-500 transition text-xl placeholder-gray-700">
             </div>
 
-            <div class="grid grid-cols-1 gap-4 pt-2">
-                <button onclick="startHost()" class="btn w-full bg-white text-black py-4 rounded-xl font-black uppercase tracking-widest text-sm hover:bg-gray-200">
-                    📤 Diffuser mon écran
+            <div class="grid grid-cols-1 gap-3 pt-2">
+                <!-- Bouton Diffuser (Mobile & PC) -->
+                <button onclick="startHost()" class="btn w-full bg-blue-600 text-white py-4 rounded-xl font-bold text-sm hover:bg-blue-500 shadow-lg shadow-blue-900/50 flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-satellite-dish"></i>
+                    DIFFUSER MON ÉCRAN
                 </button>
+                
+                <p class="text-[10px] text-gray-500">Android : Chrome | iOS : Safari | PC : Tous</p>
+
                 <div class="relative flex py-2 items-center">
                     <div class="flex-grow border-t border-gray-800"></div>
-                    <span class="flex-shrink-0 mx-4 text-gray-600 text-xs uppercase">Ou</span>
+                    <span class="flex-shrink-0 mx-4 text-gray-600 text-xs uppercase font-mono">mode spectateur</span>
                     <div class="flex-grow border-t border-gray-800"></div>
                 </div>
-                <button onclick="startAudience()" class="btn w-full bg-gray-800 text-white border border-gray-700 py-4 rounded-xl font-bold uppercase tracking-widest text-sm hover:bg-gray-700">
-                    👀 Rejoindre (Mobile)
+
+                <button onclick="startAudience()" class="btn w-full bg-white/5 text-gray-300 border border-white/10 py-3 rounded-xl font-bold text-sm hover:bg-white/10 flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-eye"></i>
+                    Regarder seulement
                 </button>
             </div>
         </div>
     </main>
 
-    <!-- VUE VIDÉO (LIVE) -->
-    <div id="room-view" class="hidden-view fixed inset-0 z-[100] bg-black flex flex-col">
+    <!-- ROOM VIEW -->
+    <div id="room-view" class="hidden-view fixed inset-0 z-[100] bg-black flex flex-col h-full w-full">
         
-        <!-- Barre de contrôle flottante -->
-        <div class="absolute top-4 left-4 right-4 z-[110] flex justify-between items-start pointer-events-none">
-            <div class="glass-panel px-4 py-2 flex items-center gap-2 pointer-events-auto">
-                <div class="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                <span class="text-xs font-bold uppercase tracking-wider" id="room-name-display">LIVE</span>
+        <!-- Top Bar -->
+        <div class="absolute top-0 left-0 right-0 z-[110] p-4 flex justify-between items-start pointer-events-none bg-gradient-to-b from-black/80 to-transparent">
+            <!-- Badge Live -->
+            <div class="glass-panel px-3 py-2 flex items-center gap-2 pointer-events-auto shadow-lg">
+                <div class="w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.6)]"></div>
+                <div class="flex flex-col leading-none">
+                    <span class="text-[10px] font-bold text-gray-400 uppercase">Salon</span>
+                    <span class="text-xs font-black uppercase tracking-wide" id="room-name-display">...</span>
+                </div>
             </div>
-            
-            <button onclick="leaveRoom()" class="glass-panel px-4 py-2 pointer-events-auto text-xs font-bold uppercase hover:bg-red-500/20 hover:text-red-500 transition border-red-500/30">
-                Quitter
-            </button>
+
+            <!-- Compteur & Quitter -->
+            <div class="flex items-center gap-2 pointer-events-auto">
+                <div class="glass-panel px-3 py-2 flex items-center gap-2 text-xs font-bold text-gray-300">
+                    <i class="fa-solid fa-user-group text-blue-400"></i>
+                    <span id="user-count">1</span>
+                </div>
+
+                <button onclick="leaveRoom()" class="glass-panel px-4 py-2 text-xs font-bold uppercase bg-red-500/10 text-red-500 border-red-500/30 hover:bg-red-500 hover:text-white transition shadow-lg">
+                    Stop / Quitter
+                </button>
+            </div>
         </div>
 
-        <!-- Zone Vidéo -->
+        <!-- Video Area -->
         <div id="video-container">
-            <div id="loading-msg" class="absolute inset-0 flex items-center justify-center flex-col gap-4 text-gray-500">
-                <div class="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
-                <p class="text-xs uppercase tracking-widest animate-pulse">Connexion au satellite...</p>
+            <div id="loading-msg" class="absolute inset-0 flex items-center justify-center flex-col gap-4 text-gray-500 bg-black">
+                <div class="w-10 h-10 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
+                <p class="text-xs uppercase tracking-widest animate-pulse font-mono">Connexion satellite...</p>
             </div>
+        </div>
+
+        <!-- Stop Notification Toast (Hidden by default) -->
+        <div id="stop-toast" class="absolute bottom-10 left-1/2 transform -translate-x-1/2 glass-panel px-6 py-3 hidden-view z-[120]">
+            <span class="text-sm font-bold text-white">Partage arrêté 🛑</span>
         </div>
     </div>
 
     <script>
         // --- CONFIGURATION ---
-        // Votre clé API fournie
-        const APP_ID = "6d17c3d1e8434a2cb1da90a644bd1ef2";
+        const APP_ID = "6d17c3d1e8434a2cb1da90a644bd1ef2"; // Ta clé
 
         // --- VARIABLES ---
         const client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
         let localTracks = { screenVideo: null, audio: null };
         let isHost = false;
+        let remoteUserCount = 0; // Compteur des AUTRES personnes
 
-        // --- FONCTIONS NAVIGATION ---
+        // --- FONCTIONS UI ---
         function switchView(view) {
             if(view === 'room') {
                 document.getElementById('setup-view').classList.add('hidden-view');
                 document.getElementById('app-header').classList.add('hidden-view');
                 document.getElementById('room-view').classList.remove('hidden-view');
             } else {
-                location.reload(); // Le plus simple pour nettoyer Agora
+                location.reload(); 
             }
         }
 
         function getChannelName() {
             const val = document.getElementById('channel-input').value.trim();
-            if(!val) alert("Mettez un nom de salon !");
+            if(!val) alert("Entrez un nom de salon !");
             return val;
         }
 
-        // --- LOGIQUE DIFFUSEUR (PC) ---
+        function updateUserCount() {
+            // Total = Moi (1) + Les autres (remoteUserCount)
+            // Si je suis tout seul, remoteUserCount = 0, donc Total = 1
+            const total = remoteUserCount + 1;
+            document.getElementById('user-count').innerText = total + " en ligne";
+        }
+
+        // --- EVENTS AGORA (Pour le compteur et les flux) ---
+        function setupClientEvents() {
+            // Quand quelqu'un rejoint
+            client.on("user-joined", (user) => {
+                remoteUserCount++;
+                updateUserCount();
+                console.log("User joined. Total remote: " + remoteUserCount);
+            });
+
+            // Quand quelqu'un part
+            client.on("user-left", (user) => {
+                remoteUserCount--;
+                if(remoteUserCount < 0) remoteUserCount = 0;
+                updateUserCount();
+                console.log("User left. Total remote: " + remoteUserCount);
+            });
+
+            // Quand un flux arrive (Vue Spectateur)
+            client.on("user-published", async (user, mediaType) => {
+                await client.subscribe(user, mediaType);
+                
+                if (mediaType === "video") {
+                    document.getElementById('loading-msg').style.display = 'none';
+                    // fit: "contain" est CRUCIAL pour voir les écrans verticaux (téléphones) sur PC sans crop
+                    user.videoTrack.play("video-container", { fit: "contain" });
+                }
+                if (mediaType === "audio") {
+                    user.audioTrack.play();
+                }
+            });
+
+            client.on("user-unpublished", (user, mediaType) => {
+                if(mediaType === 'video') {
+                    document.getElementById('loading-msg').style.display = 'flex';
+                    document.getElementById('loading-msg').innerHTML = '<p class="text-xs uppercase tracking-widest text-red-500 font-bold">Le diffuseur a mis pause</p>';
+                }
+            });
+        }
+
+        // --- LOGIQUE DIFFUSEUR (MOBILE & PC) ---
         async function startHost() {
             const channel = getChannelName();
             if(!channel) return;
 
+            // Verification simple pour iOS
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+            if (isIOS && !navigator.mediaDevices.getDisplayMedia) {
+                alert("Attention : Le partage d'écran sur iOS nécessite Safari 13+.");
+            }
+
             try {
                 isHost = true;
+                setupClientEvents();
                 switchView('room');
-                document.getElementById('room-name-display').innerText = channel.toUpperCase();
+                document.getElementById('room-name-display').innerText = channel;
                 
                 // 1. Rejoindre
-                // Note: Token = null (mode test sans sécu pour commencer)
                 await client.join(APP_ID, channel, null, null);
 
                 // 2. Créer le partage d'écran
-                // "auto" tente de capturer l'audio système si le navigateur le permet (Cochez "Partager l'audio" dans la popup Chrome)
+                // Sur mobile, le navigateur gère l'UI système pour choisir "Lancer l'enregistrement"
                 localTracks.screenVideo = await AgoraRTC.createScreenVideoTrack({
-                    encoderConfig: "1080p_1",
-                    optimizationMode: "detail" // Priorité à la netteté du texte
-                }, "auto");
+                    encoderConfig: {
+                        framerate: 15, // 15fps suffit pour du partage d'app et économise la batterie
+                        bitrateMax: 1000,
+                        width: 1280, // Bonne résolution standard
+                        height: 720
+                    } 
+                }, "auto"); // "auto" tente de prendre le son aussi
 
-                // 3. Gérer l'array retourné (Vidéo + Audio ou juste Vidéo)
+                // 3. Gestion Audio/Video array
                 let trackToPublish = [];
                 if(Array.isArray(localTracks.screenVideo)) {
-                    trackToPublish = localTracks.screenVideo; // [VideoTrack, AudioTrack]
-                    // Gérer la fin du partage (bouton "Arrêter" du navigateur)
-                    localTracks.screenVideo[0].on("track-ended", leaveRoom);
-                    // Afficher retour local
-                    localTracks.screenVideo[0].play("video-container");
+                    trackToPublish = localTracks.screenVideo; 
+                    localTracks.screenVideo[0].on("track-ended", leaveRoom); // Si l'utilisateur clique sur "Arrêter" natif
+                    localTracks.screenVideo[0].play("video-container", { fit: "contain" }); // Retour local
                 } else {
                     trackToPublish = [localTracks.screenVideo];
                     localTracks.screenVideo.on("track-ended", leaveRoom);
-                    localTracks.screenVideo.play("video-container");
+                    localTracks.screenVideo.play("video-container", { fit: "contain" });
                 }
 
                 document.getElementById('loading-msg').style.display = 'none';
@@ -189,63 +270,49 @@
                 // 4. Publier
                 await client.publish(trackToPublish);
 
+                // Notification locale
+                console.log("Partage d'écran actif");
+
             } catch (error) {
                 console.error(error);
                 if(error.code === "PERMISSION_DENIED") {
-                    alert("Partage annulé par l'utilisateur.");
-                    location.reload();
+                    // L'utilisateur a annulé la popup système
+                    leaveRoom();
                 } else {
-                    alert("Erreur Agora: " + error.message);
-                    location.reload();
+                    alert("Erreur: " + error.message);
+                    leaveRoom();
                 }
             }
         }
 
-        // --- LOGIQUE SPECTATEUR (MOBILE/AUTRE) ---
+        // --- LOGIQUE SPECTATEUR ---
         async function startAudience() {
             const channel = getChannelName();
             if(!channel) return;
 
             try {
                 isHost = false;
+                setupClientEvents();
                 switchView('room');
-                document.getElementById('room-name-display').innerText = channel.toUpperCase();
-                document.getElementById('loading-msg').innerHTML = '<p class="text-xs uppercase tracking-widest animate-pulse">En attente du diffuseur...</p>';
+                document.getElementById('room-name-display').innerText = channel;
+                document.getElementById('loading-msg').innerHTML = '<p class="text-xs uppercase tracking-widest animate-pulse">Recherche du signal...</p>';
 
-                // 1. Écouteurs d'événements
-                client.on("user-published", async (user, mediaType) => {
-                    // S'abonner au flux
-                    await client.subscribe(user, mediaType);
-                    console.log("Flux reçu:", mediaType);
-
-                    if (mediaType === "video") {
-                        document.getElementById('loading-msg').style.display = 'none';
-                        // fit: "contain" est CRUCIAL pour voir tout l'écran sur mobile
-                        user.videoTrack.play("video-container", { fit: "contain" });
-                    }
-                    if (mediaType === "audio") {
-                        user.audioTrack.play();
-                    }
-                });
-
-                client.on("user-unpublished", (user) => {
-                    document.getElementById('loading-msg').style.display = 'flex';
-                    document.getElementById('loading-msg').innerHTML = '<p class="text-xs uppercase tracking-widest text-red-500">Diffusion en pause...</p>';
-                });
-
-                // 2. Rejoindre
                 await client.join(APP_ID, channel, null, null);
 
             } catch (error) {
                 console.error(error);
-                alert("Erreur de connexion : " + error.message);
+                alert("Erreur de connexion");
                 location.reload();
             }
         }
 
-        // --- QUITTER ---
+        // --- QUITTER / STOP ---
         async function leaveRoom() {
-            // Nettoyage des pistes locales
+            // Afficher toast
+            const toast = document.getElementById('stop-toast');
+            toast.classList.remove('hidden-view');
+
+            // Fermer pistes locales (Arrête le partage système)
             if(localTracks.screenVideo) {
                 if(Array.isArray(localTracks.screenVideo)){
                     localTracks.screenVideo.forEach(t => t.close());
@@ -253,9 +320,13 @@
                     localTracks.screenVideo.close();
                 }
             }
-            // Quitter le canal
+            
             await client.leave();
-            location.reload();
+
+            // Petit délai pour l'UX
+            setTimeout(() => {
+                location.reload();
+            }, 1000);
         }
     </script>
 </body>
