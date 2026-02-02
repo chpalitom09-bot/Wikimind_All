@@ -2,286 +2,317 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>WikiMind Dictate - Saisie & Correction Live</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wikimind Voice - Saisie Intelligente</title>
     <style>
-        :root { --bg: #111; --text: #eee; --accent: #2dd4bf; }
-        body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; overflow-x: hidden; }
-        
-        .glass {
-            background: rgba(30, 30, 30, 0.6); backdrop-filter: blur(12px);
-            border: 1px solid rgba(255,255,255,0.1); border-radius: 20px;
+        :root {
+            --primary: #2563eb;
+            --secondary: #1e40af;
+            --bg-grad-start: #f0f9ff;
+            --bg-grad-end: #e0f2fe;
+            --glass: rgba(255, 255, 255, 0.85);
+            --text-dark: #1e293b;
+            --text-gray: #64748b;
         }
 
-        .mic-btn {
-            width: 70px; height: 70px; border-radius: 50%;
-            background: #333; display: flex; align-items: center; justify-content: center;
-            font-size: 28px; cursor: pointer; transition: 0.3s;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.5); border: 2px solid #444;
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: linear-gradient(135deg, var(--bg-grad-start), var(--bg-grad-end));
+            height: 100vh;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow: hidden;
         }
-        .mic-btn.active {
-            background: #ef4444; color: white; border-color: #ef4444;
+
+        /* Header Style */
+        header {
+            width: 100%;
+            padding: 20px;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            z-index: 10;
+        }
+
+        h1 {
+            margin: 0;
+            color: var(--secondary);
+            font-weight: 300;
+            letter-spacing: 1px;
+        }
+
+        h1 span {
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        /* Main Container */
+        .container {
+            flex: 1;
+            width: 100%;
+            max-width: 900px;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            box-sizing: border-box;
+        }
+
+        /* Editor Area */
+        .editor-wrapper {
+            flex: 1;
+            background: var(--glass);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            overflow-y: auto;
+            position: relative;
+            font-size: 1.1rem;
+            line-height: 1.6;
+        }
+
+        /* Text Styles */
+        .final-text {
+            color: var(--text-dark);
+        }
+        
+        .ai-processing {
+            color: var(--primary);
             animation: pulse 1.5s infinite;
         }
-        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); } 70% { box-shadow: 0 0 0 20px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
 
-        .editor {
-            width: 100%; min-height: 40vh; background: transparent; border: none;
-            outline: none; font-size: 1.2rem; line-height: 1.6; color: #ddd;
-            resize: none;
+        .interim-text {
+            color: var(--text-gray);
+            font-style: italic;
         }
-        
-        /* Switch Correction Live */
-        .toggle-checkbox:checked { right: 0; border-color: #2dd4bf; }
-        .toggle-checkbox:checked + .toggle-label { background-color: #2dd4bf; }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding-bottom: 30px;
+            gap: 20px;
+        }
+
+        #mic-btn {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            border: none;
+            background: white;
+            color: var(--text-gray);
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #mic-btn.listening {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.7);
+            animation: pulse-shadow 1.5s infinite;
+        }
+
+        .status {
+            font-size: 0.9rem;
+            color: var(--text-gray);
+            margin-top: 10px;
+            height: 20px;
+        }
+
+        /* Animations */
+        @keyframes pulse-shadow {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 20px rgba(37, 99, 235, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(37, 99, 235, 0); }
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.6; }
+            50% { opacity: 1; }
+            100% { opacity: 0.6; }
+        }
+
+        /* API Key Input (Just for demo purposes so you don't hardcode it) */
+        .api-config {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 0.8rem;
+        }
+        .api-config input {
+            padding: 5px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
     </style>
 </head>
-<body class="flex flex-col min-h-screen">
+<body>
 
-    <!-- Header -->
-    <header class="p-6 flex justify-between items-center border-b border-gray-800 bg-black/50 backdrop-blur-md fixed w-full z-50">
-        <div class="font-black text-xl italic tracking-tighter">WikiMind <span class="text-teal-400">Dictate</span></div>
-        
-        <!-- Toggle Correction Live -->
-        <div class="flex items-center gap-3">
-            <span class="text-xs font-bold uppercase text-gray-400">Correction Auto</span>
-            <div class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
-                <input type="checkbox" name="toggle" id="auto-fix-toggle" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer border-gray-800 left-0 transition-all duration-300"/>
-                <label for="auto-fix-toggle" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-800 cursor-pointer"></label>
-            </div>
-        </div>
+    <header>
+        <h1>Wiki<span>mind</span> Voice</h1>
+        <div class="status" id="status-text">Prêt à écouter...</div>
     </header>
 
-    <!-- Main -->
-    <main class="flex-grow pt-32 pb-40 px-4 max-w-4xl mx-auto w-full flex flex-col gap-6">
-        
-        <!-- Status Bar -->
-        <div id="status-msg" class="text-center text-sm font-bold text-gray-500 uppercase tracking-widest">
-            Prêt à dicter
+    <div class="container">
+        <!-- Zone de texte -->
+        <div class="editor-wrapper" id="editor">
+            <span id="final-content"></span>
+            <span id="interim-content" class="interim-text"></span>
         </div>
 
-        <!-- Editor -->
-        <div class="glass p-8 relative min-h-[50vh] flex flex-col">
-            <textarea id="editor" class="editor" placeholder="Appuie sur le micro et parle..."></textarea>
-            <!-- Texte fantôme (ce que l'IA entend avant de valider) -->
-            <div id="ghost-text" class="absolute bottom-4 left-8 right-8 text-gray-500 italic opacity-50 pointer-events-none text-lg"></div>
-        </div>
-
-        <!-- Actions Manuelles -->
-        <div class="grid grid-cols-2 gap-4">
-            <button onclick="manualCorrect()" class="glass p-4 text-center hover:bg-teal-900/30 transition text-teal-400 font-bold border-teal-900">
-                ✨ Correction Totale
+        <!-- Contrôles -->
+        <div class="controls">
+            <button id="mic-btn" onclick="toggleDictation()">
+                <i class="fas fa-microphone"></i> 🎤
             </button>
-            <button onclick="formatCourse()" class="glass p-4 text-center hover:bg-blue-900/30 transition text-blue-400 font-bold border-blue-900">
-                🎓 Structurer en Cours
-            </button>
-        </div>
-    </main>
-
-    <!-- Controls -->
-    <div class="fixed bottom-10 left-0 w-full flex justify-center z-50">
-        <div class="glass px-8 py-4 flex items-center gap-6 shadow-2xl bg-black">
-            <button id="mic-btn" onclick="toggleMic()" class="mic-btn">🎙️</button>
-            <div class="flex flex-col">
-                <span id="mic-label" class="font-bold text-white">Micro OFF</span>
-                <span class="text-xs text-gray-400">Cliquez pour parler</span>
-            </div>
         </div>
     </div>
 
+    <!-- Configuration cachée -->
     <script>
-        // --- API KEY ---
-        const MISTRAL_API_KEY = "RmL56FeSccbbNpOC1KIDrYozHSFmY5eD";
-
-        // --- ELEMENTS ---
-        const editor = document.getElementById('editor');
-        const ghost = document.getElementById('ghost-text');
+        // CONFIGURATION
+        // Mets ta clé ici ou laisse vide pour la demander au chargement
+        const MISTRAL_API_KEY = "TA_CLE_API_ICI"; 
+        
+        const contentDiv = document.getElementById('final-content');
+        const interimDiv = document.getElementById('interim-content');
         const micBtn = document.getElementById('mic-btn');
-        const statusMsg = document.getElementById('status-msg');
-        const autoFixToggle = document.getElementById('auto-fix-toggle');
+        const statusText = document.getElementById('status-text');
 
-        // --- SPEECH RECOGNITION CONFIG ---
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         let recognition;
-        let isListening = false;
-        let silenceTimer;
+        let isRecording = false;
 
-        if (!SpeechRecognition) {
-            alert("⚠️ Ton navigateur ne supporte pas la saisie vocale. Utilise Chrome ou Edge.");
-            statusMsg.innerText = "Navigateur non compatible";
-        } else {
+        // Initialisation de la reconnaissance vocale
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             recognition = new SpeechRecognition();
-            recognition.continuous = true;      // Ne s'arrête pas
-            recognition.interimResults = true;  // Affiche le texte en direct
+            recognition.continuous = true; // Continue d'écouter
+            recognition.interimResults = true; // Affiche le texte pendant qu'on parle
             recognition.lang = 'fr-FR';
 
             recognition.onstart = () => {
-                isListening = true;
-                micBtn.classList.add('active');
-                document.getElementById('mic-label').innerText = "Écoute en cours...";
-                statusMsg.innerText = "🔴 Enregistrement...";
-                statusMsg.className = "text-center text-sm font-bold text-red-500 uppercase tracking-widest animate-pulse";
+                isRecording = true;
+                micBtn.classList.add('listening');
+                statusText.innerText = "Écoute en cours...";
             };
 
             recognition.onend = () => {
-                // Redémarrage automatique si on ne l'a pas arrêté manuellement
-                if (isListening) {
-                    try { recognition.start(); } catch(e) {}
+                // Relance automatique si on n'a pas arrêté manuellement
+                if (isRecording) {
+                    try { recognition.start(); } catch(e){}
                 } else {
-                    micBtn.classList.remove('active');
-                    document.getElementById('mic-label').innerText = "Micro OFF";
-                    statusMsg.innerText = "⏸️ Pause";
-                    statusMsg.className = "text-center text-sm font-bold text-gray-500 uppercase tracking-widest";
+                    micBtn.classList.remove('listening');
+                    statusText.innerText = "En pause.";
                 }
             };
 
-            recognition.onerror = (event) => {
-                console.error("Erreur Saisie Vocale:", event.error);
-                if(event.error === 'not-allowed') {
-                    alert("🚫 Accès Micro refusé ! Vérifie que tu es en HTTPS ou Localhost et autorise le micro.");
-                    isListening = false;
-                }
-                if(event.error === 'network') {
-                    statusMsg.innerText = "⚠️ Problème réseau";
-                }
-            };
-
-            recognition.onresult = (event) => {
+            recognition.onresult = async (event) => {
                 let interimTranscript = '';
-                let finalTranscriptChunk = '';
+                let finalTranscript = '';
 
                 for (let i = event.resultIndex; i < event.results.length; ++i) {
                     if (event.results[i].isFinal) {
-                        finalTranscriptChunk += event.results[i][0].transcript;
+                        finalTranscript += event.results[i][0].transcript;
                     } else {
                         interimTranscript += event.results[i][0].transcript;
                     }
                 }
 
                 // Affichage du texte provisoire (gris)
-                ghost.innerText = interimTranscript;
+                interimDiv.innerText = interimTranscript;
 
-                // Ajout du texte finalisé dans l'éditeur
-                if (finalTranscriptChunk) {
-                    const textToAdd = finalTranscriptChunk.trim();
-                    if (textToAdd) {
-                        // Ajout propre avec espace
-                        const currentText = editor.value;
-                        const prefix = (currentText.length > 0 && !currentText.endsWith('\n') && !currentText.endsWith(' ')) ? ' ' : '';
-                        
-                        // Si "Auto Fix" est activé, on corrige ce petit bout immédiatement
-                        if(autoFixToggle.checked) {
-                            quickCorrectChunk(textToAdd, prefix);
-                        } else {
-                            editor.value += prefix + textToAdd;
-                        }
-                        
-                        editor.scrollTop = editor.scrollHeight;
-                    }
+                // Si on a un bout de phrase validé (isFinal), on l'envoie à l'IA
+                if (finalTranscript.length > 0) {
+                    processWithMistral(finalTranscript);
                 }
             };
+
+            recognition.onerror = (event) => {
+                console.error("Erreur vocale:", event.error);
+                statusText.innerText = "Erreur: " + event.error;
+            };
+
+        } else {
+            alert("Ton navigateur ne supporte pas la saisie vocale. Utilise Chrome ou Edge.");
         }
 
-        // --- FONCTIONS ---
-
-        function toggleMic() {
-            if (!recognition) return;
-            if (isListening) {
-                isListening = false;
+        function toggleDictation() {
+            if (isRecording) {
+                isRecording = false;
                 recognition.stop();
             } else {
-                // Test pour voir si HTTPS/Localhost
-                if (window.location.protocol === 'file:') {
-                    alert("⚠️ ATTENTION : La saisie vocale ne marche pas en ouvrant le fichier directement.\n\nIl faut utiliser un serveur local (ex: Live Server sur VSCode).");
+                if (MISTRAL_API_KEY === "TA_CLE_API_ICI") {
+                    alert("Attention : Modifie le code pour ajouter ta clé API Mistral !");
+                    return;
                 }
-                try {
-                    recognition.start();
-                } catch(e) { console.log("Déjà démarré"); }
+                recognition.start();
             }
         }
 
-        // --- CORRECTION IA EN ARRIÈRE PLAN (Chunk par Chunk) ---
-        async function quickCorrectChunk(text, prefix) {
-            // On affiche le texte brut d'abord pour la réactivité
-            const startPos = editor.value.length;
-            editor.value += prefix + text; 
+        // Fonction pour envoyer le texte à Mistral pour mise en forme
+        async function processWithMistral(text) {
+            // Créer un élément temporaire "En cours de traitement..."
+            const tempSpan = document.createElement('span');
+            tempSpan.className = "ai-processing";
+            tempSpan.innerText = " " + text + " (IA...) ";
+            contentDiv.appendChild(tempSpan);
             
-            // Indicateur visuel discret
-            statusMsg.innerText = "🤖 Correction IA en cours...";
-            
+            // Scroll vers le bas
+            const editor = document.getElementById('editor');
+            editor.scrollTop = editor.scrollHeight;
+
             try {
-                const response = await fetch("https://api.mistral.ai/v1/chat/completions", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${MISTRAL_API_KEY}` },
+                const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${MISTRAL_API_KEY}`
+                    },
                     body: JSON.stringify({
-                        model: "mistral-small-latest",
+                        model: "mistral-small-latest", // Modèle rapide
                         messages: [
-                            { role: "system", content: "Corrige uniquement l'orthographe et la grammaire de ce segment de phrase. Garde le sens exact. Renvoie juste le texte corrigé." },
-                            { role: "user", content: text }
+                            {
+                                "role": "system",
+                                "content": "Tu es un assistant de mise en forme. Reçois le texte brut d'une dictée vocale. Ta tâche : corriger la ponctuation, les majuscules et les fautes mineures. Ne change pas le sens. Réponds UNIQUEMENT avec le texte corrigé, sans introduction."
+                            },
+                            {
+                                "role": "user",
+                                "content": text
+                            }
                         ],
-                        temperature: 0.1
+                        temperature: 0.3
                     })
                 });
 
                 const data = await response.json();
-                if(data.choices) {
-                    const corrected = data.choices[0].message.content.trim();
-                    // Remplacement "magique" du texte brut par le texte corrigé
-                    const originalFull = editor.value;
-                    // On remplace la fin de la chaine (le dernier ajout)
-                    // Note: C'est une simplification, si l'utilisateur tape entre temps ça peut sauter, mais pour de la dictée ça passe.
-                    editor.value = originalFull.substring(0, startPos) + prefix + corrected;
+                
+                if (data.choices && data.choices[0]) {
+                    const formattedText = data.choices[0].message.content;
+                    // Remplacer le texte "en cours" par le texte propre
+                    tempSpan.className = "final-text";
+                    tempSpan.innerText = " " + formattedText;
+                } else {
+                    // Fallback si l'API échoue
+                    tempSpan.className = "final-text";
+                    tempSpan.innerText = " " + text;
                 }
-            } catch (e) {
-                console.error("Erreur IA", e);
-            }
-            statusMsg.innerText = "🔴 Enregistrement...";
-        }
 
-        // --- CORRECTION TOTALE MANUELLE ---
-        async function manualCorrect() {
-            const text = editor.value;
-            if(!text) return;
-            statusMsg.innerText = "✨ Correction globale...";
-            
-            const corrected = await callAI("Corrige parfaitement ce texte (grammaire, syntaxe, ponctuation).", text);
-            if(corrected) editor.value = corrected;
-            
-            statusMsg.innerText = "Prêt";
-        }
-
-        // --- FORMATAGE COURS ---
-        async function formatCourse() {
-            const text = editor.value;
-            if(!text) return;
-            statusMsg.innerText = "🎓 Structuration du cours...";
-            
-            const course = await callAI("Transforme ce texte en cours structuré (Markdown). Utilise des Titres, Listes à puces, et mets les mots clés en Gras.", text);
-            if(course) editor.value = course; // L'éditeur supporte le texte brut, tu verras le markdown
-            
-            statusMsg.innerText = "Prêt";
-        }
-
-        // --- APPEL API GÉNÉRIQUE ---
-        async function callAI(systemPrompt, userText) {
-            try {
-                const response = await fetch("https://api.mistral.ai/v1/chat/completions", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${MISTRAL_API_KEY}` },
-                    body: JSON.stringify({
-                        model: "mistral-small-latest",
-                        messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userText }]
-                    })
-                });
-                const data = await response.json();
-                return data.choices[0].message.content;
-            } catch (e) {
-                alert("Erreur IA : " + e);
-                return null;
+            } catch (error) {
+                console.error("Erreur Mistral:", error);
+                tempSpan.className = "final-text";
+                tempSpan.innerText = " " + text; // On garde le texte brut si erreur
             }
         }
     </script>
