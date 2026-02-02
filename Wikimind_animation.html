@@ -1,286 +1,484 @@
+<!-- START OF FILE Wikimind_animate.html -->
 <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WikiMind - Loading Sequence</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>WikiMind Animate - Générateur d'Animation IA</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- GSAP for High-End Motion -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-    
     <!-- Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
         :root {
-            --bg: #000000;
-            --white: #ffffff;
+            --bg: #ffffff;
+            --text: #111111;
+            --card-bg: rgba(249, 250, 251, 0.85);
+            --border: #e5e7eb;
+            --accent: #8b5cf6; /* Violet pour Animate */
+            --accent-hover: #7c3aed;
         }
 
-        body, html {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            background-color: var(--bg);
-            overflow: hidden;
+        .dark-mode {
+            --bg: #0f0f0f;
+            --text: #eeeeee;
+            --card-bg: rgba(22, 22, 22, 0.85);
+            --border: #252525;
+            --accent: #a78bfa;
+            --accent-hover: #8b5cf6;
+        }
+
+        body {
             font-family: 'Inter', sans-serif;
-            cursor: none; /* Immersion totale */
-        }
-
-        /* --- CONTENEUR PRINCIPAL --- */
-        #splash-container {
-            position: relative;
-            width: 100vw;
+            background-color: var(--bg);
+            color: var(--text);
+            transition: background-color 0.4s ease, color 0.4s ease;
+            overflow-x: hidden;
             height: 100vh;
             display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-            perspective: 1000px; /* Pour l'effet 3D subtil */
+            flex-col: column;
         }
 
-        /* --- FILM GRAIN (Cinematic Noise) --- */
-        .noise-overlay {
-            position: fixed;
-            top: 0; left: 0;
+        /* --- INTRO ANIMATION --- */
+        #intro-overlay {
+            position: fixed; inset: 0; z-index: 9999;
+            background-color: var(--bg);
+            display: flex; align-items: center; justify-content: center;
+            transition: opacity 0.6s ease-out, visibility 0.6s;
+        }
+        
+        .logo-pulse {
+            width: 80px; height: 80px;
+            background: var(--text); color: var(--bg);
+            border-radius: 24px; display: flex; align-items: center; justify-content: center;
+            font-size: 40px; font-weight: 900;
+            animation: pulseLogo 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
+        }
+        @keyframes pulseLogo {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+        }
+
+        /* --- Background Animation Canvas --- */
+        #bg-canvas {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 0; pointer-events: none; opacity: 0.6;
+        }
+
+        /* --- UI Components --- */
+        .glass-panel {
+            background: var(--card-bg); backdrop-filter: blur(12px);
+            border: 1px solid var(--border); border-radius: 24px;
+        }
+
+        .btn-primary {
+            background-color: var(--text); color: var(--bg);
+            transition: transform 0.2s, opacity 0.2s;
+        }
+        .btn-primary:active { transform: scale(0.95); }
+
+        .btn-accent {
+            background-color: var(--accent); color: white;
+            transition: all 0.2s;
+        }
+        .btn-accent:hover { background-color: var(--accent-hover); box-shadow: 0 0 15px rgba(139, 92, 246, 0.4); }
+
+        /* Loader */
+        .loader {
+            border: 3px solid rgba(255,255,255,0.1);
+            border-left-color: var(--accent);
+            border-radius: 50%;
+            width: 20px; height: 20px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        /* Preview Area */
+        #preview-container {
             width: 100%; height: 100%;
-            pointer-events: none;
-            z-index: 50;
-            opacity: 0.07;
-            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='1'/%3E%3C/svg%3E");
+            border-radius: 16px;
+            overflow: hidden;
+            background: #000;
+            position: relative;
         }
+        iframe { width: 100%; height: 100%; border: none; }
 
-        /* --- CANVAS --- */
-        canvas {
-            position: absolute;
-            top: 0; left: 0;
-            z-index: 10;
-            filter: blur(0.5px); /* Softness luxueuse */
-        }
-
-        /* --- TYPOGRAPHIE --- */
-        #text-container {
-            position: absolute;
-            bottom: 15%;
-            width: 100%;
-            text-align: center;
+        /* Syntax Highlighter Mockup */
+        .code-overlay {
+            position: absolute; inset: 0; background: rgba(0,0,0,0.9);
+            color: #0f0; font-family: monospace; padding: 20px;
+            overflow: auto; display: none; font-size: 12px;
             z-index: 20;
-            opacity: 0; /* Géré par GSAP */
-            mix-blend-mode: exclusion;
         }
-
-        .brand-name {
-            font-weight: 300;
-            font-size: 0.8rem;
-            letter-spacing: 2em; /* Start wide */
-            color: var(--white);
-            text-transform: uppercase;
-        }
-
     </style>
 </head>
-<body>
+<body class="flex flex-col h-screen relative overflow-hidden">
 
-    <div id="splash-container">
-        <!-- Grain Overlay -->
-        <div class="noise-overlay"></div>
-
-        <!-- Canvas for Particles -->
-        <canvas id="scene"></canvas>
-
-        <!-- Typography -->
-        <div id="text-container">
-            <h1 class="brand-name">WikiMind</h1>
+    <!-- SPLASH SCREEN -->
+    <div id="intro-overlay">
+        <div class="flex flex-col items-center gap-4">
+            <div class="logo-pulse">W</div>
+            <div class="text-xs font-mono uppercase tracking-widest mt-2">Initialisation Animate</div>
         </div>
     </div>
 
+    <!-- BACKGROUND -->
+    <canvas id="bg-canvas"></canvas>
+
+    <!-- NAVBAR -->
+    <header class="fixed top-0 w-full z-50 border-b border-gray-200/50 dark:border-gray-800/50 backdrop-blur-md">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="flex items-center gap-3 cursor-pointer" onclick="window.location.href='index.html'">
+                <div class="w-10 h-10 bg-violet-600 text-white rounded-xl flex items-center justify-center font-black text-xl">A</div>
+                <h1 class="hidden md:block text-xl font-black uppercase tracking-tighter italic">WikiMind <span class="text-violet-500">Animate</span></h1>
+            </div>
+            
+            <div class="flex items-center gap-3">
+                <div class="px-3 py-1 bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-300 rounded-full text-[10px] font-bold uppercase tracking-widest">
+                    <i class="fa-solid fa-robot mr-1"></i> Mistral Powered
+                </div>
+                <button onclick="toggleTheme()" class="w-10 h-10 rounded-full border border-gray-200 dark:border-gray-700 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-zinc-800 transition bg-white dark:bg-black">
+                    <i class="fa-solid fa-moon text-gray-800 dark:text-white"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-grow pt-24 pb-6 px-4 md:px-6 w-full max-w-7xl mx-auto h-full z-10 flex flex-col md:flex-row gap-6">
+
+        <!-- LEFT PANEL: CONTROLS -->
+        <div class="w-full md:w-1/3 flex flex-col gap-4 animate-up">
+            <div class="glass-panel p-6 flex-grow flex flex-col">
+                <div class="mb-4">
+                    <h2 class="text-2xl font-black tracking-tight mb-1">Studio Créatif</h2>
+                    <p class="text-gray-500 text-xs">Décrivez l'animation, l'IA écrit le code.</p>
+                </div>
+
+                <!-- Prompt Input -->
+                <div class="flex-grow relative mb-4">
+                    <textarea id="prompt-input" 
+                        class="w-full h-full min-h-[150px] bg-gray-50 dark:bg-zinc-900/50 border border-gray-200 dark:border-gray-700 rounded-xl p-4 text-sm focus:ring-2 focus:ring-violet-500 focus:outline-none resize-none"
+                        placeholder="Ex: Une pluie de particules néon qui réagissent comme des feux d'artifice, fond sombre, style cybernétique..."></textarea>
+                    <div class="absolute bottom-3 right-3 text-gray-400 text-[10px] font-mono">PROMPT</div>
+                </div>
+
+                <!-- Settings -->
+                <div class="grid grid-cols-2 gap-3 mb-6">
+                    <div>
+                        <label class="text-[10px] font-bold uppercase text-gray-500 ml-1">Style</label>
+                        <select id="style-select" class="w-full mt-1 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-gray-700 rounded-lg p-2 text-xs font-bold">
+                            <option value="canvas">✨ Particules / Géométrique</option>
+                            <option value="abstract">🎨 Art Abstrait</option>
+                            <option value="physics">⚛️ Simulation Physique</option>
+                            <option value="3d">🧊 Faux 3D / Perspective</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold uppercase text-gray-500 ml-1">Durée (Boucle)</label>
+                        <select id="duration-select" class="w-full mt-1 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-gray-700 rounded-lg p-2 text-xs font-bold">
+                            <option value="infinite">Infinie</option>
+                            <option value="5s">5 secondes</option>
+                            <option value="10s">10 secondes</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Action Button -->
+                <button onclick="generateAnimation()" id="generate-btn" class="w-full btn-accent py-4 rounded-xl font-black uppercase tracking-widest text-sm flex items-center justify-center gap-2 shadow-lg shadow-violet-500/20">
+                    <span id="btn-text">Générer l'Animation</span>
+                    <span id="btn-loader" class="loader hidden"></span>
+                </button>
+            </div>
+
+            <!-- Status Console -->
+            <div class="glass-panel p-4 h-32 overflow-y-auto font-mono text-[10px] text-gray-500" id="console-log">
+                <div class="text-violet-500">> Système prêt.</div>
+                <div>> En attente de prompt...</div>
+            </div>
+        </div>
+
+        <!-- RIGHT PANEL: PREVIEW -->
+        <div class="w-full md:w-2/3 h-[500px] md:h-auto relative animate-up" style="animation-delay: 0.1s;">
+            <div class="glass-panel p-2 h-full flex flex-col relative">
+                <!-- Toolbar -->
+                <div class="absolute top-4 right-4 z-30 flex gap-2">
+                    <button onclick="toggleCode()" class="bg-black/50 text-white p-2 rounded-lg backdrop-blur-md hover:bg-black/70 text-xs" title="Voir le Code">
+                        <i class="fa-solid fa-code"></i>
+                    </button>
+                    <button onclick="resetPreview()" class="bg-black/50 text-white p-2 rounded-lg backdrop-blur-md hover:bg-black/70 text-xs" title="Reset">
+                        <i class="fa-solid fa-rotate-right"></i>
+                    </button>
+                </div>
+
+                <!-- Viewport -->
+                <div id="preview-container" class="rounded-xl shadow-2xl">
+                    <iframe id="result-frame" sandbox="allow-scripts allow-same-origin"></iframe>
+                    <div id="placeholder-msg" class="absolute inset-0 flex flex-col items-center justify-center text-gray-500 gap-4">
+                        <div class="w-16 h-16 rounded-2xl bg-gray-100 dark:bg-zinc-800 flex items-center justify-center text-2xl animate-pulse">🎬</div>
+                        <p class="text-xs uppercase tracking-widest font-bold">Aucune animation générée</p>
+                    </div>
+                    <!-- Code Overlay -->
+                    <div id="code-view" class="code-overlay rounded-xl"></div>
+                </div>
+
+                <!-- Bottom Actions -->
+                <div class="mt-2 flex justify-between items-center px-2">
+                    <div class="flex items-center gap-2">
+                        <div class="w-2 h-2 rounded-full bg-red-500 animate-pulse" id="rec-dot" style="display:none;"></div>
+                        <span class="text-[10px] font-bold uppercase text-gray-500" id="status-text">Prêt</span>
+                    </div>
+                    <div class="flex gap-2">
+                         <button onclick="downloadCode()" class="px-4 py-2 rounded-lg bg-gray-200 dark:bg-zinc-800 text-xs font-bold uppercase hover:bg-gray-300 dark:hover:bg-zinc-700 transition">
+                            <i class="fa-solid fa-file-code mr-1"></i> HTML
+                        </button>
+                        <button onclick="startRecording()" id="record-btn" disabled class="px-4 py-2 rounded-lg bg-red-500/10 text-red-500 border border-red-500/20 text-xs font-bold uppercase hover:bg-red-500 hover:text-white transition disabled:opacity-50 disabled:cursor-not-allowed">
+                            <i class="fa-solid fa-video mr-1"></i> Enregistrer (MP4)
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- SCRIPTS -->
     <script>
-        document.addEventListener("DOMContentLoaded", () => {
-            const canvas = document.getElementById('scene');
-            const ctx = canvas.getContext('2d');
-            const container = document.getElementById('splash-container');
+        // --- CONFIGURATION ---
+        // ⚠️ API KEY INTEGRÉE (Pour démonstration immédiate, à sécuriser en prod)
+        const MISTRAL_API_KEY = "RmL56FeSccbbNpOC1KIDrYozHSFmY5eD"; 
+        const API_URL = "https://api.mistral.ai/v1/chat/completions";
+
+        let currentCode = "";
+        let mediaRecorder;
+        let recordedChunks = [];
+        let isRecording = false;
+
+        // --- UI LOGIC ---
+        function log(msg, type = 'info') {
+            const consoleEl = document.getElementById('console-log');
+            const div = document.createElement('div');
+            div.innerText = `> ${msg}`;
+            if(type === 'error') div.className = "text-red-500 font-bold";
+            if(type === 'success') div.className = "text-green-500 font-bold";
+            consoleEl.appendChild(div);
+            consoleEl.scrollTop = consoleEl.scrollHeight;
+        }
+
+        // --- CORE: GENERATION IA ---
+        async function generateAnimation() {
+            const prompt = document.getElementById('prompt-input').value.trim();
+            const style = document.getElementById('style-select').value;
             
-            let width = window.innerWidth;
-            let height = window.innerHeight;
+            if(!prompt) { alert("Veuillez décrire une animation."); return; }
+
+            // UI Update
+            const btn = document.getElementById('generate-btn');
+            const btnText = document.getElementById('btn-text');
+            const loader = document.getElementById('btn-loader');
             
-            // Configuration de base
-            canvas.width = width;
-            canvas.height = height;
+            btn.disabled = true;
+            btnText.innerText = "Génération...";
+            loader.classList.remove('hidden');
+            log("Envoi de la requête à Mistral AI...");
 
-            // Paramètres de l'animation
-            const SETTINGS = {
-                particleSize: 1.5,
-                scanStep: 6, // Plus petit = plus de particules (Attention performance)
-                font: "900 25vw 'Inter'", // Taille massive pour le "W"
-                monolithHeight: height * 0.6,
-                exitSpeed: 1.2
-            };
-
-            let particles = [];
+            // System Prompt optimisé pour le code créatif
+            const systemPrompt = `Tu es un expert en Creative Coding et JavaScript.
+            Ta tâche : Générer un fichier HTML complet contenant une animation sur un <canvas>.
             
-            // --- 1. GÉNÉRATION DES COORDONNÉES DU LOGO "W" ---
-            function getLogoCoordinates() {
-                // Création d'un canvas virtuel pour "scanner" le texte
-                const tempCanvas = document.createElement('canvas');
-                const tempCtx = tempCanvas.getContext('2d');
-                tempCanvas.width = width;
-                tempCanvas.height = height;
+            Règles strictes :
+            1. Un seul fichier HTML. CSS et JS inclus (<style>, <script>).
+            2. Utilise l'API Canvas HTML5 standard. Pas de bibliothèques externes (pas de p5.js, three.js).
+            3. Le canvas doit prendre 100% de la largeur/hauteur (window.innerWidth).
+            4. L'animation doit être fluide (requestAnimationFrame).
+            5. Gère le redimensionnement de la fenêtre.
+            6. Style demandé : ${style}.
+            7. Adapte les couleurs pour un fond sombre (car l'interface est sombre).
+            8. Ne réponds QUE par le code HTML. Pas d'explications avant ou après. Commence par <!DOCTYPE html>.`;
 
-                tempCtx.fillStyle = '#ffffff';
-                tempCtx.font = SETTINGS.font;
-                tempCtx.textAlign = 'center';
-                tempCtx.textBaseline = 'middle';
-                tempCtx.fillText('W', width / 2, height / 2);
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${MISTRAL_API_KEY}`
+                    },
+                    body: JSON.stringify({
+                        model: "mistral-large-latest", // Ou codestral-latest si dispo
+                        messages: [
+                            { role: "system", content: systemPrompt },
+                            { role: "user", content: `Crée une animation : ${prompt}` }
+                        ],
+                        temperature: 0.7
+                    })
+                });
 
-                const imageData = tempCtx.getImageData(0, 0, width, height);
-                const data = imageData.data;
-                const coords = [];
+                if(!response.ok) throw new Error("Erreur API : " + response.status);
 
-                // Scan des pixels
-                for (let y = 0; y < height; y += SETTINGS.scanStep) {
-                    for (let x = 0; x < width; x += SETTINGS.scanStep) {
-                        const alpha = data[(y * width + x) * 4 + 3];
-                        if (alpha > 128) {
-                            coords.push({ x, y });
-                        }
-                    }
-                }
-                return coords;
-            }
+                const data = await response.json();
+                let rawCode = data.choices[0].message.content;
 
-            // --- 2. SYSTÈME DE PARTICULES ---
-            class Particle {
-                constructor(targetX, targetY, index, total) {
-                    // Position Initiale : LE MONOLITHE
-                    // Une ligne verticale parfaite au centre de l'écran
-                    this.x = width / 2;
-                    
-                    // Distribution verticale le long du monolithe
-                    const normalizedPos = index / total; // 0 à 1
-                    const startY = (height - SETTINGS.monolithHeight) / 2;
-                    this.y = startY + (normalizedPos * SETTINGS.monolithHeight);
+                // Nettoyage du code (Markdown removal)
+                rawCode = rawCode.replace(/```html/g, "").replace(/```/g, "");
 
-                    // Position Cible (Le Logo W)
-                    this.targetX = targetX;
-                    this.targetY = targetY;
-
-                    // Propriétés visuelles
-                    this.size = Math.random() < 0.1 ? SETTINGS.particleSize * 1.5 : SETTINGS.particleSize; // Quelques particules plus grosses
-                    this.alpha = 1; 
-                    
-                    // Pour l'animation d'entrée (Le Monolithe grandit)
-                    this.currentY = height / 2; // Départ du centre pour growth
-                }
-
-                draw() {
-                    ctx.fillStyle = `rgba(255, 255, 255, ${this.alpha})`;
-                    ctx.beginPath();
-                    ctx.rect(this.x, this.y, this.size, this.size); // Rectangles = plus "Digital/Architectural" que des cercles
-                    ctx.fill();
-                }
-            }
-
-            // --- 3. INITIALISATION ---
-            function init() {
-                const targetCoords = getLogoCoordinates();
+                currentCode = rawCode;
+                renderCode(currentCode);
                 
-                // On mélange les coordonnées cibles pour que l'explosion soit organique
-                // (Sinon le haut du monolithe va vers le haut du W, trop linéaire)
-                targetCoords.sort(() => Math.random() - 0.5);
+                log("Code généré avec succès !", "success");
+                document.getElementById('record-btn').disabled = false;
 
-                particles = targetCoords.map((coord, i) => {
-                    return new Particle(coord.x, coord.y, i, targetCoords.length);
-                });
-
-                // Préparer l'état initial visuel (Le Monolithe fermé)
-                // On écrase this.y pour l'animation GSAP
-                particles.forEach(p => {
-                    p.finalMonolithY = p.y; // Sauvegarde la position finale du monolithe
-                    p.y = height / 2; // Commence au centre (point)
-                    p.x = width / 2;
-                });
+            } catch (error) {
+                console.error(error);
+                log("Erreur de génération : " + error.message, "error");
+                alert("Erreur lors de la génération.");
+            } finally {
+                btn.disabled = false;
+                btnText.innerText = "Générer l'Animation";
+                loader.classList.add('hidden');
             }
+        }
 
-            // --- 4. BOUCLE DE RENDU ---
-            function animate() {
-                ctx.clearRect(0, 0, width, height);
-                particles.forEach(p => p.draw());
-                requestAnimationFrame(animate);
+        // --- RENDER LOGIC ---
+        function renderCode(code) {
+            const frame = document.getElementById('result-frame');
+            document.getElementById('placeholder-msg').style.display = 'none';
+            document.getElementById('code-view').innerText = code;
+            
+            // Injection via srcdoc
+            frame.srcdoc = code;
+        }
+
+        function toggleCode() {
+            const codeView = document.getElementById('code-view');
+            codeView.style.display = codeView.style.display === 'block' ? 'none' : 'block';
+        }
+
+        function resetPreview() {
+            document.getElementById('result-frame').srcdoc = "";
+            document.getElementById('placeholder-msg').style.display = 'flex';
+            document.getElementById('record-btn').disabled = true;
+            currentCode = "";
+        }
+
+        function downloadCode() {
+            if(!currentCode) return;
+            const blob = new Blob([currentCode], {type: "text/html"});
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = "wikimind_animation.html";
+            a.click();
+        }
+
+        // --- RECORDING LOGIC (VIDEO EXPORT) ---
+        function startRecording() {
+            const iframe = document.getElementById('result-frame');
+            
+            // Accès au canvas dans l'iframe (nécessite allow-same-origin)
+            try {
+                const canvas = iframe.contentDocument.querySelector('canvas');
+                if (!canvas) { alert("Aucun canvas détecté dans l'animation."); return; }
+
+                const stream = canvas.captureStream(60); // 60 FPS
+                mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm; codecs=vp9' });
+                
+                recordedChunks = [];
+                mediaRecorder.ondataavailable = (e) => {
+                    if (e.data.size > 0) recordedChunks.push(e.data);
+                };
+
+                mediaRecorder.onstop = () => {
+                    const blob = new Blob(recordedChunks, { type: 'video/webm' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `wikimind_animate_${Date.now()}.webm`; // .webm est le plus sûr via browser
+                    a.click();
+                    
+                    document.getElementById('rec-dot').style.display = 'none';
+                    document.getElementById('status-text').innerText = "Export terminé";
+                    document.getElementById('record-btn').innerHTML = '<i class="fa-solid fa-video mr-1"></i> Enregistrer (MP4)';
+                    document.getElementById('record-btn').classList.remove('bg-red-500', 'text-white');
+                    isRecording = false;
+                };
+
+                mediaRecorder.start();
+                isRecording = true;
+                
+                // UI changes
+                document.getElementById('rec-dot').style.display = 'block';
+                document.getElementById('status-text').innerText = "Enregistrement...";
+                document.getElementById('record-btn').innerHTML = '<i class="fa-solid fa-square mr-1"></i> Stopper';
+                document.getElementById('record-btn').onclick = stopRecording;
+                document.getElementById('record-btn').classList.add('bg-red-500', 'text-white');
+
+            } catch (e) {
+                console.error(e);
+                alert("Impossible de capturer la vidéo (Cross-Origin Restriction possible si en local sans serveur).");
             }
+        }
 
-            // --- 5. SÉQUENCE D'ANIMATION (TIMELINE) ---
-            function runSequence() {
-                init();
-                animate();
-
-                const tl = gsap.timeline();
-
-                // PHASE 1 : Le Monolithe s'étire (De point à ligne)
-                tl.to(particles, {
-                    duration: 1.2,
-                    y: (i, t) => t.finalMonolithY,
-                    ease: "power4.inOut",
-                    stagger: {
-                        amount: 0.2,
-                        from: "center"
-                    }
-                });
-
-                // Pause dramatique
-                tl.to({}, { duration: 0.3 });
-
-                // PHASE 2 : Fragmentation (Le Monolithe explose vers le W)
-                tl.to(particles, {
-                    duration: 1.8,
-                    x: (i, t) => t.targetX,
-                    y: (i, t) => t.targetY,
-                    ease: "expo.out", // "Explosion" rapide puis ralentissement élégant
-                });
-
-                // PHASE 3 : Texte (Kerning Animation)
-                tl.to("#text-container", {
-                    opacity: 1,
-                    duration: 1,
-                    ease: "power2.out"
-                }, "-=1.5"); // Commence avant la fin des particules
-
-                tl.to(".brand-name", {
-                    letterSpacing: "0.2em", // Resserrement drastique
-                    duration: 2.5,
-                    ease: "power4.out"
-                }, "-=1.5");
-
-                // PHASE 4 : LA SINGULARITÉ (Sortie)
-                tl.to(container, {
-                    duration: SETTINGS.exitSpeed,
-                    scale: 0, // Aspiration vers le centre
-                    opacity: 0,
-                    rotation: 15, // Légère vrille pour l'effet vortex
-                    filter: "blur(50px)", // Flou de vitesse extrême
-                    ease: "power4.in", // Accélération vers la fin
-                    delay: 0.5,
-                    onComplete: () => {
-                        // --- REDIRECTION ---
-                        window.location.href = "index.html";
-                    }
-                });
+        function stopRecording() {
+            if(mediaRecorder && isRecording) {
+                mediaRecorder.stop();
+                document.getElementById('record-btn').onclick = startRecording;
             }
+        }
 
-            // Gestion du redimensionnement (optionnel pour splash, mais propre)
-            window.addEventListener('resize', () => {
-                width = window.innerWidth;
-                height = window.innerHeight;
-                canvas.width = width;
-                canvas.height = height;
-            });
+        // --- THEME & INIT ---
+        function toggleTheme() {
+            document.body.classList.toggle('dark-mode');
+            const isDark = document.body.classList.contains('dark-mode');
+            localStorage.setItem('wikimind_theme', isDark ? 'dark' : 'light');
+        }
 
-            // Lancement
-            runSequence();
-        });
+        window.onload = () => {
+            // Theme Init
+            if (localStorage.getItem('wikimind_theme') === 'dark' || (!localStorage.getItem('wikimind_theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.body.classList.add('dark-mode');
+            }
+            
+            // Remove splash
+            setTimeout(() => {
+                document.getElementById('intro-overlay').style.opacity = '0';
+                document.getElementById('intro-overlay').style.visibility = 'hidden';
+            }, 1000);
+
+            // Init BG
+            initCanvas();
+        };
+
+        // --- BACKGROUND ANIMATION ---
+        const canvas = document.getElementById('bg-canvas');
+        const ctx = canvas.getContext('2d');
+        let width, height, particles = [];
+
+        function initCanvas() { resize(); createParticles(); animate(); }
+        function resize() { width = canvas.width = window.innerWidth; height = canvas.height = window.innerHeight; }
+        function createParticles() {
+            particles = [];
+            for (let i = 0; i < 40; i++) {
+                particles.push({ x: Math.random() * width, y: Math.random() * height, vx: (Math.random() - 0.5) * 0.4, vy: (Math.random() - 0.5) * 0.4, size: Math.random() * 2 + 1 });
+            }
+        }
+        function animate() {
+            ctx.clearRect(0, 0, width, height);
+            const isDark = document.body.classList.contains('dark-mode');
+            ctx.fillStyle = isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)';
+            for (let p of particles) {
+                p.x += p.vx; p.y += p.vy;
+                if (p.x < 0 || p.x > width) p.vx *= -1; if (p.y < 0 || p.y > height) p.vy *= -1;
+                ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill();
+            }
+            requestAnimationFrame(animate);
+        }
+        window.addEventListener('resize', () => { resize(); createParticles(); });
+
     </script>
 </body>
 </html>
