@@ -1,0 +1,1174 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Chronomètre Oral — V6 (Pro + Grammaires)</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  :root{
+    --bg:#f8fafc;
+    --card:#ffffff;
+    --accent:#0b74ff;
+    --muted:#6b7280;
+    --success:#16a34a;
+    --warning:#f59e0b;
+    --danger:#ef4444;
+    --glass: rgba(255,255,255,0.6);
+    --text-color: #14213d;
+    --heading-color: #08142b;
+    --input-border: #e6eefc;
+    --input-bg: #ffffff;
+    --alt-bg: #f1f5f9;
+  }
+  [data-theme="dark"] {
+    --bg: #1e293b;
+    --card: #334155;
+    --accent: #3b82f6;
+    --muted: #94a3b8;
+    --success: #4ade80;
+    --warning: #facc15;
+    --danger: #f87171;
+    --glass: rgba(51,65,85,0.7);
+    --text-color: #f1f5f9;
+    --heading-color: #f8fafc;
+    --input-border: #475569;
+    --input-bg: #1e293b;
+    --alt-bg: #475569;
+  }
+
+  *{box-sizing:border-box}
+  body{
+    font-family:"Poppins",sans-serif;
+    background:var(--bg);
+    margin:0;
+    padding:24px;
+    display:flex;
+    justify-content:center;
+    color:var(--text-color);
+    transition:background-color .3s;
+  }
+  .wrap{width:100%;max-width:1100px;position:relative}
+  header{display:flex;align-items:center;gap:16px;margin-bottom:18px}
+  h1{margin:0;color:var(--accent);font-size:1.4rem}
+  .grid{
+    display:grid;
+    grid-template-columns: 1fr;
+    gap:20px;
+  }
+  .card{
+    background:var(--card);
+    border-radius:14px;
+    padding:18px;
+    box-shadow:0 8px 30px rgba(15,23,42,0.06);
+    transition:background-color .3s;
+  }
+  #timer{
+    font-size:2.4rem;
+    text-align:center;
+    font-weight:700;
+    color:var(--heading-color);
+  }
+  .controls{display:flex;gap:10px;justify-content:center;margin-top:12px;flex-wrap:wrap}
+  .btn{
+    border:none;padding:10px 14px;border-radius:10px;font-weight:700;cursor:pointer;
+    box-shadow:0 6px 18px rgba(11,116,255,0.08);transition:transform .12s;
+    color:white;
+  }
+  .btn:active{transform:translateY(1px)}
+  .btn.start{background:var(--success)}
+  .btn.pause{background:var(--warning);color:var(--text-color)}
+  .btn.stop{background:var(--danger)}
+  .btn.reset{background:var(--accent)}
+  .small{font-size:0.9rem;padding:8px 10px;border-radius:8px;background:var(--alt-bg);color:var(--text-color);border:1px solid var(--input-border)}
+
+  label{display:block;font-weight:600;margin-bottom:6px}
+  textarea{width:100%;min-height:110px;border-radius:10px;border:1px solid var(--input-border);padding:10px;font-size:0.95rem;resize:vertical;background:var(--input-bg);color:var(--text-color)}
+  select,input{width:100%;padding:9px;border-radius:10px;border:1px solid var(--input-border);font-size:0.95rem;background:var(--input-bg);color:var(--text-color)}
+
+  #speakBtn{width:100%;margin-top:10px;background:#06b6d4;color:white;padding:10px;border-radius:10px;font-weight:700;cursor:pointer;border:none}
+  #liveTranscript{min-height:70px;border-radius:8px;padding:10px;border:1px dashed var(--input-border);background:var(--input-bg);white-space:pre-wrap;font-style:italic;color:var(--muted)}
+
+  .resultRow{display:flex;align-items:center;justify-content:space-between;margin-top:12px;gap:10px}
+  .badge{padding:6px 10px;border-radius:999px;background:var(--alt-bg);color:var(--text-color);font-weight:700;white-space:nowrap}
+
+  .expectedWords{margin-top:12px;line-height:1.8;font-size:1rem}
+
+  /* Word style and Tooltip */
+  .word{
+    padding:2px 6px;border-radius:6px;margin-right:6px;display:inline-block;transition:background-color .3s;
+    cursor:pointer;
+    position:relative;
+  }
+  .word:hover{
+    box-shadow: 0 0 0 2px var(--accent);
+    transform: translateY(-1px);
+  }
+  .tooltip{
+    visibility:hidden;opacity:0;
+    background:var(--card);border:1px solid var(--input-border);
+    border-radius:6px;padding:8px 12px;
+    position:absolute;z-index:10;bottom:120%;left:50%;
+    transform:translateX(-50%);
+    box-shadow:0 4px 12px rgba(0,0,0,0.1);
+    font-size:0.85rem;min-width:180px;
+    transition:opacity 0.2s;
+    pointer-events:none;
+    color:var(--text-color);
+    white-space:nowrap;
+  }
+  .word:hover .tooltip{visibility:visible;opacity:1;}
+  .tooltip::after {
+    content:"";position:absolute;top:100%;left:50%;
+    margin-left:-5px;border-width:5px;border-style:solid;
+    border-color:var(--input-border) transparent transparent transparent;
+  }
+  .tooltip-content div{line-height:1.4}
+  .tooltip-content span{font-weight:700}
+
+  /* colors */
+  .ok{background:rgba(16,185,129,0.12);color:var(--success);border:1px solid rgba(16,185,129,0.18)}
+  .approx{background:rgba(245,158,11,0.1);color:var(--warning);border:1px solid rgba(245,158,11,0.14)}
+  .bad{background:rgba(239,68,68,0.08);color:var(--danger);border:1px solid rgba(239,68,68,0.12)}
+  .neutral{background:transparent;color:var(--muted);border:1px dashed var(--input-border)}
+
+  /* history Sidebar */
+  #sidebar{
+    position:fixed;top:0;right:-400px;width:380px;height:100%;
+    background:var(--bg);box-shadow: -4px 0 15px rgba(0,0,0,0.1);
+    z-index:1000;padding:24px;overflow-y:auto;
+    transition:right .3s ease-in-out;
+    border-left:1px solid var(--input-border);
+  }
+  #sidebar.open{right:0;}
+  #sidebar-overlay{
+    position:fixed;top:0;left:0;width:100%;height:100%;
+    background:rgba(0,0,0,0.5);z-index:999;
+    display:none;
+  }
+  #sidebar-overlay.open{display:block;}
+  .close-btn{
+    background:none;border:none;font-size:1.5rem;font-weight:700;
+    color:var(--text-color);position:absolute;top:10px;right:10px;
+    cursor:pointer;padding:8px;
+  }
+  .menu-btn{
+    background:none;border:none;font-size:1.5rem;cursor:pointer;
+    color:var(--accent);margin-right:10px;
+  }
+  .historyList{max-height:260px;overflow:auto;margin-top:10px;border-top:1px solid var(--input-border);padding-top:10px}
+  .sessionItem{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px dashed var(--input-border);font-size:0.95rem;cursor:pointer}
+  .chartWrap{margin-top:12px}
+
+  @media (max-width:980px){
+    #sidebar{width:90%;right:-90%;}
+  }
+
+  /* Toggle Switch (Shared style for Dark Mode and Grammars) */
+  .switch {
+    position: relative;
+    display: inline-block;
+    width: 40px;
+    height: 20px;
+  }
+  .switch input {opacity: 0; width: 0; height: 0;}
+  .slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: #ccc;
+    transition: .4s;
+    border-radius: 20px;
+  }
+  .slider:before {
+    position: absolute;
+    content: "";
+    height: 16px;
+    width: 16px;
+    left: 2px;
+    bottom: 2px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+  }
+  input:checked + .slider {background-color: var(--accent);}
+  input:checked + .slider:before {-webkit-transform: translateX(20px); -ms-transform: translateX(20px); transform: translateX(20px);}
+
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <button class="menu-btn" id="openSidebarBtn">☰</button>
+    <h1>Chronomètre Oral — V6 (Pro)</h1>
+    <div style="margin-left:auto;font-size:0.95rem;color:var(--muted)">Sauvegarde locale • Multilingue • Live transcription</div>
+  </header>
+
+  <div class="grid">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div id="wpmDisplay" class="badge">WPM: --</div>
+        <div id="timer">00:00</div>
+        <div id="targetDurationBadge" class="badge">Objectif: --</div>
+      </div>
+
+      <div class="controls" aria-hidden>
+        <button class="btn start" id="startBtn">▶️ Démarrer</button>
+        <button class="btn pause" id="pauseBtn">⏸️ Pause</button>
+        <button class="btn stop" id="stopBtn">⏹️ Terminer</button>
+        <button class="btn reset" id="resetBtn">🔁 Réinitialiser</button>
+      </div>
+
+      <div style="display:flex;gap:10px;margin-top:12px">
+        <div style="flex:1">
+          <label for="lang">Langue Reconnaissance</label>
+          <select id="lang">
+            <option value="en-US">🇬🇧 Anglais (en-US)</option>
+            <option value="fr-FR" selected>🇫🇷 Français (fr-FR)</option>
+            <option value="es-ES">🇪🇸 Espagnol (es-ES)</option>
+            <option value="de-DE">🇩🇪 Allemand (de-DE)</option>
+            <option value="it-IT">🇮🇹 Italien (it-IT)</option>
+          </select>
+        </div>
+        <div style="width:120px">
+          <label for="durationTarget">Objectif Durée (s)</label>
+          <input type="number" id="durationTarget" placeholder="ex: 300" min="10">
+        </div>
+      </div>
+
+      <div style="margin-top:12px;display:flex;gap:10px;align-items:flex-end">
+        <div style="flex:1">
+          <label for="expectedText">Texte attendu (ton oral)</label>
+          <select id="savedTextsSelect" style="margin-bottom:6px">
+            <option value="new">-- Nouveau Texte --</option>
+          </select>
+          <textarea id="expectedText" placeholder="Colle ici ton texte d'oral (phrases, bullet points...)"></textarea>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:5px;width:120px">
+          <button class="btn small" id="saveTextBtn" style="background:var(--accent);color:white;margin-bottom:5px">💾 Sauver</button>
+          <button class="btn small" id="deleteTextBtn" style="background:var(--danger);color:white">🗑️ Supprimer</button>
+        </div>
+      </div>
+
+
+      <button id="speakBtn">🎙️ Démarrer l'écoute (transcription live)</button>
+
+      <div style="display:flex;gap:10px;margin-top:12px;align-items:center">
+        <div style="flex:1">
+          <label>Texte compris (live)</label>
+          <div id="liveTranscript">Prêt — appuie sur 'Démarrer l'écoute' pour commencer la transcription live.</div>
+        </div>
+        <div style="width:160px">
+          <label>Résultat (final)</label>
+          <div class="badge" id="summaryBadge">—</div>
+        </div>
+      </div>
+
+      <div class="resultRow">
+        <div>
+          <label>Comparaison mot-à-mot (Clic pour s'entraîner !)</label>
+          <div class="expectedWords" id="expectedWords">Aucun texte.</div>
+        </div>
+      </div>
+
+      <div style="margin-top:10px" class="chartWrap card">
+        <canvas id="miniChart" height="100"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="sidebar-overlay"></div>
+<div id="sidebar" class="card">
+  <button class="close-btn" id="closeSidebarBtn">&times;</button>
+  <label style="font-size:1.2rem;font-weight:700">Historique des sessions</label>
+  <div class="historyList" id="historyList">
+    <div style="color:var(--muted)">Aucune session.</div>
+  </div>
+
+  <div style="margin-top:12px;display:flex;gap:8px">
+    <button class="small" id="clearHistory">Effacer l'historique</button>
+    <button class="small" id="exportHistory">Exporter JSON</button>
+  </div>
+
+  <div style="margin-top:14px">
+    <label>Graphique historique</label>
+    <canvas id="historyChart" height="220"></canvas>
+  </div>
+
+  <div style="margin-top:12px;display:flex;justify-content:space-between;align-items:center">
+    <div>
+      <div style="font-weight:700">Moyenne durée</div>
+      <div id="avgDuration" style="color:var(--muted)">--</div>
+    </div>
+    <div>
+      <div style="font-weight:700">Moyenne accuracy</div>
+      <div id="avgAcc" style="color:var(--muted)">--</div>
+    </div>
+  </div>
+
+  <div style="margin-top:20px;border-top:1px solid var(--input-border);padding-top:15px">
+    <label style="font-size:1.2rem;font-weight:700">Paramètres Facultatifs</label>
+
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px">
+      <div>Mode Sombre</div>
+      <label class="switch">
+        <input type="checkbox" id="darkModeToggle">
+        <span class="slider"></span>
+      </label>
+    </div>
+
+    <div style="margin-top:15px">
+      <label for="confidenceMode" style="font-weight:400">Mode de seuil de couleur</label>
+      <select id="confidenceMode" class="small" title="Ajuste la sensibilité pour couleur jaune/vert">
+        <option value="default">Standard (Vert≥80%, Jaune≥50%)</option>
+        <option value="strict">Strict (Vert≥90%, Jaune≥70%)</option>
+        <option value="lenient">Souple (Vert≥70%, Jaune≥50%)</option>
+      </select>
+    </div>
+
+    <div style="margin-top:20px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div style="font-weight:400">Activer les noms propres (Grammaires)</div>
+        <label class="switch">
+          <input type="checkbox" id="grammarToggle">
+          <span class="slider"></span>
+        </label>
+      </div>
+      <label for="properNounsList" style="font-weight:400">Liste de mots spécifiques (séparés par une virgule)</label>
+      <textarea id="properNounsList" placeholder="Hambourg, Bad Bevensen, Tiphaine, ..."></textarea>
+      <div style="font-size:0.8rem;color:var(--muted);margin-top:4px">Aide la reconnaissance pour ce vocabulaire. Nécessite de relancer l'écoute.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* -------------------------
+   Utilitaires : format, Levenshtein
+   ------------------------- */
+function pad(n){return n.toString().padStart(2,'0')}
+function formatSec(s){
+  if(isNaN(s)) return "--:--";
+  const m = Math.floor(s/60);
+  const sec = Math.floor(s%60);
+  return pad(m)+":"+pad(sec);
+}
+
+/* Levenshtein distance */
+function levenshtein(a,b){
+  a = a||""; b = b||"";
+  a = a.toLowerCase(); b = b.toLowerCase();
+  const al=a.length, bl=b.length;
+  if(al===0) return bl; if(bl===0) return al;
+  const v0 = new Array(bl+1), v1 = new Array(bl+1);
+  for(let j=0;j<=bl;j++) v0[j]=j;
+  for(let i=0;i<al;i++){
+    v1[0]=i+1;
+    for(let j=0;j<bl;j++){
+      const cost = a[i]===b[j]?0:1;
+      v1[j+1] = Math.min(v1[j]+1, v0[j+1]+1, v0[j]+cost);
+    }
+    for(let j=0;j<=bl;j++) v0[j]=v1[j];
+  }
+  return v1[bl];
+}
+
+/* similarity between two words (0..1) */
+function similarityWord(a,b){
+  a=a||""; b=b||"";
+  if(a.length===0 && b.length===0) return 1;
+  const d = levenshtein(a,b);
+  const maxL = Math.max(a.length,b.length) || 1;
+  return Math.max(0, 1 - d/maxL);
+}
+
+/* clean & split words from a text */
+function wordsFrom(text){
+  if(!text) return [];
+  return text
+    .trim()
+    .replace(/[^\p{L}\p{N}'’-]+/gu," ") // keep letters, numbers, apostrophes
+    .split(/\s+/)
+    .filter(Boolean);
+}
+
+/* -------------------------
+   Timer logic
+   ------------------------- */
+let startTime=0, elapsed=0, timerInterval=null;
+let totalWordsSaid = 0; // for WPM calculation
+const timerEl = document.getElementById("timer");
+const startBtn = document.getElementById("startBtn");
+const pauseBtn = document.getElementById("pauseBtn");
+const stopBtn = document.getElementById("stopBtn");
+const resetBtn = document.getElementById("resetBtn");
+const wpmDisplay = document.getElementById("wpmDisplay");
+const durationTargetEl = document.getElementById("durationTarget");
+const targetDurationBadge = document.getElementById("targetDurationBadge");
+
+function calculateWPM(durationSeconds, wordCount){
+  if(durationSeconds < 5) return 0; // Prevent huge initial WPM
+  return Math.round((wordCount / durationSeconds) * 60);
+}
+
+function tick(){
+  const t = Date.now() - startTime + elapsed;
+  const totalSec = Math.round(t/1000);
+  timerEl.textContent = formatSec(totalSec);
+  // WPM calculation
+  const currentWPM = calculateWPM(totalSec, totalWordsSaid);
+  wpmDisplay.textContent = `WPM: ${currentWPM}`;
+  // Target duration check
+  const target = parseInt(durationTargetEl.value);
+  if(target > 0){
+    if(totalSec < target){
+      targetDurationBadge.textContent = `Objectif: -${formatSec(target - totalSec)}`;
+      targetDurationBadge.className = "badge approx";
+    } else {
+      targetDurationBadge.textContent = `Objectif: +${formatSec(totalSec - target)}`;
+      targetDurationBadge.className = "badge danger";
+    }
+  } else {
+    targetDurationBadge.textContent = `Objectif: --`;
+    targetDurationBadge.className = "badge";
+  }
+
+  // push to mini chart
+  pushMiniChart(totalSec);
+}
+
+startBtn.addEventListener("click",()=>{
+  if(!startTime) startTime = Date.now();
+  else if(!timerInterval) startTime = Date.now();
+  if(timerInterval) return;
+  timerInterval = setInterval(tick, 250);
+  // Start recognition automatically if text is present
+  if(expectedTextEl.value.trim().length > 0 && !recognizing){
+    startRecognition();
+  }
+});
+
+pauseBtn.addEventListener("click",()=>{
+  if(!timerInterval) return;
+  clearInterval(timerInterval);
+  timerInterval=null;
+  elapsed += Date.now()-startTime;
+  startTime = 0;
+  if(recognizing) recognition.stop(); // Stop recognition on pause
+});
+
+stopBtn.addEventListener("click",()=>{
+  // stop timer
+  if(timerInterval){ clearInterval(timerInterval); timerInterval=null; elapsed += Date.now()-startTime; startTime=0; }
+  const totalSec = Math.round((elapsed || 0)/1000); // Use elapsed if timer was paused/stopped
+  // stop recognition too if active
+  stopRecognitionAndFinalize(totalSec);
+});
+
+resetBtn.addEventListener("click",()=>{
+  if(timerInterval){ clearInterval(timerInterval); timerInterval=null; }
+  startTime = 0; elapsed = 0; totalWordsSaid = 0;
+  timerEl.textContent = "00:00";
+  wpmDisplay.textContent = "WPM: --";
+  targetDurationBadge.textContent = "Objectif: --";
+  targetDurationBadge.className = "badge";
+  // reset mini chart
+  resetMiniChart();
+  // reset transcript and comparison
+  finalTranscript = ""; interimTranscript = "";
+  liveTranscriptEl.textContent = "Prêt — appuie sur 'Démarrer l'écoute' pour commencer la transcription live.";
+  renderNeutralExpected();
+  summaryBadge.textContent = "—";
+});
+
+durationTargetEl.addEventListener("input",()=>{
+  if(!timerInterval){
+    const target = parseInt(durationTargetEl.value);
+    if(target > 0){
+      targetDurationBadge.textContent = `Objectif: ${formatSec(target)}`;
+      targetDurationBadge.className = "badge";
+    } else {
+      targetDurationBadge.textContent = `Objectif: --`;
+      targetDurationBadge.className = "badge";
+    }
+  }
+});
+
+/* -------------------------
+   Speech Recognition
+   ------------------------- */
+const speakBtn = document.getElementById("speakBtn");
+const liveTranscriptEl = document.getElementById("liveTranscript");
+const expectedTextEl = document.getElementById("expectedText");
+const expectedWordsEl = document.getElementById("expectedWords");
+const summaryBadge = document.getElementById("summaryBadge");
+const langSelect = document.getElementById("lang");
+const confidenceMode = document.getElementById("confidenceMode");
+const grammarToggle = document.getElementById("grammarToggle");
+const properNounsList = document.getElementById("properNounsList");
+
+let recognition = null;
+let recognizing = false;
+let finalTranscript = ""; // accumulate final results for session
+let interimTranscript = "";
+let microSessionRecognition = null; // New recognition instance for word practice
+
+/* init recognition safely */
+function initRecognition(lang, isMicroSession = false){
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition || null;
+  const SpeechGrammarList = window.SpeechGrammarList || window.webkitSpeechGrammarList || null;
+
+  if(!SpeechRecognition){
+    speakBtn.disabled = true;
+    liveTranscriptEl.textContent = "⚠️ Reconnaissance vocale non supportée par ce navigateur.";
+    return null;
+  }
+  const r = new SpeechRecognition();
+  r.lang = lang || langSelect.value || "fr-FR";
+  r.interimResults = true;
+  r.continuous = !isMicroSession; // Continuous for main session, not for micro
+  r.maxAlternatives = 1;
+
+  // --- Grammar Logic ---
+  if(grammarToggle.checked && SpeechGrammarList){
+    const words = properNounsList.value.split(',').map(w => w.trim()).filter(w => w.length > 0);
+    if(words.length > 0){
+      const grammar = `#JSGF V1.0; grammar properNouns; public <name> = (${words.join(' | ')});`;
+      const grammarList = new SpeechGrammarList();
+      grammarList.addFromString(grammar, 1); // Weight 1, highest priority
+      r.grammars = grammarList;
+    }
+  }
+  // ---------------------
+
+  if (isMicroSession) {
+    // Separate result handler for micro-session
+    r.onresult = handleMicroSessionResult;
+    r.onend = () => {
+        microSessionRecognition = null; // Reset
+        liveTranscriptEl.textContent = "Prêt — appuie sur 'Démarrer l'écoute' pour commencer la transcription live.";
+        // Re-enable main recognition if timer is still running
+        if(timerInterval && !recognizing) startRecognition();
+    };
+    r.onerror = (e) => {
+        console.warn("Micro-session error", e);
+        liveTranscriptEl.textContent = "Erreur micro-session. Réessayez.";
+    };
+  } else {
+    r.onresult = handleRecognitionResult;
+    r.onend = ()=>{
+      recognizing = false;
+      speakBtn.textContent = "🎙️ Démarrer l'écoute (transcription live)";
+      // Restart if timer is running (continuous mode workaround)
+      if(timerInterval) setTimeout(()=>startRecognition(), 500);
+    };
+    r.onerror = (e)=> {
+      console.warn("SpeechRecognition error", e);
+    };
+  }
+
+  return r;
+}
+
+/* --- Main Recognition --- */
+// Listeners to re-init recognition when settings change
+langSelect.addEventListener('change', () => { if(recognizing) { stopRecognition(); startRecognition(); } });
+grammarToggle.addEventListener('change', () => { if(recognizing) { stopRecognition(); startRecognition(); } });
+properNounsList.addEventListener('input', () => { if(recognizing) { stopRecognition(); startRecognition(); } });
+
+speakBtn.addEventListener("click", ()=>{
+  if(recognizing){
+    stopRecognition();
+  } else {
+    startRecognition();
+  }
+});
+
+function startRecognition(){
+  // Always re-init to apply grammar/lang settings
+  recognition = initRecognition(langSelect.value);
+  if(!recognition) return;
+  
+  if(microSessionRecognition) return; // Don't start main if micro is active
+
+  if(!recognizing){
+    // Reset transcripts only if not in the middle of a continuous session (i.e. if speaking wasn't already on)
+    if(!timerInterval) { finalTranscript = ""; interimTranscript = ""; }
+    
+    try {
+        recognition.start();
+        recognizing=true;
+        speakBtn.textContent = "🛑 Arrêter l'écoute";
+        liveTranscriptEl.textContent = "Écoute en cours...";
+    } catch(e) {
+        console.warn("Recognition start error (likely already started)", e);
+        recognizing=true;
+        speakBtn.textContent = "🛑 Arrêter l'écoute";
+    }
+  }
+}
+
+function stopRecognition(){
+  if(recognition && recognizing){
+    recognition.stop();
+    recognizing=false;
+    speakBtn.textContent = "🎙️ Démarrer l'écoute (transcription live)";
+    liveTranscriptEl.textContent = (finalTranscript + interimTranscript).trim() || "Prêt — appuie sur 'Démarrer l'écoute' pour commencer la transcription live.";
+  }
+}
+
+/* Collect results - Colorize words on final results */
+function handleRecognitionResult(event){
+  let interim = "";
+  let currentFinal = "";
+  for(let i=event.resultIndex; i<event.results.length; i++){
+    const res = event.results[i];
+    if(res.isFinal){
+      currentFinal += res[0].transcript + " ";
+    } else {
+      interim += res[0].transcript + " ";
+    }
+  }
+
+  if(currentFinal){
+    finalTranscript += currentFinal;
+    // Update comparison live on final results
+    const said = finalTranscript.trim();
+    totalWordsSaid = wordsFrom(said).length;
+    renderComparison(expectedTextEl.value, said);
+  }
+
+  interimTranscript = interim;
+  liveTranscriptEl.textContent = (finalTranscript + interimTranscript).trim() || "Écoute en cours...";
+}
+
+/* Stop recognition and then finalize session: compute comparisons and save */
+function stopRecognitionAndFinalize(totalSec){
+  // Stop recognition
+  if(recognition && recognizing){
+    recognition.stop();
+    recognizing = false;
+    speakBtn.textContent = "🎙️ Démarrer l'écoute (transcription live)";
+  }
+  
+  // Wait a tiny bit to ensure final onresult handled
+  setTimeout(()=>{
+    const said = (finalTranscript || interimTranscript || "").trim();
+    totalWordsSaid = wordsFrom(said).length; // Final count
+    finalizeSession(totalSec, said);
+    // Reset live text display
+    liveTranscriptEl.textContent = "Session terminée. Résultat affiché dans la comparaison ci-dessous.";
+  }, 250);
+}
+
+/* --- Micro-Session Recognition for Single Word Practice --- */
+function startMicroSession(expectedWord, wordElement){
+    if(recognizing || microSessionRecognition) {
+        if(recognizing) stopRecognition(); // Stop main if running
+        if(microSessionRecognition) microSessionRecognition.stop();
+    }
+    
+    microSessionRecognition = initRecognition(langSelect.value, true);
+    if (!microSessionRecognition) return;
+
+    // Store context for result handler
+    microSessionRecognition.expectedWord = expectedWord;
+    microSessionRecognition.wordElement = wordElement;
+
+    try {
+        microSessionRecognition.start();
+        liveTranscriptEl.textContent = `Entraînement : Dites "${expectedWord}"... (Écoute en cours)`;
+    } catch(e) {
+        console.error("Micro-session start error:", e);
+        liveTranscriptEl.textContent = "Erreur au démarrage de l'entraînement.";
+    }
+}
+
+function handleMicroSessionResult(event){
+    let final = "";
+    for(let i=event.resultIndex; i<event.results.length; i++){
+        if(event.results[i].isFinal){
+            final = event.results[i][0].transcript;
+            break;
+        }
+    }
+
+    if(final){
+        const { expectedWord, wordElement } = microSessionRecognition;
+        const finalCleaned = wordsFrom(final)[0] || final; // Take first word if multiple
+        const score = similarityWord(expectedWord, finalCleaned);
+
+        // Update the word element data for permanent feedback
+        wordElement.setAttribute('data-said', finalCleaned);
+        wordElement.setAttribute('data-score', score.toFixed(2));
+        wordElement.setAttribute('data-practice', 'true');
+        
+        // Re-run coloring logic for this single element
+        colorizeWordElement(wordElement, expectedWord, finalCleaned, score);
+        
+        liveTranscriptEl.textContent = `Entraînement terminé : Vous avez dit "${final}" | Score: ${Math.round(score*100)}%`;
+        microSessionRecognition.stop(); // Stop after first final result
+    } else {
+        let interim = "";
+        for(let i=event.resultIndex; i<event.results.length; i++){ interim += event.results[i][0].transcript + " "; }
+        liveTranscriptEl.textContent = `Entraînement : Dites "${microSessionRecognition.expectedWord}"... (Vu: ${interim.trim()})`;
+    }
+}
+/* -------------------------
+   Comparison & Coloring
+   ------------------------- */
+function getThresholds(){
+  const mode = confidenceMode.value;
+  if(mode==='strict') return {green:0.9,yellow:0.7};
+  if(mode==='lenient') return {green:0.7,yellow:0.5};
+  return {green:0.8,yellow:0.5};
+}
+
+/* match expected words to said words (greedy best-match) */
+function matchWords(expectedWords, saidWords){
+  const used = new Array(saidWords.length).fill(false);
+  const matches = [];
+  for(let i=0;i<expectedWords.length;i++){
+    const e = expectedWords[i];
+    let bestIdx = -1, bestScore = 0;
+    for(let j=0;j<saidWords.length;j++){
+      if(used[j]) continue;
+      const s = saidWords[j];
+      const sim = similarityWord(e, s);
+      if(sim > bestScore){ bestScore = sim; bestIdx = j; }
+    }
+    if(bestIdx !== -1 && bestScore > 0){
+      used[bestIdx] = true;
+      matches.push({expected:e, said: saidWords[bestIdx], score: bestScore, index: i});
+    } else {
+      matches.push({expected:e, said:"", score:0, index: i});
+    }
+  }
+  return matches;
+}
+
+/* Set the class based on score */
+function colorizeWordElement(span, expected, said, score){
+    const thresholds = getThresholds();
+    span.setAttribute('data-said', said);
+    span.setAttribute('data-score', score.toFixed(2));
+    
+    // Remove previous classes
+    span.className = span.className.replace(/\b(ok|approx|bad|neutral)\b/g, '').trim();
+
+    if(score >= thresholds.green) span.className += " ok";
+    else if(score >= thresholds.yellow) span.className += " approx";
+    else if(score > 0) span.className += " bad";
+    else span.className += " neutral";
+
+    // Update tooltip content
+    const tooltipContent = span.querySelector('.tooltip-content');
+    if(tooltipContent){
+        tooltipContent.innerHTML = `
+            <div>Mot attendu: <span>${expected}</span></div>
+            <div>Mot compris: <span>${said || "N/A"}</span></div>
+            <div>Accuracy: <span>${Math.round(score*100)}%</span></div>
+            ${span.getAttribute('data-practice') === 'true' ? '<div><span style="color:var(--accent)">Entraîné !</span></div>' : ''}
+        `;
+    }
+}
+
+/* colorize expected text and compute overall accuracy */
+function renderComparison(expectedText, saidText){
+  const expWords = wordsFrom(expectedText);
+  const saidWords = wordsFrom(saidText);
+  const matches = matchWords(expWords, saidWords);
+  
+  // RENDER WORDS (if not already rendered/neutral)
+  if(expectedWordsEl.children.length !== expWords.length){
+      // This will only happen if the user manually changes the text area while speaking, which is fine.
+      renderNeutralExpected();
+  }
+
+  let sumSim = 0;
+  const wordSpans = expectedWordsEl.children;
+
+  matches.forEach((m, i)=>{
+    const sim = m.score || 0; sumSim += sim;
+    const span = wordSpans[i];
+    if(span){
+        colorizeWordElement(span, m.expected, m.said, sim);
+    }
+  });
+
+  // accuracy overall as average similarity
+  const overall = expWords.length ? Math.round((sumSim/expWords.length)*100) : 0;
+  summaryBadge.textContent = overall + "%";
+  return overall;
+}
+
+/* finalize session: compute comparison, save to history */
+function finalizeSession(durationSec, saidText){
+  const expected = expectedTextEl.value || "";
+  const acc = renderComparison(expected, saidText);
+  
+  // push session to localStorage
+  const sessions = JSON.parse(localStorage.getItem("oral_sessions") || "[]");
+  const session = {
+    date: new Date().toISOString(),
+    duration: Math.round(durationSec),
+    accuracy: acc,
+    expectedSnippet: expected.slice(0,100) + (expected.length > 100 ? "..." : ""),
+    saidSnippet: (saidText||"").slice(0,100) + ((saidText||"").length > 100 ? "..." : ""),
+    fullExpected: expected,
+    fullSaid: saidText || "",
+    wpm: calculateWPM(durationSec, totalWordsSaid)
+  };
+  sessions.push(session);
+  localStorage.setItem("oral_sessions", JSON.stringify(sessions));
+  // update UI history & charts
+  refreshHistoryUI();
+}
+
+/* -------------------------
+   History Sidebar UI & Charts
+   ------------------------- */
+const historyListEl = document.getElementById("historyList");
+const avgDurationEl = document.getElementById("avgDuration");
+const avgAccEl = document.getElementById("avgAcc");
+const exportBtn = document.getElementById("exportHistory");
+const clearBtn = document.getElementById("clearHistory");
+const sidebar = document.getElementById("sidebar");
+const openSidebarBtn = document.getElementById("openSidebarBtn");
+const closeSidebarBtn = document.getElementById("closeSidebarBtn");
+const sidebarOverlay = document.getElementById("sidebar-overlay");
+
+openSidebarBtn.addEventListener("click", ()=>{
+  sidebar.classList.add("open");
+  sidebarOverlay.classList.add("open");
+});
+closeSidebarBtn.addEventListener("click", ()=>{
+  sidebar.classList.remove("open");
+  sidebarOverlay.classList.remove("open");
+});
+sidebarOverlay.addEventListener("click", ()=>{
+  sidebar.classList.remove("open");
+  sidebarOverlay.classList.remove("open");
+});
+
+function refreshHistoryUI(){
+  const sessions = JSON.parse(localStorage.getItem("oral_sessions") || "[]");
+  historyListEl.innerHTML = "";
+  if(!sessions.length){
+    historyListEl.innerHTML = "<div style='color:var(--muted)'>Aucune session.</div>";
+    avgDurationEl.textContent = "--";
+    avgAccEl.textContent = "--";
+    updateHistoryChart([],[],[]);
+    return;
+  }
+  // list
+  sessions.slice().reverse().forEach(s=>{
+    const el = document.createElement("div");
+    el.className = "sessionItem";
+    el.setAttribute("data-session-date", s.date);
+    el.innerHTML = `<div style="flex:1">
+        <div style="font-weight:700">${new Date(s.date).toLocaleString()}</div>
+        <div style="color:var(--muted);font-size:0.92rem">${s.expectedSnippet}</div>
+      </div>
+      <div style="text-align:right;min-width:110px">
+        <div style="font-weight:700">${formatSec(s.duration)} (${s.wpm} WPM)</div>
+        <div style="color:var(--muted)">${s.accuracy}%</div>
+      </div>`;
+    historyListEl.appendChild(el);
+  });
+  // averages
+  const totalDur = sessions.reduce((a,b)=>a+b.duration,0);
+  const totalAcc = sessions.reduce((a,b)=>a+b.accuracy,0);
+  avgDurationEl.textContent = formatSec(totalDur / sessions.length);
+  avgAccEl.textContent = Math.round(totalAcc / sessions.length) + "%";
+  // chart data
+  const labels = sessions.map(s => new Date(s.date).toLocaleTimeString());
+  const durations = sessions.map(s=>s.duration);
+  const accuracies = sessions.map(s=>s.accuracy);
+  updateHistoryChart(labels, durations, accuracies);
+}
+
+clearBtn.addEventListener("click", ()=>{
+  if(!confirm("Effacer tout l'historique ?")) return;
+  localStorage.removeItem("oral_sessions");
+  refreshHistoryUI();
+});
+
+exportBtn.addEventListener("click", ()=>{
+  const data = localStorage.getItem("oral_sessions") || "[]";
+  const blob = new Blob([data], {type:"application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = "oral_sessions.json";
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+/* HISTORY CHART (duration & accuracy) */
+let historyChart = null;
+const ctxHistory = document.getElementById("historyChart").getContext("2d");
+function updateHistoryChart(labels,durations,accuracies){
+  if(historyChart) historyChart.destroy();
+  historyChart = new Chart(ctxHistory, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [
+        { type:'bar', label:'Durée (s)', data: durations, yAxisID:'y1', backgroundColor:'rgba(11,116,255,0.12)', borderColor:'rgba(11,116,255,0.28)', borderWidth:1 },
+        { type:'line', label:'Accuracy %', data: accuracies, yAxisID:'y2', borderColor:'rgba(16,185,129,0.9)', tension:0.3, pointRadius:4, fill:false }
+      ]
+    },
+    options:{
+      responsive:true,
+      scales:{
+        y1:{ position:'left', title:{display:true,text:'Durée (s)'} },
+        y2:{ position:'right', title:{display:true,text:'Accuracy (%)'}, min:0, max:100, grid:{display:false} },
+        x:{ ticks:{maxRotation:45, minRotation:0} }
+      },
+      plugins:{legend:{position:'top'}}
+    }
+  });
+}
+
+/* MINI chart: live duration samples */
+let miniChart = null;
+const miniCtx = document.getElementById("miniChart").getContext("2d");
+function initMiniChart(){
+  miniChart = new Chart(miniCtx, {
+    type:'line',
+    data:{ labels:[], datasets:[{label:'Temps (s)', data:[], borderColor: 'rgba(11,116,255,0.9)', fill:false, tension:0.2}] },
+    options:{responsive:true, plugins:{legend:{display:false}}, scales:{x:{display:false}, y:{min:0}}}
+  });
+}
+function pushMiniChart(value){
+  if(!miniChart) return;
+  miniChart.data.labels.push("");
+  miniChart.data.datasets[0].data.push(value);
+  if(miniChart.data.labels.length>60){
+    miniChart.data.labels.shift(); miniChart.data.datasets[0].data.shift();
+  }
+  miniChart.update('none');
+}
+function resetMiniChart(){
+  if(!miniChart) return;
+  miniChart.data.labels = []; miniChart.data.datasets[0].data = [];
+  miniChart.update();
+}
+
+/* -------------------------
+   Text Management (Save/Load) - CORRIGÉ
+   ------------------------- */
+const savedTextsSelect = document.getElementById("savedTextsSelect");
+const saveTextBtn = document.getElementById("saveTextBtn");
+const deleteTextBtn = document.getElementById("deleteTextBtn");
+const TEXTS_KEY = "oral_saved_texts";
+
+function loadSavedTexts(){
+  try {
+    return JSON.parse(localStorage.getItem(TEXTS_KEY) || "{}");
+  } catch (e) {
+    console.error("Erreur de chargement des textes sauvegardés :", e);
+    return {};
+  }
+}
+
+function saveText(name, content){
+  const texts = loadSavedTexts();
+  texts[name] = content;
+  localStorage.setItem(TEXTS_KEY, JSON.stringify(texts));
+  return texts;
+}
+
+function deleteText(name){
+  const texts = loadSavedTexts();
+  delete texts[name];
+  localStorage.setItem(TEXTS_KEY, JSON.stringify(texts));
+  return texts;
+}
+
+function refreshSavedTextsSelect(selectedName = null){
+  const texts = loadSavedTexts();
+  savedTextsSelect.innerHTML = '<option value="new">-- Nouveau Texte --</option>';
+  let foundSelected = false;
+  
+  // Remplir les options
+  for(const name in texts){
+    const option = document.createElement("option");
+    option.value = name;
+    option.textContent = name;
+    if(selectedName === name){
+      option.selected = true;
+      foundSelected = true;
+    }
+    savedTextsSelect.appendChild(option);
+  }
+  
+  // Sélectionner l'option appropriée
+  if(selectedName && !foundSelected) savedTextsSelect.value = 'new';
+  
+  // Si aucun n'est sélectionné, tenter de faire correspondre le contenu actuel
+  if(!selectedName || !foundSelected){
+      const currentContent = expectedTextEl.value.trim();
+      let matchFound = false;
+      for(const name in texts){
+          if(texts[name].trim() === currentContent){
+              savedTextsSelect.value = name;
+              matchFound = true;
+              break;
+          }
+      }
+      if(!matchFound) savedTextsSelect.value = 'new';
+  }
+}
+
+saveTextBtn.addEventListener("click", ()=>{
+  const content = expectedTextEl.value.trim();
+  if(!content) return alert("Veuillez saisir du texte à sauvegarder.");
+  
+  let name;
+  const currentSelection = savedTextsSelect.value;
+  const texts = loadSavedTexts();
+  
+  if(currentSelection !== 'new' && texts[currentSelection] && texts[currentSelection].trim() === content){
+    // Update existing one silently if content didn't change (using its current name)
+    name = currentSelection;
+  } else {
+    // Prompt for a new name or reuse current name if content is new/modified
+    name = prompt("Nom du texte à sauvegarder/modifier (laissez vide pour annuler):");
+  }
+
+  if(name){
+    saveText(name, content);
+    refreshSavedTextsSelect(name);
+    alert(`Texte "${name}" sauvegardé.`);
+  }
+});
+
+deleteTextBtn.addEventListener("click", ()=>{
+  const name = savedTextsSelect.value;
+  if(name === 'new') return alert("Sélectionnez un texte à supprimer.");
+  if(confirm(`Voulez-vous vraiment supprimer le texte "${name}" ?`)){
+    deleteText(name);
+    expectedTextEl.value = "";
+    refreshSavedTextsSelect();
+    renderNeutralExpected(); // Force update of word view
+  }
+});
+
+savedTextsSelect.addEventListener("change", ()=>{
+  const name = savedTextsSelect.value;
+  if(name === 'new'){
+    expectedTextEl.value = "";
+    renderNeutralExpected();
+  } else {
+    const texts = loadSavedTexts();
+    expectedTextEl.value = texts[name];
+    renderNeutralExpected(); // Force update of word view
+  }
+});
+
+/* -------------------------
+   Dark Mode Toggle & Proper Nouns
+   ------------------------- */
+const darkModeToggle = document.getElementById("darkModeToggle");
+const ROOT_THEME_KEY = "oral_theme_dark";
+
+function checkDarkMode(){
+  const isDark = localStorage.getItem(ROOT_THEME_KEY) === "true";
+  document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+  darkModeToggle.checked = isDark;
+}
+
+darkModeToggle.addEventListener("change", ()=>{
+  const isDark = darkModeToggle.checked;
+  document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+  localStorage.setItem(ROOT_THEME_KEY, isDark);
+});
+
+// Proper Noun persistence
+const GRAMMARS_KEY = "oral_grammars_active";
+const NOUNS_KEY = "oral_proper_nouns";
+
+function loadGrammarSettings(){
+    grammarToggle.checked = localStorage.getItem(GRAMMARS_KEY) === "true";
+    properNounsList.value = localStorage.getItem(NOUNS_KEY) || "Hambourg, Bad Bevensen, Tiphaine";
+}
+
+grammarToggle.addEventListener('change', () => {
+    localStorage.setItem(GRAMMARS_KEY, grammarToggle.checked);
+    // Restart recognition if running to apply changes
+    if (recognizing) { stopRecognition(); startRecognition(); }
+});
+
+properNounsList.addEventListener('input', () => {
+    localStorage.setItem(NOUNS_KEY, properNounsList.value);
+    // Restart recognition if running to apply changes
+    if (recognizing) { stopRecognition(); startRecognition(); }
+});
+
+/* -------------------------
+   Initialization
+   ------------------------- */
+initMiniChart();
+refreshHistoryUI();
+loadGrammarSettings(); // Load grammar settings before checking dark mode
+checkDarkMode();
+
+/* When page loads, also show expected text split into neutral words */
+function renderNeutralExpected(){
+  const exp = expectedTextEl.value || "";
+  const arr = wordsFrom(exp);
+  expectedWordsEl.innerHTML = "";
+  if(!arr.length){ expectedWordsEl.textContent = "Aucun texte."; return; }
+  
+  arr.forEach(w=>{
+    const s = document.createElement("span");
+    s.className = "word neutral"; 
+    s.textContent = w;
+    s.setAttribute('data-expected', w); // Store expected word for tooltip/click
+    s.innerHTML += `<div class="tooltip"><div class="tooltip-content">Cliquez pour vous entraîner à dire ce mot !</div></div>`; // Tooltip structure
+    s.addEventListener('click', (e) => {
+        // Prevent event propagation if already in micro-session
+        if(microSessionRecognition) return;
+        
+        const expectedWord = e.currentTarget.getAttribute('data-expected');
+        startMicroSession(expectedWord, e.currentTarget);
+    });
+    expectedWordsEl.appendChild(s);
+  });
+  // Update the select menu after updating the textarea content, so it can match
+  refreshSavedTextsSelect();
+}
+expectedTextEl.addEventListener("input", renderNeutralExpected);
+// Initial load of saved text and neutral rendering
+(function initialLoad(){
+    refreshSavedTextsSelect();
+    // Load the content of the currently selected item (which should default to 'new' or last saved)
+    const name = savedTextsSelect.value;
+    if(name !== 'new'){
+        const texts = loadSavedTexts();
+        expectedTextEl.value = texts[name];
+    }
+    renderNeutralExpected(); 
+})();
+
+
+/* On load, try to pre-init recognition availability message */
+(function tryDetect(){
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition || null;
+  if(!SpeechRecognition){
+    liveTranscriptEl.textContent = "⚠️ Reconnaissance vocale non supportée par ce navigateur.";
+    speakBtn.disabled = true;
+  } else {
+    liveTranscriptEl.textContent = "Prêt — appuie sur 'Démarrer l'écoute' pour commencer la transcription live.";
+  }
+
+  // Pre-select French (fr-FR) since the UI is in French
+  langSelect.value = localStorage.getItem("oral_lang") || "fr-FR";
+  langSelect.addEventListener('change', () => localStorage.setItem("oral_lang", langSelect.value));
+})();
+
+</script>
+</body>
+</html>

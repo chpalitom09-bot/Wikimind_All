@@ -1,0 +1,618 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Chronomètre Oral — V3 (Historique)</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  :root{
+    --bg:#f8fafc;
+    --card:#ffffff;
+    --accent:#0b74ff;
+    --muted:#6b7280;
+    --success:#16a34a;
+    --warning:#f59e0b;
+    --danger:#ef4444;
+    --glass: rgba(255,255,255,0.6);
+  }
+  *{box-sizing:border-box}
+  body{
+    font-family:"Poppins",sans-serif;
+    background:var(--bg);
+    margin:0;
+    padding:24px;
+    display:flex;
+    justify-content:center;
+    color:#14213d;
+  }
+  .wrap{width:100%;max-width:1100px;}
+  header{display:flex;align-items:center;gap:16px;margin-bottom:18px}
+  h1{margin:0;color:var(--accent);font-size:1.4rem}
+  .grid{
+    display:grid;
+    grid-template-columns: 1fr 420px;
+    gap:20px;
+  }
+
+  .card{
+    background:var(--card);
+    border-radius:14px;
+    padding:18px;
+    box-shadow:0 8px 30px rgba(15,23,42,0.06);
+  }
+
+  #timer{
+    font-size:2.4rem;
+    text-align:center;
+    font-weight:700;
+    color:#08142b;
+  }
+  .controls{display:flex;gap:10px;justify-content:center;margin-top:12px;flex-wrap:wrap}
+  .btn{
+    border:none;padding:10px 14px;border-radius:10px;font-weight:700;cursor:pointer;
+    box-shadow:0 6px 18px rgba(11,116,255,0.08);transition:transform .12s;
+    color:white;
+  }
+  .btn:active{transform:translateY(1px)}
+  .btn.start{background:var(--success)}
+  .btn.pause{background:var(--warning);color:#000}
+  .btn.stop{background:var(--danger)}
+  .btn.reset{background:var(--accent)}
+  .small{font-size:0.9rem;padding:8px 10px;border-radius:8px;background:#f1f5f9;color:#0f172a;border:1px solid #e6eefc}
+
+  label{display:block;font-weight:600;margin-bottom:6px}
+  textarea{width:100%;min-height:110px;border-radius:10px;border:1px solid #e6eefc;padding:10px;font-size:0.95rem;resize:vertical}
+  select,input{width:100%;padding:9px;border-radius:10px;border:1px solid #e6eefc;font-size:0.95rem}
+
+  #speakBtn{width:100%;margin-top:10px;background:#06b6d4;color:white;padding:10px;border-radius:10px;font-weight:700;cursor:pointer;border:none}
+  #liveTranscript{min-height:70px;border-radius:8px;padding:10px;border:1px dashed #e6eefc;background:#fbfdff;white-space:pre-wrap}
+
+  .resultRow{display:flex;align-items:center;justify-content:space-between;margin-top:12px;gap:10px}
+  .badge{padding:6px 10px;border-radius:999px;background:#f1f5f9;color:#0f172a;font-weight:700}
+
+  .expectedWords{margin-top:12px;line-height:1.8;font-size:1rem}
+  .word{padding:2px 6px;border-radius:6px;margin-right:6px;display:inline-block}
+
+  /* colors */
+  .ok{background:rgba(16,185,129,0.12);color:var(--success);border:1px solid rgba(16,185,129,0.18)}
+  .approx{background:rgba(245,158,11,0.1);color:var(--warning);border:1px solid rgba(245,158,11,0.14)}
+  .bad{background:rgba(239,68,68,0.08);color:var(--danger);border:1px solid rgba(239,68,68,0.12)}
+  .neutral{background:transparent;color:var(--muted);border:1px dashed #eef2ff}
+
+  /* history */
+  .historyList{max-height:260px;overflow:auto;margin-top:10px;border-top:1px solid #f1f5f9;padding-top:10px}
+  .sessionItem{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px dashed #f3f6fb;font-size:0.95rem}
+  .chartWrap{margin-top:12px}
+
+  @media (max-width:980px){
+    .grid{grid-template-columns:1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Chronomètre Oral — V3 (Historique)</h1>
+    <div style="margin-left:auto;font-size:0.95rem;color:var(--muted)">Sauvegarde locale • Multilingue • Live transcription</div>
+  </header>
+
+  <div class="grid">
+    <!-- LEFT: main -->
+    <div class="card">
+      <div id="timer">00:00</div>
+
+      <div class="controls" aria-hidden>
+        <button class="btn start" id="startBtn">▶️ Démarrer</button>
+        <button class="btn pause" id="pauseBtn">⏸️ Pause</button>
+        <button class="btn stop" id="stopBtn">⏹️ Terminer</button>
+        <button class="btn reset" id="resetBtn">🔁 Réinitialiser</button>
+      </div>
+
+      <div style="display:flex;gap:10px;margin-top:12px">
+        <div style="flex:1">
+          <label for="lang">Langue Reconnaissance</label>
+          <select id="lang">
+            <option value="en-US">🇬🇧 Anglais (en-US)</option>
+            <option value="fr-FR">🇫🇷 Français (fr-FR)</option>
+            <option value="es-ES">🇪🇸 Espagnol (es-ES)</option>
+            <option value="de-DE">🇩🇪 Allemand (de-DE)</option>
+          </select>
+        </div>
+        <div style="width:120px">
+          <label for="confidenceMode">Mode seuil</label>
+          <select id="confidenceMode" class="small" title="Ajuste la sensibilité pour couleur jaune/vert">
+            <option value="default">Standard</option>
+            <option value="strict">Strict (vert≥90%, jaune≥70%)</option>
+            <option value="lenient">Souple (vert≥70%, jaune≥50%)</option>
+          </select>
+        </div>
+      </div>
+
+      <label style="margin-top:12px">Texte attendu (ton oral)</label>
+      <textarea id="expectedText" placeholder="Colle ici ton texte d'oral (phrases, bullet points...)"></textarea>
+
+      <button id="speakBtn">🎙️ Démarrer l'écoute (transcription live)</button>
+
+      <div style="display:flex;gap:10px;margin-top:12px;align-items:center">
+        <div style="flex:1">
+          <label>Texte compris (live)</label>
+          <div id="liveTranscript">—</div>
+        </div>
+        <div style="width:160px">
+          <label>Résultat</label>
+          <div class="badge" id="summaryBadge">—</div>
+        </div>
+      </div>
+
+      <div class="resultRow">
+        <div>
+          <label>Comparaison mot-à-mot</label>
+          <div class="expectedWords" id="expectedWords">Aucun texte.</div>
+        </div>
+      </div>
+
+      <div style="margin-top:10px" class="chartWrap card">
+        <canvas id="miniChart" height="100"></canvas>
+      </div>
+    </div>
+
+    <!-- RIGHT: history & stats -->
+    <div>
+      <div class="card">
+        <label>Historique des sessions</label>
+        <div class="historyList" id="historyList">
+          <div style="color:var(--muted)">Aucune session.</div>
+        </div>
+
+        <div style="margin-top:12px;display:flex;gap:8px">
+          <button class="small" id="clearHistory">Effacer l'historique</button>
+          <button class="small" id="exportHistory">Exporter JSON</button>
+        </div>
+
+        <div style="margin-top:14px">
+          <label>Graphique historique</label>
+          <canvas id="historyChart" height="220"></canvas>
+        </div>
+
+        <div style="margin-top:12px;display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div style="font-weight:700">Moyenne durée</div>
+            <div id="avgDuration" style="color:var(--muted)">--</div>
+          </div>
+          <div>
+            <div style="font-weight:700">Moyenne accuracy</div>
+            <div id="avgAcc" style="color:var(--muted)">--</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+/* -------------------------
+   Utilitaires : format, Levenshtein
+   ------------------------- */
+function pad(n){return n.toString().padStart(2,'0')}
+function formatSec(s){
+  if(isNaN(s)) return "--:--";
+  const m = Math.floor(s/60);
+  const sec = Math.floor(s%60);
+  return pad(m)+":"+pad(sec);
+}
+
+/* Levenshtein distance */
+function levenshtein(a,b){
+  a = a||""; b = b||"";
+  a = a.toLowerCase(); b = b.toLowerCase();
+  const al=a.length, bl=b.length;
+  if(al===0) return bl; if(bl===0) return al;
+  const v0 = new Array(bl+1), v1 = new Array(bl+1);
+  for(let j=0;j<=bl;j++) v0[j]=j;
+  for(let i=0;i<al;i++){
+    v1[0]=i+1;
+    for(let j=0;j<bl;j++){
+      const cost = a[i]===b[j]?0:1;
+      v1[j+1] = Math.min(v1[j]+1, v0[j+1]+1, v0[j]+cost);
+    }
+    for(let j=0;j<=bl;j++) v0[j]=v1[j];
+  }
+  return v1[bl];
+}
+
+/* similarity between two words (0..1) */
+function similarityWord(a,b){
+  a=a||""; b=b||"";
+  if(a.length===0 && b.length===0) return 1;
+  const d = levenshtein(a,b);
+  const maxL = Math.max(a.length,b.length) || 1;
+  return Math.max(0, 1 - d/maxL);
+}
+
+/* clean & split words from a text */
+function wordsFrom(text){
+  if(!text) return [];
+  return text
+    .trim()
+    .replace(/[^\p{L}\p{N}'’-]+/gu," ") // keep letters, numbers, apostrophes
+    .split(/\s+/)
+    .filter(Boolean);
+}
+
+/* -------------------------
+   Timer logic
+   ------------------------- */
+let startTime=0, elapsed=0, timerInterval=null;
+const timerEl = document.getElementById("timer");
+const startBtn = document.getElementById("startBtn");
+const pauseBtn = document.getElementById("pauseBtn");
+const stopBtn = document.getElementById("stopBtn");
+const resetBtn = document.getElementById("resetBtn");
+
+function tick(){
+  const t = Date.now() - startTime + elapsed;
+  timerEl.textContent = formatSec(t/1000);
+  // push to mini chart
+  pushMiniChart(Math.round(t/1000));
+}
+
+startBtn.addEventListener("click",()=>{
+  if(!startTime) startTime = Date.now();
+  else if(!timerInterval) startTime = Date.now();
+  if(timerInterval) return;
+  timerInterval = setInterval(tick, 250);
+});
+
+pauseBtn.addEventListener("click",()=>{
+  if(!timerInterval) return;
+  clearInterval(timerInterval);
+  timerInterval=null;
+  elapsed += Date.now()-startTime;
+  startTime = 0;
+});
+
+stopBtn.addEventListener("click",()=>{
+  // stop timer
+  if(timerInterval){ clearInterval(timerInterval); timerInterval=null; elapsed += Date.now()-startTime; startTime=0; }
+  const totalSec = Math.round(elapsed/1000);
+  // stop recognition too if active
+  stopRecognitionAndFinalize(totalSec);
+  // save session (finalization happens after transcription processing)
+});
+
+resetBtn.addEventListener("click",()=>{
+  if(timerInterval){ clearInterval(timerInterval); timerInterval=null; }
+  startTime = 0; elapsed = 0;
+  timerEl.textContent = "00:00";
+  // reset mini chart
+  resetMiniChart();
+});
+
+/* -------------------------
+   Speech Recognition
+   ------------------------- */
+const speakBtn = document.getElementById("speakBtn");
+const liveTranscriptEl = document.getElementById("liveTranscript");
+const expectedTextEl = document.getElementById("expectedText");
+const expectedWordsEl = document.getElementById("expectedWords");
+const summaryBadge = document.getElementById("summaryBadge");
+const langSelect = document.getElementById("lang");
+const confidenceMode = document.getElementById("confidenceMode");
+
+let recognition = null;
+let recognizing = false;
+let finalTranscript = ""; // accumulate final results for session
+let interimTranscript = "";
+
+/* init recognition safely */
+function initRecognition(lang){
+  // try standard API first
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition || null;
+  if(!SpeechRecognition){
+    speakBtn.disabled = true;
+    liveTranscriptEl.textContent = "⚠️ Reconnaissance vocale non supportée par ce navigateur.";
+    return null;
+  }
+  const r = new SpeechRecognition();
+  r.lang = lang || langSelect.value || "en-US";
+  r.interimResults = true;
+  r.continuous = true;
+  r.maxAlternatives = 1;
+  return r;
+}
+
+/* start/stop controls */
+speakBtn.addEventListener("click", ()=>{
+  if(!recognition){
+    recognition = initRecognition(langSelect.value);
+    if(!recognition) return;
+    recognition.onresult = handleRecognitionResult;
+    recognition.onend = ()=>{
+      recognizing = false;
+      speakBtn.textContent = "🎙️ Démarrer l'écoute (transcription live)";
+    };
+    recognition.onerror = (e)=> {
+      console.warn("SpeechRecognition error", e);
+    };
+  }
+  if(recognizing){
+    recognition.stop();
+    recognizing=false;
+    speakBtn.textContent = "🎙️ Démarrer l'écoute (transcription live)";
+  } else {
+    // reset transcripts for new listening segment
+    interimTranscript = ""; finalTranscript = "";
+    liveTranscriptEl.textContent = "—";
+    recognition.lang = langSelect.value;
+    recognition.start();
+    recognizing=true;
+    speakBtn.textContent = "🛑 Arrêter l'écoute";
+  }
+});
+
+/* Collect results */
+function handleRecognitionResult(event){
+  let interim = "";
+  for(let i=event.resultIndex; i<event.results.length; i++){
+    const res = event.results[i];
+    if(res.isFinal){
+      finalTranscript += res[0].transcript + " ";
+    } else {
+      interim += res[0].transcript + " ";
+    }
+  }
+  interimTranscript = interim;
+  liveTranscriptEl.textContent = (finalTranscript + interimTranscript).trim() || "—";
+}
+
+/* Stop recognition and then finalize session: compute comparisons and save */
+function stopRecognitionAndFinalize(totalSec){
+  // if recognition active, stop it and wait a short moment to ensure onresult flushed
+  if(recognition && recognizing){
+    recognition.stop();
+    recognizing = false;
+    speakBtn.textContent = "🎙️ Démarrer l'écoute (transcription live)";
+  }
+  // finalTranscript might still be filling; give tiny timeout to ensure final onresult handled
+  setTimeout(()=>{
+    const said = (finalTranscript || interimTranscript || "").trim();
+    finalizeSession(totalSec, said);
+  }, 250);
+}
+
+/* -------------------------
+   Comparison & Coloring
+   ------------------------- */
+function getThresholds(){
+  const mode = confidenceMode.value;
+  if(mode==='strict') return {green:0.9,yellow:0.7};
+  if(mode==='lenient') return {green:0.7,yellow:0.5};
+  return {green:0.8,yellow:0.5};
+}
+
+/* match expected words to said words (greedy best-match) */
+function matchWords(expectedWords, saidWords){
+  // mark all said words unused initially
+  const used = new Array(saidWords.length).fill(false);
+  const results = [];
+  for(let i=0;i<expectedWords.length;i++){
+    const e = expectedWords[i];
+    let bestIdx = -1, bestScore = 0;
+    for(let j=0;j<saidWords.length;j++){
+      if(used[j]) continue;
+      const s = saidWords[j];
+      const sim = similarityWord(e, s);
+      if(sim > bestScore){ bestScore = sim; bestIdx = j; }
+    }
+    if(bestIdx !== -1 && bestScore > 0){
+      used[bestIdx] = true;
+      results.push({expected:e, said: saidWords[bestIdx], score: bestScore});
+    } else {
+      results.push({expected:e, said:"", score:0});
+    }
+  }
+  return results;
+}
+
+/* colorize expected text and compute overall accuracy */
+function renderComparison(expectedText, saidText){
+  const expWords = wordsFrom(expectedText);
+  const saidWords = wordsFrom(saidText);
+  const matches = matchWords(expWords, saidWords);
+  const thresholds = getThresholds();
+  // build HTML
+  expectedWordsEl.innerHTML = "";
+  let sumSim = 0;
+  matches.forEach(m=>{
+    const sim = m.score || 0; sumSim += sim;
+    const span = document.createElement("span");
+    span.className = "word ";
+    if(sim >= thresholds.green) span.className += "ok";
+    else if(sim >= thresholds.yellow) span.className += "approx";
+    else if(sim > 0) span.className += "bad";
+    else span.className += "neutral";
+    span.textContent = m.expected;
+    expectedWordsEl.appendChild(span);
+  });
+  // accuracy overall as average similarity
+  const overall = expWords.length ? Math.round((sumSim/expWords.length)*100) : 0;
+  summaryBadge.textContent = overall + "%";
+  return overall;
+}
+
+/* finalize session: compute comparison, save to history */
+function finalizeSession(durationSec, saidText){
+  const expected = expectedTextEl.value || "";
+  const acc = renderComparison(expected, saidText);
+  // push session to localStorage
+  const sessions = JSON.parse(localStorage.getItem("oral_sessions") || "[]");
+  const session = {
+    date: new Date().toISOString(),
+    duration: Math.round(durationSec),
+    accuracy: acc,
+    expectedSnippet: expected.slice(0,200),
+    saidSnippet: (saidText||"").slice(0,200)
+  };
+  sessions.push(session);
+  localStorage.setItem("oral_sessions", JSON.stringify(sessions));
+  // update UI history & charts
+  refreshHistoryUI();
+  // reset elapsed counters (as one session finished)
+  elapsed = 0; startTime = 0;
+  timerEl.textContent = formatSec(0);
+  // show mini-chart point
+  pushMiniChart(durationSec);
+}
+
+/* -------------------------
+   History UI & Charts
+   ------------------------- */
+const historyListEl = document.getElementById("historyList");
+const avgDurationEl = document.getElementById("avgDuration");
+const avgAccEl = document.getElementById("avgAcc");
+const exportBtn = document.getElementById("exportHistory");
+const clearBtn = document.getElementById("clearHistory");
+
+function refreshHistoryUI(){
+  const sessions = JSON.parse(localStorage.getItem("oral_sessions") || "[]");
+  historyListEl.innerHTML = "";
+  if(!sessions.length){
+    historyListEl.innerHTML = "<div style='color:var(--muted)'>Aucune session.</div>";
+    avgDurationEl.textContent = "--";
+    avgAccEl.textContent = "--";
+    updateHistoryChart([],[]);
+    return;
+  }
+  // list
+  sessions.slice().reverse().forEach(s=>{
+    const el = document.createElement("div");
+    el.className = "sessionItem";
+    el.innerHTML = `<div style="flex:1">
+        <div style="font-weight:700">${new Date(s.date).toLocaleString()}</div>
+        <div style="color:var(--muted);font-size:0.92rem">${s.expectedSnippet}</div>
+      </div>
+      <div style="text-align:right;min-width:110px">
+        <div style="font-weight:700">${formatSec(s.duration)}</div>
+        <div style="color:var(--muted)">${s.accuracy}%</div>
+      </div>`;
+    historyListEl.appendChild(el);
+  });
+  // averages
+  const totalDur = sessions.reduce((a,b)=>a+b.duration,0);
+  const totalAcc = sessions.reduce((a,b)=>a+b.accuracy,0);
+  avgDurationEl.textContent = formatSec(totalDur / sessions.length);
+  avgAccEl.textContent = Math.round(totalAcc / sessions.length) + "%";
+  // chart data
+  const labels = sessions.map(s => new Date(s.date).toLocaleString());
+  const durations = sessions.map(s=>s.duration);
+  const accuracies = sessions.map(s=>s.accuracy);
+  updateHistoryChart(labels, durations, accuracies);
+}
+
+clearBtn.addEventListener("click", ()=>{
+  if(!confirm("Effacer tout l'historique ?")) return;
+  localStorage.removeItem("oral_sessions");
+  refreshHistoryUI();
+});
+
+exportBtn.addEventListener("click", ()=>{
+  const data = localStorage.getItem("oral_sessions") || "[]";
+  const blob = new Blob([data], {type:"application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = "oral_sessions.json";
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+/* HISTORY CHART (duration & accuracy) */
+let historyChart = null;
+const ctxHistory = document.getElementById("historyChart").getContext("2d");
+function updateHistoryChart(labels,durations,accuracies){
+  if(historyChart) historyChart.destroy();
+  historyChart = new Chart(ctxHistory, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [
+        { type:'bar', label:'Durée (s)', data: durations, yAxisID:'y1', backgroundColor:'rgba(11,116,255,0.12)', borderColor:'rgba(11,116,255,0.28)', borderWidth:1 },
+        { type:'line', label:'Accuracy %', data: accuracies, yAxisID:'y2', borderColor:'rgba(16,185,129,0.9)', tension:0.3, pointRadius:4, fill:false }
+      ]
+    },
+    options:{
+      responsive:true,
+      scales:{
+        y1:{ position:'left', title:{display:true,text:'Durée (s)'} },
+        y2:{ position:'right', title:{display:true,text:'Accuracy (%)'}, min:0, max:100, grid:{display:false} },
+        x:{ ticks:{maxRotation:45, minRotation:0} }
+      },
+      plugins:{legend:{position:'top'}}
+    }
+  });
+}
+
+/* MINI chart: live duration samples */
+let miniChart = null;
+const miniCtx = document.getElementById("miniChart").getContext("2d");
+function initMiniChart(){
+  miniChart = new Chart(miniCtx, {
+    type:'line',
+    data:{ labels:[], datasets:[{label:'Temps (s)', data:[], borderColor: 'rgba(11,116,255,0.9)', fill:false, tension:0.2}] },
+    options:{responsive:true, plugins:{legend:{display:false}}, scales:{x:{display:false}}}
+  });
+}
+function pushMiniChart(value){
+  if(!miniChart) return;
+  miniChart.data.labels.push("");
+  miniChart.data.datasets[0].data.push(value);
+  if(miniChart.data.labels.length>60){
+    miniChart.data.labels.shift(); miniChart.data.datasets[0].data.shift();
+  }
+  miniChart.update('none');
+}
+function resetMiniChart(){
+  if(!miniChart) return;
+  miniChart.data.labels = []; miniChart.data.datasets[0].data = [];
+  miniChart.update();
+}
+
+/* -------------------------
+   Initialization
+   ------------------------- */
+initMiniChart();
+refreshHistoryUI();
+
+/* When page loads, also show expected text split into neutral words */
+function renderNeutralExpected(){
+  const exp = expectedTextEl.value || "";
+  const arr = wordsFrom(exp);
+  expectedWordsEl.innerHTML = "";
+  if(!arr.length){ expectedWordsEl.textContent = "Aucun texte."; return; }
+  arr.forEach(w=>{
+    const s = document.createElement("span");
+    s.className = "word neutral"; s.textContent = w;
+    expectedWordsEl.appendChild(s);
+  });
+}
+expectedTextEl.addEventListener("input", renderNeutralExpected);
+renderNeutralExpected();
+
+/* -------------------------
+   On load, try to pre-init recognition availability message
+   ------------------------- */
+(function tryDetect(){
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition || null;
+  if(!SpeechRecognition){
+    liveTranscriptEl.textContent = "⚠️ Reconnaissance vocale non supportée par ce navigateur.";
+    speakBtn.disabled = true;
+  } else {
+    liveTranscriptEl.textContent = "Prêt — appuie sur 'Démarrer l'écoute' pour commencer la transcription live.";
+  }
+})();
+
+</script>
+</body>
+</html>
