@@ -4,254 +4,227 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>WikiMind Animate - Générateur d'Animation IA</title>
+    <title>WikiMind Animate PRO - Generative Art Engine</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     
     <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
         :root {
-            --bg: #ffffff;
-            --text: #111111;
-            --card-bg: rgba(249, 250, 251, 0.85);
-            --border: #e5e7eb;
-            --accent: #8b5cf6; /* Violet pour Animate */
-            --accent-hover: #7c3aed;
-        }
-
-        .dark-mode {
-            --bg: #0f0f0f;
-            --text: #eeeeee;
-            --card-bg: rgba(22, 22, 22, 0.85);
-            --border: #252525;
-            --accent: #a78bfa;
-            --accent-hover: #8b5cf6;
+            --bg: #050505;
+            --text: #ffffff;
+            --panel: rgba(20, 20, 20, 0.7);
+            --border: rgba(255, 255, 255, 0.1);
+            --accent: #7c3aed; /* Violet intense */
+            --accent-glow: rgba(124, 58, 237, 0.5);
         }
 
         body {
             font-family: 'Inter', sans-serif;
             background-color: var(--bg);
             color: var(--text);
-            transition: background-color 0.4s ease, color 0.4s ease;
-            overflow-x: hidden;
+            overflow: hidden;
             height: 100vh;
             display: flex;
-            flex-col: column;
-        }
-
-        /* --- INTRO ANIMATION --- */
-        #intro-overlay {
-            position: fixed; inset: 0; z-index: 9999;
-            background-color: var(--bg);
-            display: flex; align-items: center; justify-content: center;
-            transition: opacity 0.6s ease-out, visibility 0.6s;
-        }
-        
-        .logo-pulse {
-            width: 80px; height: 80px;
-            background: var(--text); color: var(--bg);
-            border-radius: 24px; display: flex; align-items: center; justify-content: center;
-            font-size: 40px; font-weight: 900;
-            animation: pulseLogo 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
-        }
-        @keyframes pulseLogo {
-            0%, 100% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.1); opacity: 0.8; }
-        }
-
-        /* --- Background Animation Canvas --- */
-        #bg-canvas {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 0; pointer-events: none; opacity: 0.6;
+            flex-direction: column;
         }
 
         /* --- UI Components --- */
         .glass-panel {
-            background: var(--card-bg); backdrop-filter: blur(12px);
-            border: 1px solid var(--border); border-radius: 24px;
+            background: var(--panel);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
         }
-
-        .btn-primary {
-            background-color: var(--text); color: var(--bg);
-            transition: transform 0.2s, opacity 0.2s;
-        }
-        .btn-primary:active { transform: scale(0.95); }
 
         .btn-accent {
-            background-color: var(--accent); color: white;
-            transition: all 0.2s;
+            background: linear-gradient(135deg, #6d28d9 0%, #7c3aed 100%);
+            color: white;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
         }
-        .btn-accent:hover { background-color: var(--accent-hover); box-shadow: 0 0 15px rgba(139, 92, 246, 0.4); }
+        .btn-accent:hover { 
+            transform: translateY(-2px);
+            box-shadow: 0 0 20px var(--accent-glow);
+        }
+        .btn-accent::after {
+            content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: 0.5s;
+        }
+        .btn-accent:hover::after { left: 100%; }
 
         /* Loader */
         .loader {
-            border: 3px solid rgba(255,255,255,0.1);
-            border-left-color: var(--accent);
+            width: 16px; height: 16px;
+            border: 2px solid #fff;
+            border-bottom-color: transparent;
             border-radius: 50%;
-            width: 20px; height: 20px;
-            animation: spin 1s linear infinite;
+            display: inline-block;
+            box-sizing: border-box;
+            animation: rotation 1s linear infinite;
         }
-        @keyframes spin { 100% { transform: rotate(360deg); } }
+        @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
         /* Preview Area */
         #preview-container {
             width: 100%; height: 100%;
-            border-radius: 16px;
+            border-radius: 12px;
             overflow: hidden;
             background: #000;
             position: relative;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
         }
         iframe { width: 100%; height: 100%; border: none; }
 
-        /* Syntax Highlighter Mockup */
+        /* Code Overlay */
         .code-overlay {
-            position: absolute; inset: 0; background: rgba(0,0,0,0.9);
-            color: #0f0; font-family: monospace; padding: 20px;
-            overflow: auto; display: none; font-size: 12px;
+            position: absolute; inset: 0; background: rgba(10, 10, 15, 0.95);
+            color: #a5b3ce; font-family: 'JetBrains Mono', monospace; padding: 20px;
+            overflow: auto; display: none; font-size: 11px; line-height: 1.5;
             z-index: 20;
+            white-space: pre-wrap;
         }
+
+        /* Console */
+        .console-line { margin-bottom: 4px; border-left: 2px solid transparent; padding-left: 6px; }
+        .console-info { border-color: #3b82f6; color: #93c5fd; }
+        .console-success { border-color: #22c55e; color: #86efac; }
+        .console-error { border-color: #ef4444; color: #fca5a5; }
+        .console-system { border-color: #a855f7; color: #d8b4fe; }
+
+        /* Particles BG */
+        #bg-canvas { position: fixed; inset: 0; z-index: -1; opacity: 0.3; pointer-events: none; }
     </style>
 </head>
-<body class="flex flex-col h-screen relative overflow-hidden">
+<body class="flex flex-col h-screen">
 
-    <!-- SPLASH SCREEN -->
-    <div id="intro-overlay">
-        <div class="flex flex-col items-center gap-4">
-            <div class="logo-pulse">W</div>
-            <div class="text-xs font-mono uppercase tracking-widest mt-2">Initialisation Animate</div>
+    <!-- HEADER -->
+    <header class="h-16 border-b border-white/5 bg-black/50 backdrop-blur-md flex items-center justify-between px-6 z-50">
+        <div class="flex items-center gap-3 cursor-pointer" onclick="window.location.href='index.html'">
+            <div class="w-8 h-8 bg-gradient-to-br from-violet-600 to-indigo-600 rounded-lg flex items-center justify-center font-bold text-white shadow-lg shadow-violet-900/50">A</div>
+            <h1 class="font-bold tracking-tight text-lg">WikiMind <span class="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-indigo-400">Animate Pro</span></h1>
         </div>
-    </div>
-
-    <!-- BACKGROUND -->
-    <canvas id="bg-canvas"></canvas>
-
-    <!-- NAVBAR -->
-    <header class="fixed top-0 w-full z-50 border-b border-gray-200/50 dark:border-gray-800/50 backdrop-blur-md">
-        <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-            <div class="flex items-center gap-3 cursor-pointer" onclick="window.location.href='index.html'">
-                <div class="w-10 h-10 bg-violet-600 text-white rounded-xl flex items-center justify-center font-black text-xl">A</div>
-                <h1 class="hidden md:block text-xl font-black uppercase tracking-tighter italic">WikiMind <span class="text-violet-500">Animate</span></h1>
-            </div>
-            
-            <div class="flex items-center gap-3">
-                <div class="px-3 py-1 bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-300 rounded-full text-[10px] font-bold uppercase tracking-widest">
-                    <i class="fa-solid fa-robot mr-1"></i> Mistral Powered
-                </div>
-                <button onclick="toggleTheme()" class="w-10 h-10 rounded-full border border-gray-200 dark:border-gray-700 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-zinc-800 transition bg-white dark:bg-black">
-                    <i class="fa-solid fa-moon text-gray-800 dark:text-white"></i>
-                </button>
+        <div class="flex items-center gap-4">
+            <div class="hidden md:flex items-center gap-2 px-3 py-1 bg-white/5 rounded-full border border-white/10">
+                <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                <span class="text-[10px] font-mono uppercase text-gray-400">Mistral Large Engine</span>
             </div>
         </div>
     </header>
 
-    <!-- MAIN CONTENT -->
-    <main class="flex-grow pt-24 pb-6 px-4 md:px-6 w-full max-w-7xl mx-auto h-full z-10 flex flex-col md:flex-row gap-6">
+    <!-- MAIN INTERFACE -->
+    <main class="flex-grow flex flex-col md:flex-row p-4 gap-4 h-[calc(100vh-64px)] overflow-hidden">
 
-        <!-- LEFT PANEL: CONTROLS -->
-        <div class="w-full md:w-1/3 flex flex-col gap-4 animate-up">
-            <div class="glass-panel p-6 flex-grow flex flex-col">
-                <div class="mb-4">
-                    <h2 class="text-2xl font-black tracking-tight mb-1">Studio Créatif</h2>
-                    <p class="text-gray-500 text-xs">Décrivez l'animation, l'IA écrit le code.</p>
-                </div>
+        <!-- EDITOR PANEL (Left) -->
+        <div class="w-full md:w-[400px] flex flex-col gap-4 animate-fade-in-left">
+            
+            <!-- Input Area -->
+            <div class="glass-panel p-5 flex flex-col flex-grow relative overflow-hidden group">
+                <!-- Decorative glow -->
+                <div class="absolute -top-10 -right-10 w-32 h-32 bg-violet-600/20 rounded-full blur-3xl pointer-events-none"></div>
 
-                <!-- Prompt Input -->
-                <div class="flex-grow relative mb-4">
+                <h2 class="text-sm font-bold uppercase tracking-widest text-gray-400 mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-wand-magic-sparkles text-violet-400"></i> Prompt Créatif
+                </h2>
+
+                <div class="relative flex-grow mb-4">
                     <textarea id="prompt-input" 
-                        class="w-full h-full min-h-[150px] bg-gray-50 dark:bg-zinc-900/50 border border-gray-200 dark:border-gray-700 rounded-xl p-4 text-sm focus:ring-2 focus:ring-violet-500 focus:outline-none resize-none"
-                        placeholder="Ex: Une pluie de particules néon qui réagissent comme des feux d'artifice, fond sombre, style cybernétique..."></textarea>
-                    <div class="absolute bottom-3 right-3 text-gray-400 text-[10px] font-mono">PROMPT</div>
+                        class="w-full h-full bg-black/40 border border-white/10 rounded-xl p-4 text-sm font-medium text-white placeholder-gray-600 focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/50 transition resize-none"
+                        placeholder="Ex: Un trou noir gravitationnel avec des particules qui orbitent et sont aspirées au centre, effet de distorsion, couleurs violet et cyan néon..."></textarea>
                 </div>
 
-                <!-- Settings -->
+                <!-- Advanced Controls -->
                 <div class="grid grid-cols-2 gap-3 mb-6">
                     <div>
-                        <label class="text-[10px] font-bold uppercase text-gray-500 ml-1">Style</label>
-                        <select id="style-select" class="w-full mt-1 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-gray-700 rounded-lg p-2 text-xs font-bold">
-                            <option value="canvas">✨ Particules / Géométrique</option>
-                            <option value="abstract">🎨 Art Abstrait</option>
-                            <option value="physics">⚛️ Simulation Physique</option>
-                            <option value="3d">🧊 Faux 3D / Perspective</option>
+                        <label class="text-[9px] font-bold uppercase text-gray-500 ml-1 mb-1 block">Rendu</label>
+                        <select id="style-select" class="w-full bg-black/40 border border-white/10 rounded-lg py-2 px-3 text-xs text-gray-300 focus:outline-none">
+                            <option value="particles">✨ Particules & Physique</option>
+                            <option value="math">📐 Art Mathématique (Fractale)</option>
+                            <option value="fluid">💧 Fluide & Organique</option>
+                            <option value="cyberpunk">🌆 Cyberpunk / Glitch</option>
+                            <option value="cosmos">🌌 Espace & Nebula</option>
                         </select>
                     </div>
                     <div>
-                        <label class="text-[10px] font-bold uppercase text-gray-500 ml-1">Durée (Boucle)</label>
-                        <select id="duration-select" class="w-full mt-1 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-gray-700 rounded-lg p-2 text-xs font-bold">
-                            <option value="infinite">Infinie</option>
-                            <option value="5s">5 secondes</option>
-                            <option value="10s">10 secondes</option>
+                        <label class="text-[9px] font-bold uppercase text-gray-500 ml-1 mb-1 block">Complexité</label>
+                        <select id="complexity-select" class="w-full bg-black/40 border border-white/10 rounded-lg py-2 px-3 text-xs text-gray-300 focus:outline-none">
+                            <option value="high">🔥 Ultra (Push Limits)</option>
+                            <option value="medium">⚡ Rapide</option>
                         </select>
                     </div>
                 </div>
 
-                <!-- Action Button -->
-                <button onclick="generateAnimation()" id="generate-btn" class="w-full btn-accent py-4 rounded-xl font-black uppercase tracking-widest text-sm flex items-center justify-center gap-2 shadow-lg shadow-violet-500/20">
-                    <span id="btn-text">Générer l'Animation</span>
+                <button onclick="generateAnimation()" id="generate-btn" class="btn-accent w-full py-4 rounded-xl font-bold text-sm tracking-wide shadow-lg flex items-center justify-center gap-2">
+                    <span id="btn-text">GÉNÉRER LE CODE</span>
                     <span id="btn-loader" class="loader hidden"></span>
                 </button>
             </div>
 
-            <!-- Status Console -->
-            <div class="glass-panel p-4 h-32 overflow-y-auto font-mono text-[10px] text-gray-500" id="console-log">
-                <div class="text-violet-500">> Système prêt.</div>
-                <div>> En attente de prompt...</div>
-            </div>
-        </div>
-
-        <!-- RIGHT PANEL: PREVIEW -->
-        <div class="w-full md:w-2/3 h-[500px] md:h-auto relative animate-up" style="animation-delay: 0.1s;">
-            <div class="glass-panel p-2 h-full flex flex-col relative">
-                <!-- Toolbar -->
-                <div class="absolute top-4 right-4 z-30 flex gap-2">
-                    <button onclick="toggleCode()" class="bg-black/50 text-white p-2 rounded-lg backdrop-blur-md hover:bg-black/70 text-xs" title="Voir le Code">
-                        <i class="fa-solid fa-code"></i>
-                    </button>
-                    <button onclick="resetPreview()" class="bg-black/50 text-white p-2 rounded-lg backdrop-blur-md hover:bg-black/70 text-xs" title="Reset">
-                        <i class="fa-solid fa-rotate-right"></i>
-                    </button>
+            <!-- Console Log -->
+            <div class="glass-panel p-4 h-40 overflow-hidden flex flex-col">
+                <div class="flex justify-between items-center mb-2 border-b border-white/5 pb-2">
+                    <span class="text-[10px] font-mono uppercase text-gray-500">Terminal Système</span>
+                    <button onclick="clearConsole()" class="text-[9px] text-gray-600 hover:text-white transition">CLEAR</button>
                 </div>
-
-                <!-- Viewport -->
-                <div id="preview-container" class="rounded-xl shadow-2xl">
-                    <iframe id="result-frame" sandbox="allow-scripts allow-same-origin"></iframe>
-                    <div id="placeholder-msg" class="absolute inset-0 flex flex-col items-center justify-center text-gray-500 gap-4">
-                        <div class="w-16 h-16 rounded-2xl bg-gray-100 dark:bg-zinc-800 flex items-center justify-center text-2xl animate-pulse">🎬</div>
-                        <p class="text-xs uppercase tracking-widest font-bold">Aucune animation générée</p>
-                    </div>
-                    <!-- Code Overlay -->
-                    <div id="code-view" class="code-overlay rounded-xl"></div>
-                </div>
-
-                <!-- Bottom Actions -->
-                <div class="mt-2 flex justify-between items-center px-2">
-                    <div class="flex items-center gap-2">
-                        <div class="w-2 h-2 rounded-full bg-red-500 animate-pulse" id="rec-dot" style="display:none;"></div>
-                        <span class="text-[10px] font-bold uppercase text-gray-500" id="status-text">Prêt</span>
-                    </div>
-                    <div class="flex gap-2">
-                         <button onclick="downloadCode()" class="px-4 py-2 rounded-lg bg-gray-200 dark:bg-zinc-800 text-xs font-bold uppercase hover:bg-gray-300 dark:hover:bg-zinc-700 transition">
-                            <i class="fa-solid fa-file-code mr-1"></i> HTML
-                        </button>
-                        <button onclick="startRecording()" id="record-btn" disabled class="px-4 py-2 rounded-lg bg-red-500/10 text-red-500 border border-red-500/20 text-xs font-bold uppercase hover:bg-red-500 hover:text-white transition disabled:opacity-50 disabled:cursor-not-allowed">
-                            <i class="fa-solid fa-video mr-1"></i> Enregistrer (MP4)
-                        </button>
-                    </div>
+                <div id="console-log" class="flex-grow overflow-y-auto font-mono text-[10px] space-y-1 pr-2 custom-scrollbar">
+                    <div class="console-line console-system">> Wikimind Animate v3.1 Ready.</div>
+                    <div class="console-line console-system">> Waiting for input...</div>
                 </div>
             </div>
         </div>
 
+        <!-- PREVIEW PANEL (Right) -->
+        <div class="flex-grow h-full flex flex-col gap-4 relative">
+            
+            <!-- Toolbar Overlay -->
+            <div class="glass-panel p-2 flex justify-between items-center bg-black/80">
+                <div class="flex items-center gap-3 px-2">
+                    <div class="w-2 h-2 rounded-full bg-gray-600" id="status-dot"></div>
+                    <span class="text-[10px] font-bold uppercase text-gray-400" id="status-text">Idle</span>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="toggleCode()" class="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-gray-400 hover:text-white transition" title="Voir le Code">
+                        <i class="fa-solid fa-code text-xs"></i>
+                    </button>
+                    <button onclick="downloadCode()" class="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-gray-400 hover:text-white transition" title="Télécharger HTML">
+                        <i class="fa-solid fa-download text-xs"></i>
+                    </button>
+                    <button onclick="startRecording()" id="record-btn" disabled class="px-3 h-8 rounded-lg bg-red-500/10 text-red-500 border border-red-500/20 text-xs font-bold uppercase hover:bg-red-500 hover:text-white transition disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-2">
+                        <i class="fa-solid fa-circle text-[8px]"></i> REC
+                    </button>
+                </div>
+            </div>
+
+            <!-- Iframe Container -->
+            <div id="preview-container" class="flex-grow relative border border-white/10">
+                <iframe id="result-frame" sandbox="allow-scripts allow-same-origin allow-modals"></iframe>
+                
+                <!-- Placeholder -->
+                <div id="placeholder-msg" class="absolute inset-0 flex flex-col items-center justify-center text-gray-600 gap-4 pointer-events-none">
+                    <div class="w-20 h-20 rounded-3xl bg-white/5 flex items-center justify-center text-3xl shadow-2xl border border-white/5">✨</div>
+                    <p class="text-xs uppercase tracking-widest font-bold opacity-50">L'IA attend vos instructions</p>
+                </div>
+
+                <!-- Code View -->
+                <div id="code-view" class="code-overlay custom-scrollbar"></div>
+            </div>
+        </div>
     </main>
 
-    <!-- SCRIPTS -->
+    <!-- LOGIC -->
     <script>
-        // --- CONFIGURATION ---
-        // ⚠️ API KEY INTEGRÉE (Pour démonstration immédiate, à sécuriser en prod)
+        // CONFIG
         const MISTRAL_API_KEY = "RmL56FeSccbbNpOC1KIDrYozHSFmY5eD"; 
         const API_URL = "https://api.mistral.ai/v1/chat/completions";
 
@@ -260,47 +233,84 @@
         let recordedChunks = [];
         let isRecording = false;
 
-        // --- UI LOGIC ---
+        // LOGGING UTILS
         function log(msg, type = 'info') {
             const consoleEl = document.getElementById('console-log');
             const div = document.createElement('div');
-            div.innerText = `> ${msg}`;
-            if(type === 'error') div.className = "text-red-500 font-bold";
-            if(type === 'success') div.className = "text-green-500 font-bold";
+            div.className = `console-line console-${type}`;
+            
+            // Timestamp
+            const time = new Date().toLocaleTimeString('fr-FR', {hour12:false, hour:'2-digit', minute:'2-digit', second:'2-digit'});
+            div.innerHTML = `<span class="opacity-50">[${time}]</span> ${msg}`;
+            
             consoleEl.appendChild(div);
             consoleEl.scrollTop = consoleEl.scrollHeight;
         }
 
-        // --- CORE: GENERATION IA ---
+        function clearConsole() {
+            document.getElementById('console-log').innerHTML = '';
+            log('Console cleared.', 'system');
+        }
+
+        // GENERATION ENGINE
         async function generateAnimation() {
             const prompt = document.getElementById('prompt-input').value.trim();
             const style = document.getElementById('style-select').value;
+            const complexity = document.getElementById('complexity-select').value;
             
-            if(!prompt) { alert("Veuillez décrire une animation."); return; }
+            if(!prompt) { 
+                log("Erreur : Le prompt est vide.", "error"); 
+                document.getElementById('prompt-input').focus();
+                return; 
+            }
 
-            // UI Update
+            // UI Feedback
             const btn = document.getElementById('generate-btn');
             const btnText = document.getElementById('btn-text');
             const loader = document.getElementById('btn-loader');
+            const statusDot = document.getElementById('status-dot');
+            const statusText = document.getElementById('status-text');
             
             btn.disabled = true;
-            btnText.innerText = "Génération...";
+            btn.classList.add('opacity-50');
+            btnText.innerText = "CRÉATION EN COURS...";
             loader.classList.remove('hidden');
-            log("Envoi de la requête à Mistral AI...");
+            statusDot.className = "w-2 h-2 rounded-full bg-violet-500 animate-ping";
+            statusText.innerText = "Thinking...";
+            statusText.className = "text-[10px] font-bold uppercase text-violet-400 animate-pulse";
 
-            // System Prompt optimisé pour le code créatif
-            const systemPrompt = `Tu es un expert en Creative Coding et JavaScript.
-            Ta tâche : Générer un fichier HTML complet contenant une animation sur un <canvas>.
+            log("Connexion à Mistral Large...", "system");
+
+            // --- THE SECRET SAUCE : THE SYSTEM PROMPT ---
+            // C'est ici qu'on force l'IA à être excellente.
+            const systemPrompt = `You are a Demoscene Expert and Creative Coding Master (JavaScript/Canvas).
             
-            Règles strictes :
-            1. Un seul fichier HTML. CSS et JS inclus (<style>, <script>).
-            2. Utilise l'API Canvas HTML5 standard. Pas de bibliothèques externes (pas de p5.js, three.js).
-            3. Le canvas doit prendre 100% de la largeur/hauteur (window.innerWidth).
-            4. L'animation doit être fluide (requestAnimationFrame).
-            5. Gère le redimensionnement de la fenêtre.
-            6. Style demandé : ${style}.
-            7. Adapte les couleurs pour un fond sombre (car l'interface est sombre).
-            8. Ne réponds QUE par le code HTML. Pas d'explications avant ou après. Commence par <!DOCTYPE html>.`;
+            YOUR GOAL: Create a visually STUNNING, HIGH-PERFORMANCE animation code based on the user request.
+            
+            TECHNICAL CONSTRAINTS:
+            1. OUTPUT: A single, valid HTML5 file containing CSS and pure JavaScript (no external libraries like Three.js/p5.js to ensure reliability).
+            2. CANVAS: Must be full screen (window.innerWidth/Height) and handle 'resize' events perfectly.
+            3. PERFORMANCE: Use 'requestAnimationFrame' for the loop. Use ES6 Classes for particles/objects.
+            4. BACKGROUND: Default to a dark/black background (fillStyle = 'rgba(0,0,0,...)') unless specified otherwise.
+            5. CODE QUALITY: Write clean, minified-logic but readable code. Use Math.sin/cos for organic movements.
+            
+            VISUAL STANDARDS (The "WOW" Factor):
+            - Use globalCompositeOperation = 'lighter' or 'screen' for glowing neon effects.
+            - Use HSLA colors (hsl(hue, 100%, 50%)) for rainbows/gradients.
+            - Implement physics (velocity, acceleration, friction) if things move.
+            - If 'particles' are requested: Make them interactive (mouse repulsion/attraction) if possible.
+            - Don't just draw circles. Draw trails, gradients, connecting lines between particles.
+            
+            RESPONSE FORMAT:
+            Return ONLY the HTML code. Start with <!DOCTYPE html>. Do not wrap in markdown blocks. Do not explain the code. Just the raw code.
+            `;
+
+            // Prompt Engineering
+            let augmentedPrompt = `Create a ${style} animation. Complexity level: ${complexity}. Description: ${prompt}. `;
+            if(style === 'cyberpunk') augmentedPrompt += " Use neon colors, glitches, grids, futuristic vibe.";
+            if(style === 'cosmos') augmentedPrompt += " Use stars, nebula clouds, gravity, orbital mechanics.";
+            if(style === 'fluid') augmentedPrompt += " Use smooth bezier curves, liquid motion, soft gradients.";
+            augmentedPrompt += " Make it look professional and 'expensive'.";
 
             try {
                 const response = await fetch(API_URL, {
@@ -310,82 +320,95 @@
                         'Authorization': `Bearer ${MISTRAL_API_KEY}`
                     },
                     body: JSON.stringify({
-                        model: "mistral-large-latest", // Ou codestral-latest si dispo
+                        model: "mistral-large-latest", // Le plus puissant modèle dispo
                         messages: [
                             { role: "system", content: systemPrompt },
-                            { role: "user", content: `Crée une animation : ${prompt}` }
+                            { role: "user", content: augmentedPrompt }
                         ],
-                        temperature: 0.7
+                        temperature: 0.8, // Un peu plus haut pour la créativité
+                        max_tokens: 4000
                     })
                 });
 
-                if(!response.ok) throw new Error("Erreur API : " + response.status);
+                if(!response.ok) throw new Error(`API Error: ${response.status}`);
 
                 const data = await response.json();
                 let rawCode = data.choices[0].message.content;
 
-                // Nettoyage du code (Markdown removal)
-                rawCode = rawCode.replace(/```html/g, "").replace(/```/g, "");
+                // Nettoyage impitoyable du markdown si l'IA désobéit
+                rawCode = rawCode.replace(/```html/g, "").replace(/```/g, "").trim();
+
+                if(!rawCode.startsWith("<!DOCTYPE html>")) {
+                    // Si l'IA a bavardé avant
+                    const startIndex = rawCode.indexOf("<!DOCTYPE html>");
+                    if(startIndex !== -1) rawCode = rawCode.substring(startIndex);
+                }
 
                 currentCode = rawCode;
                 renderCode(currentCode);
                 
-                log("Code généré avec succès !", "success");
+                log("Code généré et injecté.", "success");
                 document.getElementById('record-btn').disabled = false;
+                statusDot.className = "w-2 h-2 rounded-full bg-green-500";
+                statusText.innerText = "Live";
+                statusText.className = "text-[10px] font-bold uppercase text-green-500";
 
             } catch (error) {
                 console.error(error);
-                log("Erreur de génération : " + error.message, "error");
-                alert("Erreur lors de la génération.");
+                log("Erreur critique: " + error.message, "error");
+                statusDot.className = "w-2 h-2 rounded-full bg-red-500";
+                statusText.innerText = "Error";
+                statusText.className = "text-[10px] font-bold uppercase text-red-500";
             } finally {
                 btn.disabled = false;
-                btnText.innerText = "Générer l'Animation";
+                btn.classList.remove('opacity-50');
+                btnText.innerText = "GÉNÉRER LE CODE";
                 loader.classList.add('hidden');
             }
         }
 
-        // --- RENDER LOGIC ---
         function renderCode(code) {
             const frame = document.getElementById('result-frame');
             document.getElementById('placeholder-msg').style.display = 'none';
-            document.getElementById('code-view').innerText = code;
+            document.getElementById('code-view').textContent = code;
             
-            // Injection via srcdoc
+            // Reset iframe to avoid memory leaks
             frame.srcdoc = code;
         }
 
         function toggleCode() {
             const codeView = document.getElementById('code-view');
-            codeView.style.display = codeView.style.display === 'block' ? 'none' : 'block';
-        }
-
-        function resetPreview() {
-            document.getElementById('result-frame').srcdoc = "";
-            document.getElementById('placeholder-msg').style.display = 'flex';
-            document.getElementById('record-btn').disabled = true;
-            currentCode = "";
+            const isVisible = codeView.style.display === 'block';
+            codeView.style.display = isVisible ? 'none' : 'block';
+            log(isVisible ? "Mode Code masqué." : "Mode Code affiché.", 'info');
         }
 
         function downloadCode() {
-            if(!currentCode) return;
+            if(!currentCode) { log("Rien à télécharger.", "error"); return; }
             const blob = new Blob([currentCode], {type: "text/html"});
             const a = document.createElement('a');
             a.href = URL.createObjectURL(blob);
-            a.download = "wikimind_animation.html";
+            a.download = "wikimind_creation.html";
             a.click();
+            log("Fichier HTML téléchargé.", "success");
         }
 
-        // --- RECORDING LOGIC (VIDEO EXPORT) ---
+        // RECORDING (Video Export)
         function startRecording() {
             const iframe = document.getElementById('result-frame');
             
-            // Accès au canvas dans l'iframe (nécessite allow-same-origin)
             try {
+                // On essaie de chopper le canvas dans l'iframe
                 const canvas = iframe.contentDocument.querySelector('canvas');
-                if (!canvas) { alert("Aucun canvas détecté dans l'animation."); return; }
+                if (!canvas) { 
+                    log("Impossible de trouver un <canvas> dans l'iframe. L'IA a peut-être échoué.", "error"); 
+                    return; 
+                }
 
-                const stream = canvas.captureStream(60); // 60 FPS
-                mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm; codecs=vp9' });
+                const stream = canvas.captureStream(60);
+                mediaRecorder = new MediaRecorder(stream, { 
+                    mimeType: MediaRecorder.isTypeSupported('video/webm; codecs=vp9') ? 'video/webm; codecs=vp9' : 'video/webm' 
+                });
                 
                 recordedChunks = [];
                 mediaRecorder.ondataavailable = (e) => {
@@ -397,87 +420,77 @@
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a');
                     a.href = url;
-                    a.download = `wikimind_animate_${Date.now()}.webm`; // .webm est le plus sûr via browser
+                    a.download = `wikimind_render_${Date.now()}.webm`;
                     a.click();
                     
-                    document.getElementById('rec-dot').style.display = 'none';
-                    document.getElementById('status-text').innerText = "Export terminé";
-                    document.getElementById('record-btn').innerHTML = '<i class="fa-solid fa-video mr-1"></i> Enregistrer (MP4)';
-                    document.getElementById('record-btn').classList.remove('bg-red-500', 'text-white');
+                    log("Export vidéo terminé (WEBM).", "success");
                     isRecording = false;
+                    updateRecordBtnUI();
                 };
 
                 mediaRecorder.start();
                 isRecording = true;
-                
-                // UI changes
-                document.getElementById('rec-dot').style.display = 'block';
-                document.getElementById('status-text').innerText = "Enregistrement...";
-                document.getElementById('record-btn').innerHTML = '<i class="fa-solid fa-square mr-1"></i> Stopper';
-                document.getElementById('record-btn').onclick = stopRecording;
-                document.getElementById('record-btn').classList.add('bg-red-500', 'text-white');
+                updateRecordBtnUI();
+                log("Enregistrement vidéo démarré...", "system");
 
             } catch (e) {
                 console.error(e);
-                alert("Impossible de capturer la vidéo (Cross-Origin Restriction possible si en local sans serveur).");
+                log("Erreur d'enregistrement (Sécurité Cross-Origin ?)", "error");
             }
         }
 
         function stopRecording() {
             if(mediaRecorder && isRecording) {
                 mediaRecorder.stop();
-                document.getElementById('record-btn').onclick = startRecording;
             }
         }
 
-        // --- THEME & INIT ---
-        function toggleTheme() {
-            document.body.classList.toggle('dark-mode');
-            const isDark = document.body.classList.contains('dark-mode');
-            localStorage.setItem('wikimind_theme', isDark ? 'dark' : 'light');
-        }
-
-        window.onload = () => {
-            // Theme Init
-            if (localStorage.getItem('wikimind_theme') === 'dark' || (!localStorage.getItem('wikimind_theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-                document.body.classList.add('dark-mode');
-            }
-            
-            // Remove splash
-            setTimeout(() => {
-                document.getElementById('intro-overlay').style.opacity = '0';
-                document.getElementById('intro-overlay').style.visibility = 'hidden';
-            }, 1000);
-
-            // Init BG
-            initCanvas();
-        };
-
-        // --- BACKGROUND ANIMATION ---
-        const canvas = document.getElementById('bg-canvas');
-        const ctx = canvas.getContext('2d');
-        let width, height, particles = [];
-
-        function initCanvas() { resize(); createParticles(); animate(); }
-        function resize() { width = canvas.width = window.innerWidth; height = canvas.height = window.innerHeight; }
-        function createParticles() {
-            particles = [];
-            for (let i = 0; i < 40; i++) {
-                particles.push({ x: Math.random() * width, y: Math.random() * height, vx: (Math.random() - 0.5) * 0.4, vy: (Math.random() - 0.5) * 0.4, size: Math.random() * 2 + 1 });
+        function updateRecordBtnUI() {
+            const btn = document.getElementById('record-btn');
+            if(isRecording) {
+                btn.innerHTML = `<i class="fa-solid fa-square text-[8px] animate-pulse"></i> STOP`;
+                btn.classList.add('bg-red-500', 'text-white');
+                btn.classList.remove('bg-red-500/10', 'text-red-500');
+                btn.onclick = stopRecording;
+            } else {
+                btn.innerHTML = `<i class="fa-solid fa-circle text-[8px]"></i> REC`;
+                btn.classList.remove('bg-red-500', 'text-white');
+                btn.classList.add('bg-red-500/10', 'text-red-500');
+                btn.onclick = startRecording;
             }
         }
-        function animate() {
-            ctx.clearRect(0, 0, width, height);
-            const isDark = document.body.classList.contains('dark-mode');
-            ctx.fillStyle = isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)';
-            for (let p of particles) {
-                p.x += p.vx; p.y += p.vy;
-                if (p.x < 0 || p.x > width) p.vx *= -1; if (p.y < 0 || p.y > height) p.vy *= -1;
-                ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill();
+
+        // BACKGROUND ANIMATION (Minimalist)
+        (function() {
+            const canvas = document.createElement('canvas');
+            canvas.id = "bg-canvas";
+            document.body.appendChild(canvas);
+            const ctx = canvas.getContext('2d');
+            let w, h;
+
+            function resize() { w = canvas.width = window.innerWidth; h = canvas.height = window.innerHeight; }
+            window.addEventListener('resize', resize);
+            resize();
+
+            const particles = Array.from({length: 30}, () => ({
+                x: Math.random() * w, y: Math.random() * h,
+                vx: (Math.random() - 0.5) * 0.5, vy: (Math.random() - 0.5) * 0.5,
+                size: Math.random() * 2
+            }));
+
+            function loop() {
+                ctx.clearRect(0, 0, w, h);
+                ctx.fillStyle = "rgba(255, 255, 255, 0.1)";
+                particles.forEach(p => {
+                    p.x += p.vx; p.y += p.vy;
+                    if(p.x < 0) p.x = w; if(p.x > w) p.x = 0;
+                    if(p.y < 0) p.y = h; if(p.y > h) p.y = 0;
+                    ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI*2); ctx.fill();
+                });
+                requestAnimationFrame(loop);
             }
-            requestAnimationFrame(animate);
-        }
-        window.addEventListener('resize', () => { resize(); createParticles(); });
+            loop();
+        })();
 
     </script>
 </body>
