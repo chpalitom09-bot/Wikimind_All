@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WikiMind Share - Partage d'écran</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- PeerJS (L'API magique pour le P2P sans serveur backend perso) -->
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg: #ffffff;
+            --text: #111111;
+            --card-bg: rgba(249, 250, 251, 0.85);
+            --border: #e5e7eb;
+            --accent: #000000;
+            --accent-text: #ffffff;
+        }
+
+        .dark-mode {
+            --bg: #0f0f0f;
+            --text: #eeeeee;
+            --card-bg: rgba(22, 22, 22, 0.85);
+            --border: #252525;
+            --accent: #ffffff;
+            --accent-text: #000000;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            transition: background-color 0.4s ease, color 0.4s ease;
+        }
+
+        /* Effet de verre */
+        .glass-panel {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+        }
+
+        .btn-primary {
+            background-color: var(--accent);
+            color: var(--accent-text);
+            transition: transform 0.1s;
+        }
+        .btn-primary:active { transform: scale(0.95); }
+
+        /* Animation */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade { animation: fadeIn 0.5s ease-out forwards; }
+
+        .hidden-view { display: none; }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen relative overflow-hidden p-6 dark-mode">
+
+    <!-- HEADER SIMPLIFIÉ -->
+    <header class="flex justify-between items-center max-w-5xl mx-auto w-full mb-10">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-white text-black rounded-xl flex items-center justify-center font-black text-xl">W</div>
+            <h1 class="text-xl font-black uppercase tracking-tighter italic">WikiMind <span class="text-blue-500">Share</span></h1>
+        </div>
+        <button onclick="document.body.classList.toggle('dark-mode')" class="p-2 rounded-full border border-gray-700 hover:bg-white/10">Theme</button>
+    </header>
+
+    <!-- MAIN -->
+    <main class="flex-grow flex flex-col items-center justify-center w-full max-w-5xl mx-auto z-10">
+
+        <!-- STEP 1: MENU PRINCIPAL -->
+        <div id="menu-view" class="animate-fade w-full max-w-2xl text-center space-y-8">
+            <h2 class="text-4xl md:text-6xl font-black tracking-tight">Partage d'écran <br><span class="text-gray-500">Instant & P2P</span></h2>
+            <p class="text-gray-400">Aucune installation requise. Choisissez votre mode.</p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+                <!-- CARTE HOST -->
+                <div onclick="initHost()" class="glass-panel p-8 cursor-pointer hover:border-white transition-colors group">
+                    <div class="text-5xl mb-4 group-hover:scale-110 transition-transform duration-300">📡</div>
+                    <h3 class="text-2xl font-bold mb-2">Diffuser</h3>
+                    <p class="text-sm text-gray-500">Partager mon écran et générer un code de connexion.</p>
+                </div>
+
+                <!-- CARTE JOIN -->
+                <div onclick="showJoin()" class="glass-panel p-8 cursor-pointer hover:border-white transition-colors group">
+                    <div class="text-5xl mb-4 group-hover:scale-110 transition-transform duration-300">📺</div>
+                    <h3 class="text-2xl font-bold mb-2">Regarder</h3>
+                    <p class="text-sm text-gray-500">Entrer un code pour voir l'écran d'un collègue.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- STEP 2: MODE HOST (DIFFUSEUR) -->
+        <div id="host-view" class="hidden-view w-full animate-fade">
+            <div class="glass-panel p-6 mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
+                <div>
+                    <div class="text-xs font-bold uppercase tracking-widest text-blue-400 mb-1">Votre ID de Session</div>
+                    <div id="my-id-display" class="text-3xl font-mono font-bold select-all cursor-pointer" title="Cliquer pour copier">Génération...</div>
+                </div>
+                <div class="flex gap-3">
+                    <button onclick="copyID()" class="px-4 py-2 rounded-full border border-gray-600 hover:bg-white/10 text-xs font-bold uppercase">Copier</button>
+                    <button onclick="location.reload()" class="btn-primary px-6 py-2 rounded-full font-bold text-xs uppercase">Arrêter</button>
+                </div>
+            </div>
+
+            <div class="relative w-full bg-black rounded-2xl overflow-hidden border border-gray-800 shadow-2xl aspect-video flex items-center justify-center">
+                <video id="local-video" autoplay muted playsinline class="w-full h-full object-contain"></video>
+                <div id="host-status" class="absolute bottom-4 left-4 px-3 py-1 bg-red-600 text-white text-xs font-bold rounded-full animate-pulse">En attente de partage...</div>
+            </div>
+        </div>
+
+        <!-- STEP 3: MODE CLIENT (SPECTATEUR) -->
+        <div id="client-view" class="hidden-view w-full max-w-lg animate-fade">
+            <div class="glass-panel p-8 text-center space-y-6">
+                <div class="text-4xl">🔗</div>
+                <h3 class="text-2xl font-bold">Rejoindre une session</h3>
+                <input type="text" id="remote-id-input" placeholder="Collez l'ID ici (ex: wiki-a1b2)" 
+                    class="w-full bg-black/20 border border-gray-700 rounded-xl px-4 py-4 text-center font-mono text-lg focus:outline-none focus:border-white transition">
+                
+                <button onclick="connectToPeer()" class="w-full btn-primary py-4 rounded-xl font-bold uppercase tracking-widest text-sm">
+                    Connexion
+                </button>
+                <button onclick="location.reload()" class="text-xs text-gray-500 hover:text-white mt-4 underline">Retour</button>
+            </div>
+        </div>
+
+        <!-- STEP 4: VIDEO CLIENT -->
+        <div id="video-view" class="hidden-view w-full animate-fade">
+             <div class="mb-4 flex justify-between items-center">
+                <h3 class="text-xl font-bold">👀 Vue à distance</h3>
+                <button onclick="location.reload()" class="px-4 py-2 rounded-full border border-gray-600 text-xs uppercase">Quitter</button>
+            </div>
+            <div class="w-full bg-black rounded-2xl overflow-hidden border border-gray-800 shadow-2xl aspect-video">
+                <video id="remote-video" autoplay playsinline controls class="w-full h-full object-contain"></video>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        // --- LOGIQUE CORE ---
+        let peer = null;
+        let myStream = null;
+
+        // Génère un ID aléatoire court style "wiki-xxxx"
+        const generateID = () => 'wiki-' + Math.random().toString(36).substr(2, 4);
+
+        // --- FONCTIONS UI ---
+        function switchView(viewId) {
+            ['menu-view', 'host-view', 'client-view', 'video-view'].forEach(id => {
+                document.getElementById(id).classList.add('hidden-view');
+            });
+            document.getElementById(viewId).classList.remove('hidden-view');
+        }
+
+        // --- PARTIE HOST (CELUI QUI PARTAGE) ---
+        function initHost() {
+            switchView('host-view');
+            const myId = generateID();
+            document.getElementById('my-id-display').innerText = myId;
+
+            // 1. Création du Peer
+            peer = new Peer(myId);
+
+            peer.on('open', (id) => {
+                console.log('Mon ID PeerJS est: ' + id);
+                startScreenShare();
+            });
+
+            // 3. Quand quelqu'un m'appelle
+            peer.on('call', (call) => {
+                console.log("Quelqu'un se connecte...");
+                // On répond à l'appel en envoyant notre flux vidéo (myStream)
+                call.answer(myStream);
+            });
+
+            peer.on('error', (err) => {
+                alert("Erreur PeerJS: " + err.type);
+            });
+        }
+
+        async function startScreenShare() {
+            try {
+                // API Navigateur native pour capturer l'écran
+                myStream = await navigator.mediaDevices.getDisplayMedia({
+                    video: { cursor: "always" },
+                    audio: false // Mettre à true si vous voulez partager le son système
+                });
+
+                // Afficher le retour local
+                const videoEl = document.getElementById('local-video');
+                videoEl.srcObject = myStream;
+                document.getElementById('host-status').innerText = "🔴 EN DIRECT";
+                document.getElementById('host-status').classList.remove('bg-red-600');
+                document.getElementById('host-status').classList.add('bg-green-600');
+
+                // Si l'utilisateur clique sur "Arrêter le partage" via l'interface du navigateur
+                myStream.getVideoTracks()[0].onended = () => {
+                    alert("Partage terminé");
+                    location.reload();
+                };
+
+            } catch (err) {
+                console.error("Erreur capture:", err);
+                alert("Impossible de capturer l'écran. Veuillez réessayer.");
+                location.reload();
+            }
+        }
+
+        function copyID() {
+            const text = document.getElementById('my-id-display').innerText;
+            navigator.clipboard.writeText(text);
+            alert("ID copié ! Envoyez-le à votre destinataire.");
+        }
+
+
+        // --- PARTIE CLIENT (CELUI QUI REGARDE) ---
+        function showJoin() {
+            switchView('client-view');
+        }
+
+        function connectToPeer() {
+            const remoteId = document.getElementById('remote-id-input').value.trim();
+            if (!remoteId) return alert("Veuillez entrer un ID valide.");
+
+            // Créer un peer temporaire pour le client (ID auto)
+            peer = new Peer();
+
+            peer.on('open', () => {
+                // Appeler le Host
+                console.log("Appel vers " + remoteId);
+                const call = peer.call(remoteId, null); // On envoie null car on ne partage pas notre caméra
+
+                // Quand le Host répond avec son flux
+                call.on('stream', (remoteStream) => {
+                    switchView('video-view');
+                    const videoEl = document.getElementById('remote-video');
+                    videoEl.srcObject = remoteStream;
+                });
+
+                call.on('close', () => {
+                    alert("La connexion a été coupée.");
+                    location.reload();
+                });
+                
+                // Gestion des erreurs de connexion après 5 secondes si rien ne se passe
+                setTimeout(() => {
+                    if(document.getElementById('video-view').classList.contains('hidden-view')){
+                        alert("Connexion
