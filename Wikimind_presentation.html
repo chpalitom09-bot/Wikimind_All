@@ -3,8 +3,8 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WikiMind - La Présentation</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>WikiMind - La Visite Guidée</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -18,362 +18,400 @@
             --text: #111111;
             --accent: #000000;
             --slide-bg: #f9fafb;
+            --card-glass: rgba(255, 255, 255, 0.8);
         }
 
         .dark-mode {
-            --bg: #0f0f0f;
-            --text: #eeeeee;
+            --bg: #000000;
+            --text: #ffffff;
             --accent: #ffffff;
-            --slide-bg: #161616;
+            --slide-bg: #111111;
+            --card-glass: rgba(20, 20, 20, 0.8);
         }
 
         body {
             font-family: 'Inter', sans-serif;
             background-color: var(--bg);
             color: var(--text);
-            overflow: hidden; /* Empêche le scroll, c'est une prez */
-            transition: background-color 0.5s ease, color 0.5s ease;
+            overflow: hidden;
             margin: 0; padding: 0;
-            height: 100vh;
-            width: 100vw;
+            height: 100vh; width: 100vw;
+            transition: background-color 0.5s ease, color 0.5s ease;
         }
 
-        /* --- INTRO ANIMATION --- */
+        /* --- 1. INTRO ANIMATION (SHUTTER) --- */
         #intro-layer {
             position: fixed; inset: 0; z-index: 100;
-            background-color: var(--bg);
             display: flex; flex-direction: column;
-            align-items: center; justify-content: center;
-            perspective: 1000px; /* Pour l'effet 3D */
+            pointer-events: all;
         }
 
-        .title-3d {
-            font-size: 8vw;
-            font-weight: 900;
-            text-transform: uppercase;
-            letter-spacing: -0.05em;
-            opacity: 0;
-            transform: translateZ(-1000px); /* Loin derrière */
-            transition: all 2s cubic-bezier(0.16, 1, 0.3, 1);
-            line-height: 1;
+        .shutter {
+            background-color: var(--text);
+            flex: 1; width: 100%;
+            transition: transform 1.2s cubic-bezier(0.8, 0, 0.2, 1);
+            transform-origin: center;
+            display: flex; align-items: center; justify-content: center;
+            position: relative;
         }
 
-        .title-3d.animate {
-            opacity: 1;
-            transform: translateZ(0); /* Arrive devant */
+        .shutter-top { transform: translateY(0); border-bottom: 1px solid var(--bg); }
+        .shutter-bottom { transform: translateY(0); border-top: 1px solid var(--bg); }
+
+        #intro-layer.open .shutter-top { transform: translateY(-100%); }
+        #intro-layer.open .shutter-bottom { transform: translateY(100%); }
+
+        .loader-text {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            color: var(--bg); z-index: 110;
+            font-size: 8vw; font-weight: 900;
+            mix-blend-mode: difference;
+            opacity: 1; transition: opacity 0.5s;
         }
 
-        .subtitle {
-            font-size: 2vw;
-            font-weight: 300;
-            letter-spacing: 0.5em;
-            text-transform: uppercase;
-            margin-top: 20px;
-            opacity: 0;
-            transform: translateY(20px);
-            transition: all 1s ease 1.5s; /* Délai */
-        }
-        .subtitle.animate { opacity: 1; transform: translateY(0); }
-
-        .start-btn-container {
-            margin-top: 60px;
-            opacity: 0;
-            transition: opacity 1s ease 2.2s;
-        }
-        .start-btn-container.animate { opacity: 1; }
-
-        /* --- SLIDESHOW ENGINE --- */
+        /* --- 2. SLIDESHOW ENGINE --- */
         #presentation-container {
             position: fixed; inset: 0;
-            display: none; /* Caché au début */
-            opacity: 0;
-            transition: opacity 1s ease;
+            opacity: 0; transition: opacity 1s ease 0.5s;
         }
+        #presentation-container.visible { opacity: 1; }
 
         .slide {
             position: absolute; inset: 0;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
-            padding: 4rem;
-            opacity: 0;
-            pointer-events: none;
-            transform: scale(0.95) translateY(20px);
-            transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+            padding: 2rem;
+            opacity: 0; pointer-events: none;
+            transform: scale(0.9) translateY(40px);
+            transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         .slide.active {
-            opacity: 1;
-            pointer-events: all;
+            opacity: 1; pointer-events: all;
             transform: scale(1) translateY(0);
         }
 
         .slide.prev {
-            opacity: 0;
-            transform: scale(1.1) translateY(-20px); /* Part vers le haut */
+            opacity: 0; transform: scale(1.1) translateY(-40px);
         }
 
-        /* Elements inside slides */
-        .slide-content { max-width: 1200px; width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: center; }
-        
-        .slide-text h2 { font-size: 4rem; font-weight: 900; line-height: 1.1; margin-bottom: 1.5rem; transform: translateY(20px); opacity: 0; transition: 0.5s 0.2s; }
-        .slide-text p { font-size: 1.25rem; color: gray; margin-bottom: 2rem; transform: translateY(20px); opacity: 0; transition: 0.5s 0.3s; }
-        .slide-visual { transform: scale(0.9); opacity: 0; transition: 0.8s 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
-        
-        .slide.active .slide-text h2, 
-        .slide.active .slide-text p,
-        .slide.active .slide-visual { transform: translateY(0) scale(1); opacity: 1; }
+        /* --- 3. LAYOUT & TYPOGRAPHY --- */
+        .slide-content {
+            max-width: 1400px; width: 100%;
+            display: grid; grid-template-columns: 1fr 1fr;
+            gap: 4rem; align-items: center;
+        }
 
-        /* --- CONTROLS --- */
+        h2 { font-size: 5rem; font-weight: 900; line-height: 0.95; margin-bottom: 1.5rem; letter-spacing: -0.04em; }
+        p { font-size: 1.25rem; opacity: 0.7; line-height: 1.6; max-width: 90%; }
+
+        .tag {
+            display: inline-block; padding: 6px 16px;
+            border-radius: 99px; font-size: 12px; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.1em;
+            margin-bottom: 20px; border: 1px solid rgba(128,128,128,0.3);
+        }
+
+        /* --- 4. VISUAL CARDS --- */
+        .visual-grid {
+            display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;
+            transform: perspective(1000px) rotateY(-5deg);
+            transition: transform 0.5s ease;
+        }
+        .visual-grid:hover { transform: perspective(1000px) rotateY(0deg); }
+
+        .app-card {
+            background: var(--card-glass);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(128,128,128,0.2);
+            padding: 2rem; border-radius: 24px;
+            display: flex; flex-direction: column; align-items: center; text-align: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.05);
+        }
+
+        /* --- 5. MOBILE OPTIMIZATION --- */
+        @media (max-width: 1024px) {
+            h2 { font-size: 3rem; }
+            .slide-content { grid-template-columns: 1fr; text-align: center; gap: 2rem; }
+            .slide { padding: 1.5rem; justify-content: flex-start; overflow-y: auto; }
+            .visual-grid { transform: none; margin-top: 2rem; }
+            .visual-grid:hover { transform: none; }
+            
+            /* Pour que le slide prenne toute la hauteur et scroll si besoin */
+            .slide-inner { margin-top: auto; margin-bottom: auto; width: 100%; }
+        }
+
+        @media (max-width: 640px) {
+            h2 { font-size: 2.5rem; }
+            p { font-size: 1rem; margin-left: auto; margin-right: auto; }
+            .app-card { padding: 1rem; }
+            .controls { bottom: 20px; right: 20px; }
+            .nav-btn { width: 50px; height: 50px; }
+            .visual-grid { grid-template-columns: 1fr; max-width: 300px; margin: 2rem auto; }
+        }
+
+        /* --- 6. CONTROLS --- */
         .controls {
             position: absolute; bottom: 40px; right: 40px;
-            display: flex; gap: 20px; z-index: 50;
+            display: flex; gap: 12px; z-index: 50;
         }
         .nav-btn {
-            width: 50px; height: 50px; border-radius: 50%;
-            border: 1px solid var(--border); color: var(--text);
+            width: 60px; height: 60px; border-radius: 50%;
+            background: var(--text); color: var(--bg);
             display: flex; align-items: center; justify-content: center;
-            cursor: pointer; transition: 0.2s;
+            cursor: pointer; transition: 0.2s; border: none;
+            font-size: 24px;
         }
-        .nav-btn:hover { background: var(--text); color: var(--bg); }
+        .nav-btn:active { transform: scale(0.9); }
+        .nav-btn.disabled { opacity: 0.2; pointer-events: none; }
 
         .progress-bar {
             position: absolute; bottom: 0; left: 0; height: 4px;
-            background: var(--accent); width: 0%; transition: width 0.5s ease;
-        }
-
-        /* --- UTILS --- */
-        .card-visual {
-            background: var(--slide-bg);
-            border: 1px solid rgba(128,128,128,0.2);
-            border-radius: 30px;
-            padding: 3rem;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.1);
-        }
-        .bg-grain {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E");
-            pointer-events: none; z-index: 0; opacity: 0.5;
-        }
-
-        /* Mobile Responsive */
-        @media (max-width: 768px) {
-            .slide-content { grid-template-columns: 1fr; text-align: center; gap: 2rem; }
-            .slide { padding: 2rem; }
-            .slide-text h2 { font-size: 2.5rem; }
-            .controls { bottom: 20px; right: 20px; }
-            .title-3d { font-size: 15vw; }
-            .subtitle { font-size: 4vw; }
+            background: var(--text); width: 0%; transition: width 0.5s ease; z-index: 50;
         }
     </style>
 </head>
 <body>
-    <div class="bg-grain"></div>
 
-    <!-- 1. INTRO CINEMATIQUE -->
+    <!-- ANIMATION ENTREE -->
     <div id="intro-layer">
-        <div id="intro-title" class="title-3d">WikiMind</div>
-        <div id="intro-sub" class="subtitle">Présentation</div>
-        <div id="intro-btn" class="start-btn-container">
-            <button onclick="startPresentation()" class="px-8 py-4 border border-gray-300 dark:border-gray-700 rounded-full font-bold uppercase tracking-widest text-xs hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-all duration-300 transform hover:scale-105">
-                Commencer la visite
-            </button>
-        </div>
+        <div class="shutter shutter-top"></div>
+        <div class="loader-text">WIKIMIND</div>
+        <div class="shutter shutter-bottom"></div>
     </div>
 
-    <!-- 2. CONTENEUR PRESENTATION -->
+    <!-- HEADER NAV -->
+    <div class="absolute top-0 left-0 w-full p-6 flex justify-between items-center z-50">
+        <div class="w-10 h-10 bg-black dark:bg-white text-white dark:text-black rounded-xl flex items-center justify-center font-black text-xl">W</div>
+        <button onclick="window.location.href='index.html'" class="text-xs font-bold uppercase tracking-widest hover:opacity-50 transition border border-gray-300 dark:border-gray-700 px-4 py-2 rounded-full">Quitter</button>
+    </div>
+
+    <!-- PRESENTATION -->
     <div id="presentation-container">
-        
-        <!-- HEADER NAV -->
-        <div class="absolute top-0 left-0 w-full p-6 flex justify-between items-center z-50">
-            <div class="w-10 h-10 bg-black dark:bg-white text-white dark:text-black rounded-xl flex items-center justify-center font-black text-xl">W</div>
-            <button onclick="window.location.href='index.html'" class="text-xs font-bold uppercase tracking-widest hover:opacity-50 transition">Quitter</button>
-        </div>
 
-        <!-- SLIDES -->
-        
-        <!-- SLIDE 1 : PHILOSOPHIE -->
-        <div class="slide active" data-index="0">
-            <div class="slide-content">
-                <div class="slide-text">
-                    <div class="inline-block px-3 py-1 mb-4 border border-gray-200 dark:border-gray-800 rounded-full text-[10px] font-bold uppercase tracking-widest">Le concept</div>
-                    <h2>L'INTELLIGENCE<br>REDEVIENT<br>PRIVÉE.</h2>
-                    <p>WikiMind n'est pas juste une suite d'outils. C'est une architecture locale. Vos données restent sur votre appareil. L'IA travaille pour vous, pas pour nous.</p>
+        <!-- SLIDE 1 : INTRO -->
+        <div class="slide active">
+            <div class="slide-content slide-inner">
+                <div class="text-part">
+                    <span class="tag">Philosophie</span>
+                    <h2>LE FUTUR<br>EST LOCAL.</h2>
+                    <p>WikiMind n'est pas un site web classique. C'est un système d'exploitation pour votre navigateur. Vos données restent sur votre appareil. L'IA travaille pour vous, en privé.</p>
                 </div>
-                <div class="slide-visual card-visual flex items-center justify-center h-80">
-                    <div class="text-9xl animate-pulse">🔒</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- SLIDE 2 : WIKIMIND AI -->
-        <div class="slide" data-index="1">
-            <div class="slide-content">
-                <div class="slide-text">
-                    <div class="inline-block px-3 py-1 mb-4 bg-blue-100 text-blue-600 rounded-full text-[10px] font-bold uppercase tracking-widest">Flagship</div>
-                    <h2>LE CERVEAU<br>CENTRAL.</h2>
-                    <p>Accédez à Llama 3, Mistral et Gemini dans une seule interface. Analyse de documents, génération de code et mode conversationnel fluide.</p>
-                </div>
-                <div class="slide-visual card-visual flex flex-col items-center justify-center h-80 relative overflow-hidden">
-                    <div class="text-8xl mb-4">🧠</div>
-                    <div class="absolute bottom-4 left-4 right-4 bg-white dark:bg-black p-4 rounded-xl text-xs font-mono border border-gray-200 dark:border-gray-800 opacity-80">
-                        > Analyse en cours...<br>
-                        > Modèle: Llama 3.3<br>
-                        > Latence: 12ms
+                <div class="visual-part flex justify-center">
+                    <div class="relative w-64 h-64 md:w-96 md:h-96 rounded-full border border-gray-200 dark:border-gray-800 flex items-center justify-center animate-[spin_10s_linear_infinite]">
+                        <div class="absolute inset-4 rounded-full border border-dashed border-gray-400 dark:border-gray-600"></div>
+                        <div class="text-6xl md:text-8xl">🔒</div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- SLIDE 3 : ETUDIANTS -->
-        <div class="slide" data-index="2">
-            <div class="slide-content">
-                <div class="slide-text">
-                    <div class="inline-block px-3 py-1 mb-4 bg-green-100 text-green-600 rounded-full text-[10px] font-bold uppercase tracking-widest">Éducation</div>
-                    <h2>RÉUSSIR<br>SES ÉTUDES.</h2>
-                    <p>Du simulateur BAC 2026 ultra-précis à la "Focus Room" Pomodoro musicale. WikiMind structure votre apprentissage et optimise votre temps.</p>
+        <!-- SLIDE 2 : WIKIMIND AI (FLAGSHIP) -->
+        <div class="slide">
+            <div class="slide-content slide-inner">
+                <div class="text-part">
+                    <span class="tag bg-blue-100 text-blue-600 border-none">Le Cerveau</span>
+                    <h2>INTELLIGENCE<br>CENTRALE.</h2>
+                    <p>Accédez à <strong>Llama, Mistral et Gemini</strong> depuis une interface unifiée. Analysez des documents, générez du code et résolvez des problèmes complexes avec le routeur neural.</p>
                 </div>
-                <div class="slide-visual card-visual grid grid-cols-2 gap-4 h-80">
-                    <div class="bg-white dark:bg-black rounded-xl flex flex-col items-center justify-center border border-gray-200 dark:border-gray-800">
+                <div class="visual-part visual-grid">
+                    <div class="app-card">
+                        <div class="text-4xl mb-2">🧠</div>
+                        <div class="font-bold">WikiMind AI</div>
+                        <div class="text-xs opacity-60 mt-1">Multi-Modèles</div>
+                    </div>
+                    <div class="app-card">
+                        <div class="text-4xl mb-2">📂</div>
+                        <div class="font-bold">Analyse Docs</div>
+                        <div class="text-xs opacity-60 mt-1">PDF & Images</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 3 : EDUCATION -->
+        <div class="slide">
+            <div class="slide-content slide-inner">
+                <div class="text-part">
+                    <span class="tag bg-green-100 text-green-600 border-none">Éducation</span>
+                    <h2>VOTRE DIPLÔME<br>ASSURÉ.</h2>
+                    <p>Une suite complète pour les étudiants. Du simulateur de notes BAC 2026 à la prise de notes intelligente, en passant par le solveur mathématique.</p>
+                </div>
+                <div class="visual-part visual-grid">
+                    <div class="app-card">
                         <div class="text-4xl mb-2">🎓</div>
-                        <span class="text-xs font-bold">Simulateur</span>
+                        <div class="font-bold">BAC 2026</div>
+                        <div class="text-xs opacity-60 mt-1">Simulateur</div>
                     </div>
-                    <div class="bg-white dark:bg-black rounded-xl flex flex-col items-center justify-center border border-gray-200 dark:border-gray-800">
-                        <div class="text-4xl mb-2">⏱️</div>
-                        <span class="text-xs font-bold">Focus</span>
+                    <div class="app-card">
+                        <div class="text-4xl mb-2">📝</div>
+                        <div class="font-bold">Cours</div>
+                        <div class="text-xs opacity-60 mt-1">Notes IA</div>
                     </div>
-                    <div class="bg-white dark:bg-black rounded-xl flex flex-col items-center justify-center border border-gray-200 dark:border-gray-800 col-span-2">
+                    <div class="app-card col-span-2">
                         <div class="text-4xl mb-2">📐</div>
-                        <span class="text-xs font-bold">Solveur Maths</span>
+                        <div class="font-bold">Maths Solver</div>
+                        <div class="text-xs opacity-60 mt-1">Géométrie & Algèbre</div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- SLIDE 4 : CREATION -->
-        <div class="slide" data-index="3">
-            <div class="slide-content">
-                <div class="slide-text">
-                    <div class="inline-block px-3 py-1 mb-4 bg-pink-100 text-pink-600 rounded-full text-[10px] font-bold uppercase tracking-widest">Studio</div>
-                    <h2>IMAGINEZ.<br>GÉNÉREZ.</h2>
-                    <p>Un studio complet pour créer des images HD et des vidéos courtes. Pas de code, juste votre imagination pilotée par des modèles de diffusion.</p>
+        <!-- SLIDE 4 : CREATIVITY STUDIO -->
+        <div class="slide">
+            <div class="slide-content slide-inner">
+                <div class="text-part">
+                    <span class="tag bg-pink-100 text-pink-600 border-none">Studio Créatif</span>
+                    <h2>IMAGINEZ.<br>CRÉEZ.</h2>
+                    <p>Générez des images HD, modélisez des objets en 3D ou créez des présentations entières en quelques secondes. Votre studio de production personnel.</p>
                 </div>
-                <div class="slide-visual card-visual h-80 bg-cover bg-center" style="background-image: url('https://image.pollinations.ai/prompt/futuristic%20abstract%203d%20shapes%20neon%20dark?nologo=true');">
-                    <!-- Image bg generated -->
-                </div>
-            </div>
-        </div>
-
-        <!-- SLIDE 5 : OUTILS AVANCES -->
-        <div class="slide" data-index="4">
-            <div class="slide-content">
-                <div class="slide-text">
-                    <div class="inline-block px-3 py-1 mb-4 bg-purple-100 text-purple-600 rounded-full text-[10px] font-bold uppercase tracking-widest">Analyse</div>
-                    <h2>VÉRITÉ &<br>NUANCE.</h2>
-                    <p>Un détecteur d'IA puissant pour vérifier vos textes, et un Humanizer pour reformuler naturellement. Maîtrisez la limite entre l'homme et la machine.</p>
-                </div>
-                <div class="slide-visual card-visual flex items-center justify-center h-80">
-                    <div class="flex gap-8">
-                        <div class="text-center">
-                            <div class="text-5xl mb-2">🛡️</div>
-                            <div class="text-[10px] uppercase font-bold">Detect</div>
-                        </div>
-                        <div class="text-center opacity-50">
-                            <div class="text-2xl mt-4">VS</div>
-                        </div>
-                        <div class="text-center">
-                            <div class="text-5xl mb-2">🧬</div>
-                            <div class="text-[10px] uppercase font-bold">Humanize</div>
-                        </div>
+                <div class="visual-part visual-grid">
+                    <div class="app-card">
+                        <div class="text-4xl mb-2">🎨</div>
+                        <div class="font-bold">Create</div>
+                        <div class="text-xs opacity-60 mt-1">Image Gen</div>
+                    </div>
+                    <div class="app-card">
+                        <div class="text-4xl mb-2">🧊</div>
+                        <div class="font-bold">3D Pro</div>
+                        <div class="text-xs opacity-60 mt-1">CAD Web</div>
+                    </div>
+                    <div class="app-card col-span-2">
+                        <div class="text-4xl mb-2">🎞️</div>
+                        <div class="font-bold">Diaporama</div>
+                        <div class="text-xs opacity-60 mt-1">Générateur Slides</div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- SLIDE 6 : CONCLUSION -->
-        <div class="slide" data-index="5">
-            <div class="slide-content text-center" style="display: flex; flex-direction: column;">
-                <h2 class="text-6xl md:text-8xl font-black tracking-tighter mb-8">PRÊT ?</h2>
-                <p class="text-xl text-gray-500 mb-12 max-w-xl">Rejoignez l'expérience WikiMind dès maintenant. Gratuitement.</p>
+        <!-- SLIDE 5 : ANALYSE & VERITE -->
+        <div class="slide">
+            <div class="slide-content slide-inner">
+                <div class="text-part">
+                    <span class="tag bg-indigo-100 text-indigo-600 border-none">Analyse IA</span>
+                    <h2>MAÎTRISEZ<br>LA VÉRITÉ.</h2>
+                    <p>Détectez si un texte a été écrit par une IA ou humanisez vos propres écrits pour les rendre indétectables. Le contrôle total sur le contenu.</p>
+                </div>
+                <div class="visual-part visual-grid">
+                    <div class="app-card">
+                        <div class="text-4xl mb-2">🛡️</div>
+                        <div class="font-bold">Detector</div>
+                        <div class="text-xs opacity-60 mt-1">Anti-Plagiat</div>
+                    </div>
+                    <div class="app-card">
+                        <div class="text-4xl mb-2">🧬</div>
+                        <div class="font-bold">Humanizer</div>
+                        <div class="text-xs opacity-60 mt-1">Reformulation</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 6 : PRODUCTIVITE & JEUX -->
+        <div class="slide">
+            <div class="slide-content slide-inner">
+                <div class="text-part">
+                    <span class="tag bg-yellow-100 text-yellow-600 border-none">Life OS</span>
+                    <h2>GÉREZ VOTRE<br>QUOTIDIEN.</h2>
+                    <p>Finance pour votre budget, Cloud pour vos fichiers, Study pour votre concentration, et même Games pour détendre votre cerveau avec une partie d'échecs.</p>
+                </div>
+                <div class="visual-part visual-grid">
+                    <div class="app-card">
+                        <div class="text-3xl mb-1">💸</div>
+                        <div class="text-sm font-bold">Finance</div>
+                    </div>
+                    <div class="app-card">
+                        <div class="text-3xl mb-1">☁️</div>
+                        <div class="text-sm font-bold">Cloud</div>
+                    </div>
+                    <div class="app-card">
+                        <div class="text-3xl mb-1">⏱️</div>
+                        <div class="text-sm font-bold">Study</div>
+                    </div>
+                    <div class="app-card">
+                        <div class="text-3xl mb-1">🎮</div>
+                        <div class="text-sm font-bold">Games</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 7 : CONCLUSION -->
+        <div class="slide">
+            <div class="slide-content slide-inner text-center block">
+                <h2 class="text-6xl md:text-8xl mb-8">PRÊT ?</h2>
+                <p class="mb-12 mx-auto">L'écosystème WikiMind n'attend que vous.</p>
                 
-                <div class="flex flex-col md:flex-row gap-6">
-                    <a href="index.html" class="px-10 py-5 bg-black dark:bg-white text-white dark:text-black rounded-full font-black uppercase tracking-widest hover:scale-105 transition shadow-2xl">
-                        Accéder à l'accueil
+                <div class="flex flex-col md:flex-row gap-6 justify-center w-full">
+                    <a href="index.html" class="px-10 py-6 bg-black dark:bg-white text-white dark:text-black rounded-full font-black uppercase tracking-widest hover:scale-105 transition shadow-2xl text-sm md:text-base">
+                        Explorer les Apps
                     </a>
-                    <a href="user.html" class="px-10 py-5 border border-gray-300 dark:border-gray-700 rounded-full font-bold uppercase tracking-widest hover:bg-gray-100 dark:hover:bg-zinc-800 transition">
+                    <a href="user.html" class="px-10 py-6 border border-gray-300 dark:border-gray-700 rounded-full font-bold uppercase tracking-widest hover:bg-gray-100 dark:hover:bg-zinc-800 transition text-sm md:text-base">
                         Créer mon compte
                     </a>
                 </div>
             </div>
         </div>
 
-        <!-- CONTROLS -->
-        <div class="controls">
-            <button onclick="prevSlide()" class="nav-btn">←</button>
-            <button onclick="nextSlide()" class="nav-btn">→</button>
-        </div>
-
-        <!-- PROGRESS BAR -->
-        <div class="progress-bar" id="progress"></div>
-
     </div>
 
-    <!-- LOGIC -->
+    <!-- CONTROLS -->
+    <div class="controls">
+        <button id="prevBtn" class="nav-btn disabled" onclick="prevSlide()">←</button>
+        <button id="nextBtn" class="nav-btn" onclick="nextSlide()">→</button>
+    </div>
+
+    <!-- PROGRESS -->
+    <div class="progress-bar" id="progress"></div>
+
     <script>
-        // --- 1. THEME MANAGEMENT ---
-        // Vérifie le thème stocké dans index.html
+        // --- THEME ---
         const savedTheme = localStorage.getItem('wikimind_landing_theme');
         if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
             document.body.classList.add('dark-mode');
         }
 
-        // --- 2. INTRO SEQUENCE ---
-        function startIntro() {
+        // --- ANIMATION ENTREE ---
+        window.addEventListener('load', () => {
             setTimeout(() => {
-                document.getElementById('intro-title').classList.add('animate');
-            }, 100);
+                document.getElementById('intro-layer').classList.add('open');
+                document.querySelector('.loader-text').style.opacity = '0';
+                
+                setTimeout(() => {
+                    document.getElementById('intro-layer').style.display = 'none';
+                    document.getElementById('presentation-container').classList.add('visible');
+                }, 1000);
+            }, 1500); // Temps de lecture du logo
+        });
 
-            setTimeout(() => {
-                document.getElementById('intro-sub').classList.add('animate');
-            }, 1000);
-
-            setTimeout(() => {
-                document.getElementById('intro-btn').classList.add('animate');
-            }, 2500);
-        }
-
-        function startPresentation() {
-            // Fade out intro
-            const intro = document.getElementById('intro-layer');
-            intro.style.opacity = '0';
-            intro.style.pointerEvents = 'none';
-            
-            // Show slides
-            const container = document.getElementById('presentation-container');
-            container.style.display = 'block';
-            
-            // Small delay to allow display:block to apply before opacity transition
-            setTimeout(() => {
-                container.style.opacity = '1';
-            }, 50);
-
-            updateProgress();
-        }
-
-        // --- 3. SLIDESHOW LOGIC ---
+        // --- SLIDER ENGINE ---
         let currentSlide = 0;
         const slides = document.querySelectorAll('.slide');
         const totalSlides = slides.length;
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
 
         function updateSlides() {
             slides.forEach((slide, index) => {
                 slide.classList.remove('active', 'prev');
-                
-                if (index === currentSlide) {
-                    slide.classList.add('active');
-                } else if (index < currentSlide) {
-                    slide.classList.add('prev');
-                }
+                if (index === currentSlide) slide.classList.add('active');
+                else if (index < currentSlide) slide.classList.add('prev');
             });
-            updateProgress();
+
+            // Barre de progression
+            document.getElementById('progress').style.width = ((currentSlide + 1) / totalSlides) * 100 + '%';
+
+            // Boutons
+            prevBtn.classList.toggle('disabled', currentSlide === 0);
+            
+            if (currentSlide === totalSlides - 1) {
+                nextBtn.innerHTML = "✓";
+                nextBtn.onclick = () => window.location.href = "index.html";
+            } else {
+                nextBtn.innerHTML = "→";
+                nextBtn.onclick = nextSlide;
+            }
         }
 
         function nextSlide() {
@@ -390,19 +428,29 @@
             }
         }
 
-        function updateProgress() {
-            const width = ((currentSlide + 1) / totalSlides) * 100;
-            document.getElementById('progress').style.width = width + '%';
+        // --- TOUCH EVENTS (SWIPE) ---
+        let touchStartX = 0;
+        let touchEndX = 0;
+
+        document.addEventListener('touchstart', e => touchStartX = e.changedTouches[0].screenX);
+        document.addEventListener('touchend', e => {
+            touchEndX = e.changedTouches[0].screenX;
+            handleSwipe();
+        });
+
+        function handleSwipe() {
+            if (touchEndX < touchStartX - 50) nextSlide();
+            if (touchEndX > touchStartX + 50) prevSlide();
         }
 
-        // --- 4. KEYBOARD NAVIGATION ---
+        // --- KEYBOARD ---
         document.addEventListener('keydown', (e) => {
             if (e.key === 'ArrowRight' || e.key === ' ') nextSlide();
             if (e.key === 'ArrowLeft') prevSlide();
         });
 
-        // Start
-        window.addEventListener('load', startIntro);
+        // INIT
+        updateSlides();
 
     </script>
 </body>
