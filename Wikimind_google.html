@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WikiMind - Experience</title>
+    
+    <!-- GSAP pour les animations fluides -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <!-- Three.js pour la 3D -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <!-- Font Google (Inter pour le look moderne) -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;700;900&display=swap" rel="stylesheet">
+
+    <style>
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            overflow: hidden; background-color: #000;
+            font-family: 'Inter', sans-serif;
+        }
+
+        #canvas-container {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 1;
+        }
+
+        /* UI Overlay */
+        #ui-layer {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 10; pointer-events: none;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+        }
+
+        .text-slide {
+            position: absolute;
+            text-align: center;
+            opacity: 0;
+            transform: translateY(50px);
+            mix-blend-mode: exclusion; /* Effet de style moderne sur fond blanc/particules */
+        }
+
+        h1 {
+            font-size: 8vw; font-weight: 900; letter-spacing: -0.05em; color: white;
+            margin: 0; line-height: 0.9;
+            text-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        h2 {
+            font-size: 3vw; font-weight: 300; color: #a1a1aa;
+            margin-top: 20px; letter-spacing: 0.2em; text-transform: uppercase;
+        }
+
+        .highlight { color: #3b82f6; } /* Bleu WikiMind */
+
+        /* Bouton Final */
+        #enter-btn {
+            pointer-events: auto;
+            opacity: 0;
+            margin-top: 40px;
+            padding: 15px 40px;
+            font-size: 18px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px;
+            color: #000; background: #fff;
+            border: none; border-radius: 50px;
+            cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        #enter-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 30px rgba(255, 255, 255, 0.6);
+        }
+
+        /* Progress Bar (Style Google I/O) */
+        .progress-line {
+            position: absolute; bottom: 0; left: 0; height: 4px; background: linear-gradient(90deg, #3b82f6, #8b5cf6, #ec4899);
+            width: 0%; z-index: 20;
+        }
+
+        /* Overlay de grain pour l'effet cinéma */
+        .noise {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 5; opacity: 0.05;
+            background: url('https://grainy-gradients.vercel.app/noise.svg');
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Container 3D -->
+    <div id="canvas-container"></div>
+    
+    <!-- Grain Filter -->
+    <div class="noise"></div>
+
+    <!-- Interface Textuelle -->
+    <div id="ui-layer">
+        
+        <!-- Slide 1: Intro -->
+        <div class="text-slide" id="slide-1">
+            <h1>WIKIMIND</h1>
+            <h2>L'Architecture de la Pensée</h2>
+        </div>
+
+        <!-- Slide 2: AI -->
+        <div class="text-slide" id="slide-2">
+            <h1><span class="highlight">INTELLIGENCE</span><br>ARTIFICIELLE</h1>
+            <h2>Mistral • Llama • Gemini</h2>
+        </div>
+
+        <!-- Slide 3: Tools -->
+        <div class="text-slide" id="slide-3">
+            <h1>OUTILS<br><span class="highlight">CRÉATIFS</span></h1>
+            <h2>Studio • Code • Analyse</h2>
+        </div>
+
+        <!-- Slide 4: Final -->
+        <div class="text-slide" id="slide-4">
+            <h1>PRÊT ?</h1>
+            <button id="enter-btn" onclick="window.location.href='index.html'">Entrer dans le Hub</button>
+        </div>
+
+    </div>
+
+    <div class="progress-line"></div>
+
+    <script>
+        // --- CONFIGURATION THREE.JS ---
+        const scene = new THREE.Scene();
+        // Brouillard pour la profondeur
+        scene.fog = new THREE.FogExp2(0x000000, 0.002);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 50;
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio); // Netteté maximale
+        document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+        // --- CREATION DES PARTICULES (LE CERVEAU / RESEAU) ---
+        const geometry = new THREE.BufferGeometry();
+        const count = 4000; // Nombre de particules
+        const positions = new Float32Array(count * 3);
+        const colors = new Float32Array(count * 3);
+
+        for(let i = 0; i < count * 3; i++) {
+            // Distribution sphérique aléatoire
+            positions[i] = (Math.random() - 0.5) * 100;
+            colors[i] = Math.random();
+        }
+
+        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+        // Matériau "Glowing"
+        const material = new THREE.PointsMaterial({
+            size: 0.3,
+            vertexColors: true,
+            transparent: true,
+            opacity: 0.8,
+            blending: THREE.AdditiveBlending,
+            sizeAttenuation: true
+        });
+
+        const particles = new THREE.Points(geometry, material);
+        scene.add(particles);
+
+        // --- LIGNES DE CONNEXION (Style Neuronal) ---
+        // On crée un objet géométrique séparé pour des lignes qui connectent certaines particules
+        const lineMaterial = new THREE.LineBasicMaterial({ color: 0x3b82f6, transparent: true, opacity: 0.15 });
+        const lineGeometry = new THREE.BufferGeometry();
+        // On prendra juste un sous-ensemble pour ne pas tuer le CPU
+        const lineCount = 200; 
+        const linePos = new Float32Array(lineCount * 3); 
+        lineGeometry.setAttribute('position', new THREE.BufferAttribute(linePos, 3));
+        const lines = new THREE.Line(lineGeometry, lineMaterial);
+        // On ajoute les lignes mais on animera leurs positions plus tard
+        // Note: Pour une démo pure JS sans heavy computation, on garde les lignes simples ou on les simule par le mouvement.
+        
+        // --- GEOMETRIES FLOTTANTES (Décor) ---
+        const shapesGroup = new THREE.Group();
+        const shapeGeo = new THREE.IcosahedronGeometry(1, 0);
+        const shapeMat = new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true, transparent: true, opacity: 0.1 });
+        
+        for(let i=0; i<20; i++) {
+            const mesh = new THREE.Mesh(shapeGeo, shapeMat);
+            mesh.position.set((Math.random()-0.5)*80, (Math.random()-0.5)*80, (Math.random()-0.5)*80);
+            mesh.scale.setScalar(Math.random() * 2 + 1);
+            shapesGroup.add(mesh);
+        }
+        scene.add(shapesGroup);
+
+
+        // --- ANIMATION LOOP (Rendu) ---
+        let time = 0;
+        function animate() {
+            requestAnimationFrame(animate);
+            time += 0.005;
+
+            // Rotation douce de l'univers
+            particles.rotation.y = time * 0.1;
+            particles.rotation.x = time * 0.05;
+            shapesGroup.rotation.y = -time * 0.2;
+
+            // Effet de vague sur les particules
+            const positions = particles.geometry.attributes.position.array;
+            for(let i=0; i<count; i++) {
+                const x = positions[i*3];
+                const y = positions[i*3+1];
+                // Ondulation
+                positions[i*3+1] = y + Math.sin(time * 2 + x * 0.1) * 0.05; 
+            }
+            particles.geometry.attributes.position.needsUpdate = true;
+
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // --- TIMELINE CINÉMATIQUE (GSAP) ---
+        const tl = gsap.timeline();
+
+        // ÉTAPE 0: Initialisation (Tout est noir/loin)
+        camera.position.z = 200;
+        material.size = 0.1;
+
+        // ÉTAPE 1: L'ENTRÉE (0s - 5s)
+        // Zoom rapide vers le centre + Apparition Titre 1
+        tl.to(camera.position, { z: 40, duration: 4, ease: "power4.out" })
+          .to(material, { size: 0.4, duration: 4, ease: "power2.out" }, "<")
+          .to("#slide-1", { opacity: 1, y: 0, duration: 1.5, ease: "power3.out" }, "-=3.5")
+          .to(".progress-line", { width: "25%", duration: 5, ease: "linear" }, 0);
+
+        // ÉTAPE 2: TRANSITION VERS IA (5s - 10s)
+        // Rotation caméra, changement de couleur particules
+        tl.to("#slide-1", { opacity: 0, y: -50, duration: 1, delay: 1 })
+          .to(particles.rotation, { z: Math.PI / 2, duration: 3, ease: "power2.inOut" }, "<")
+          .to(material.color, { r: 0.2, g: 0.5, b: 1, duration: 2 }, "<") // Devient bleu
+          .to("#slide-2", { opacity: 1, y: 0, duration: 1.5, ease: "power3.out" }, "-=1")
+          .to(".progress-line", { width: "50%", duration: 4, ease: "linear" }, "<");
+
+        // ÉTAPE 3: TRANSITION VERS OUTILS (10s - 15s)
+        // Zoom in violent (Warp speed) puis stabilisation
+        tl.to("#slide-2", { opacity: 0, scale: 1.5, duration: 0.8, delay: 2 })
+          .to(camera.position, { z: 5, duration: 1.5, ease: "expo.in" }, "<") // Warp in
+          .to(camera.position, { z: 30, duration: 2, ease: "elastic.out(1, 0.5)" }) // Rebond
+          .to(material.color, { r: 1, g: 0.2, b: 0.8, duration: 1 }, "<") // Devient Rose/Violet
+          .to("#slide-3", { opacity: 1, y: 0, duration: 1.5, ease: "power3.out" }, "-=1.5")
+          .to(".progress-line", { width: "75%", duration: 4, ease: "linear" }, "<");
+
+        // ÉTAPE 4: FINAL (15s - 20s)
+        // Formation d'une sphère parfaite ou calme
+        tl.to("#slide-3", { opacity: 0, x: -100, duration: 1, delay: 2 })
+          .to(particles.rotation, { x: 0, y: 0, z: 0, duration: 2, ease: "power2.inOut" }, "<")
+          .to(camera.position, { z: 50, duration: 2, ease: "power2.inOut" }, "<")
+          .to(material.color, { r: 1, g: 1, b: 1, duration: 2 }, "<") // Retour blanc pur
+          .to("#slide-4", { opacity: 1, y: 0, duration: 1.5, ease: "power3.out" }, "-=0.5")
+          .to("#enter-btn", { opacity: 1, y: 0, duration: 1, ease: "back.out(1.7)" }, "-=1")
+          .to(".progress-line", { width: "100%", duration: 2, ease: "linear" }, "<");
+
+        // --- GESTION DU RESIZE ---
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // --- INTERACTION SOURIS (PARALLAXE) ---
+        // Ajoute un léger mouvement de caméra basé sur la souris pour plus de profondeur
+        document.addEventListener('mousemove', (e) => {
+            const x = (e.clientX / window.innerWidth) * 2 - 1;
+            const y = -(e.clientY / window.innerHeight) * 2 + 1;
+            
+            // On tween la caméra légèrement sans casser la timeline
+            gsap.to(camera.rotation, {
+                x: y * 0.05,
+                y: -x * 0.05,
+                duration: 1
+            });
+        });
+
+    </script>
+</body>
+</html>
